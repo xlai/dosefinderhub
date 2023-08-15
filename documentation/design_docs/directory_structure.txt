@@ -1,0 +1,26 @@
+dosefinderhub/
+├── app/                  # Main app directory
+│   ├── modules/          # Shiny modules
+│   │   ├── questionnaire/ # Modules for the questionnaire interface
+│   │   │   ├── ui.R      # UI module code
+│   │   │   ├── server.R  # Server module code
+│   │   │   └── ...
+│   │   ├── trial-design/ # Modules for the trial design/conduct interface
+│   │   │   ├── ui.R      # UI module code
+│   │   │   ├── server.R  # Server module code
+│   │   │   └── ...
+│   │   └── shared/       # Shared modules
+│   ├── server.R          # Main server logic
+│   ├── ui.R              # Main UI code
+│   ├── data/             # Data related files
+│   ├── methods/          # Dose-finding method implementation
+│   ├── tests/            # Testing files
+│   ├── www/              # Any additional web content like CSS, images
+│   ├── global.R          # Global variables and shared code
+│   └── app.R             # Main app file (combines ui.R and server.R)
+├── documentation/                 # Documentation
+├── scripts/              # Any standalone R scripts or utilities
+├── .gitignore            # Git ignore file
+├── LICENSE               # License file (GPL v3)
+├── README.md             # Readme file
+└── ...
