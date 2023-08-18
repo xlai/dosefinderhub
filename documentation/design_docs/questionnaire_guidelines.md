@@ -28,7 +28,7 @@ For each question please describe:
 - **q_text**: the question text is what will be shown to the user, eg 'What type of drug are you testing?'. Make sure this is a full sentence and is grammatically correct.
 - **a_1**: the option displayed as the first answer, eg 'Chemotherapy'.
 - **a_2**: the option displayed as the second answer, eg 'Immunotherapy'.
-- **a_3 - a_10**: further options for the user to select as an asnwer. Try to order the answers in a coherent way when applicable, like if the answers range over a scale from 'Stongly agree' to 'Strongly Disagree'. If the question type is a slider, use a_1 to record the minimum value, a_2 the maximum value, and a_3 to specify the size of each step on the scale.
+- **a_3 - a_10**: further options for the user to select as an asnwer. Try to order the answers in a coherent way when applicable, like if the answers range over a scale from 'Stongly agree' to 'Strongly Disagree'. If the question type is a slider, use a_1 to record the minimum value, a_2 the maximum value, and a_3 to specify the size of each step on the scale. If the question type is numeric, use a_1 to record the initial value, a_2 the minimum value, and a_3 the maximum value.
 - Where no answers are prespecified, a1 - a10 can be left blank. If there are fewer than 10 prespecified answers, enter answers in the first available answer options and leave the remaining answer options blank (dont skip answer options).
 
 Here is an example of what q_database should look like:
