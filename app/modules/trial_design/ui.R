@@ -108,5 +108,5 @@ main_ui = fluidPage(
     )
   )
 )
-#main_server = function(input, output, session) {}
+main_server = function(input, output, session) {}
 shinyApp(main_ui, main_server)
