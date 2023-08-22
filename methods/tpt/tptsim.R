@@ -34,9 +34,10 @@ ttl <- 1/3
 max_n <- 30
 start_dose <- 1
 current_seed <- 12345
-tpt_allow_deesc <- TRUE
 n_sims$tpt <- 100
 true_dlt_ss <- c(0.05,0.15,1/3,0.5,0.8) 
+
+tpt_allow_deesc <- TRUE
 
 best_dose <- max(true_dlt_ss[true_dlt_ss<=ttl])
 best_dose_level <- match(best_dose,true_dlt_ss)
@@ -89,13 +90,12 @@ rownames(treatment_tab) <- c("Patients Treated by Model", "True Toxicity Probabi
 # iii) Length of trial. trial_duration from escalation.
 # iv) Risk of returning no dose?
 # v) clinical benefit / underdosing?
-# return distribution rather than single point?
 
 # i) accuracy
 
 dist_accuracy$tpt <- recommended_dose(sims$tpt)
 mean_accuracy$tpt <- length(subset(dist_accuracy$tpt,dist_accuracy$tpt == best_dose_level)) / n_sims$tpt
-hist(dist_accuracy$tpt,breaks=10)
+#hist(dist_accuracy$tpt,breaks=10)
 
 # ii) risk of overdosing
 
@@ -108,7 +108,4 @@ mean_overdose$tpt <- mean(dist_overdose$tpt)
 dist_length$tpt <- sims$tpt %>% escalation::trial_duration()
 mean_length$tpt <- mean(dist_length$tpt)
 #hist(dist_length$tpt,breaks=10)
-
-
-
 

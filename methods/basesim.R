@@ -1,0 +1,197 @@
+# required packages
+
+library(magrittr)
+library(escalation)
+library(ggplot2)
+
+# lists
+
+n_sims <- list()
+
+model <- list()
+sims <- list()
+
+selection <- list()
+selection_df <- list()
+selection_tab <- list()
+
+treated <- list()
+treatedpct <- list()
+treatedpct_df <- list()
+treatment_tab <- list()
+
+dist_accuracy <- list()
+mean_accuracy <- list()
+
+dist_overdose <- list()
+mean_overdose <- list()
+
+dist_length <- list()
+mean_length <- list()
+
+# variables needed (UI)
+
+n_doses <- 7
+ttl <- 1/3
+max_n <- 18
+start_dose <- 1
+current_seed <- 12345
+true_dlt_ss <- c(0.01,0.05,0.15,1/3,0.5,0.8,0.99) 
+
+best_dose <- max(true_dlt_ss[true_dlt_ss<=ttl])
+best_dose_level <- match(best_dose,true_dlt_ss)
+
+# model tpt
+
+n_sims$tpt <- 100
+
+tpt_allow_deesc <- TRUE
+
+model$tpt <- escalation::get_three_plus_three(num_doses = n_doses, 
+  allow_deescalate = tpt_allow_deesc, 
+  set.seed(current_seed)) %>% 
+  stop_at_n(n=max_n)
+
+# model crm
+
+n_sims$crm <- 100
+
+skeleton <- c(0.02,0.08,0.20,0.35,0.6,0.9,0.999)
+prior_var <- 0.8
+
+skip_esc <- FALSE
+skip_deesc <- TRUE
+stop_tox_x <- 0.1 
+stop_tox_y <- 0.7
+stop_n_mtd <- 25
+
+model$crm <- escalation::get_dfcrm(skeleton = skeleton, target = ttl, scale = sqrt(prior_var)) %>% 
+  dont_skip_doses(when_escalating = 1-skip_esc, when_deescalating = 1-skip_deesc) %>% 
+  stop_when_too_toxic(dose = 1, stop_tox_x + ttl, confidence = stop_tox_y) %>%
+  stop_when_n_at_dose(n = stop_n_mtd, dose = "recommended") %>%
+  stop_at_n(n=max_n) 
+
+## tpt sims
+
+# run sims  
+
+sims$tpt <- model$tpt %>% 
+  escalation::simulate_trials(next_dose = start_dose, n_sims$tpt, true_dlt_ss, NULL)
+
+# find selection probs  
+
+selection$tpt <- sims$tpt %>% 
+  escalation::prob_recommend()
+
+# find no. treated at dose
+
+treated$tpt <- colSums(sims$tpt %>% 
+  escalation::n_at_dose())
+
+treatedpct$tpt <- treated$tpt / sum(treated$tpt)
+
+# coerce into selection table
+
+selection_df$tpt <- data.frame(selection$tpt)
+
+selection_tab$tpt <- rbind(t(selection_df$tpt), c(NA,true_dlt_ss))
+
+rownames(selection_tab$tpt) <- c("Dose Selected by Model", "True Toxicity Probabilities")
+
+# coerce into treatment table
+
+treated_df$tpt <- data.frame(treated$tpt)
+
+treatment_tab$tpt <- rbind(t(treated_df$tpt),true_dlt_ss)
+
+rownames(treatment_tab$tpt) <- c("Patients Treated by Model", "True Toxicity Probabilities")
+
+# spider diagram?
+
+# arms of spider:
+# i) Accuracy. Defined as 'correct' MTD selection %
+# ii) Risk of overdosing. sum of (tox prob * % patients treated * # patients)
+# iii) Length of trial. trial_duration from escalation.
+# iv) Risk of returning no dose?
+# v) clinical benefit / underdosing?
+
+# i) accuracy
+
+dist_accuracy$tpt <- recommended_dose(sims$tpt)
+mean_accuracy$tpt <- length(subset(dist_accuracy$tpt,dist_accuracy$tpt == best_dose_level)) / n_sims$tpt
+#hist(dist_accuracy$tpt,breaks=10)
+
+# ii) risk of overdosing
+
+dist_overdose$tpt <- num_tox(sims$tpt)
+mean_overdose$tpt <- mean(dist_overdose$tpt)
+#hist(dist_overdose$tpt,breaks=10)
+
+# iii) trial length
+
+dist_length$tpt <- sims$tpt %>% escalation::trial_duration()
+mean_length$tpt <- mean(dist_length$tpt)
+#hist(dist_length$tpt,breaks=10)
+
+## crm sims
+
+# run sims  
+
+sims$crm <- model$crm %>% 
+  escalation::simulate_trials(next_dose = start_dose, n_sims$crm, true_dlt_ss, NULL)
+
+# find selection probs  
+
+selection$crm <- sims$crm %>% 
+  escalation::prob_recommend()
+
+# find no. treated at dose
+
+treated$crm <- colSums(sims$crm %>% 
+  escalation::n_at_dose())
+
+treatedpct$crm <- treated$crm / sum(treated$crm)
+
+# coerce into selection table
+
+selection_df$crm <- data.frame(selection$crm)
+
+selection_tab$crm <- rbind(t(selection_df$crm), c(NA,true_dlt_ss))
+
+rownames(selection_tab$crm) <- c("Dose Selected by Model", "True Toxicity Probabilities")
+
+# coerce into treatment table
+
+treated_df$crm <- data.frame(treated$crm)
+
+treatment_tab$crm <- rbind(t(treated_df$crm),true_dlt_ss)
+
+rownames(treatment_tab$crm) <- c("Patients Treated by Model", "True Toxicity Probabilities")
+
+# spider diagram?
+
+# arms of spider:
+# i) Accuracy. Defined as 'correct' MTD selection %
+# ii) Risk of overdosing. sum of (tox prob * % patients treated * # patients)
+# iii) Length of trial. trial_duration from escalation.
+# iv) Risk of returning no dose?
+# v) clinical benefit / underdosing?
+
+# i) accuracy
+
+dist_accuracy$crm <- recommended_dose(sims$crm)
+mean_accuracy$crm <- length(subset(dist_accuracy$crm,dist_accuracy$crm == best_dose_level)) / n_sims$crm
+#hist(dist_accuracy$crm,breaks=10)
+
+# ii) risk of overdosing
+
+dist_overdose$crm <- num_tox(sims$crm)
+mean_overdose$crm <- mean(dist_overdose$crm)
+#hist(dist_overdose$crm,breaks=10)
+
+# iii) trial length
+
+dist_length$crm <- sims$crm %>% escalation::trial_duration()
+mean_length$crm <- mean(dist_length$crm)
+#hist(dist_length$crm,breaks=10)
+
