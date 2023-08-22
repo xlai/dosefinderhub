@@ -38,11 +38,18 @@ server2 <- function(input, output, session) {
 
   observeEvent(input$save_inputs, {
     # Define inputs to save
-    inputs_to_save <- c("drug_type", "know_doses", "start_dose")
+    inputs_to_save <- c("drug_type", "know_doses",
+                        "n_doses", "start_dose",
+                        "know_prior_tox_info",
+                        "know_ttl", "ttl",
+                        "need_tox_interval", "stats_help",
+                        "know_late_tox", "cohort_vary",
+                        "cohort_size", "know_max_n",
+                        "max_n")
     # Declare inputs
     inputs <- NULL
     # Append all inputs before saving to folder
-    for(input.i in inputs_to_save){
+    for (input.i in inputs_to_save){
       inputs <- append(inputs, input[[input.i]])
     }
     # Inputs data.frame

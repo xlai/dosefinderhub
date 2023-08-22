@@ -1,12 +1,11 @@
 library(shiny)
-library(rlang)
 
 ui2 <- shiny::fluidPage(
 
   theme = bslib::bs_theme(bootswatch = "darkly"),
 
   shiny::textInput(inputId = "inputsLocation",
-                   label = "Load Previous Inputs",
+                   label = "Load Previously Saved Inputs:",
                    value = ""),
 
   shiny::actionButton("load_inputs", "Load inputs"),
@@ -30,8 +29,8 @@ ui2 <- shiny::fluidPage(
                         selected = "No",
                         width = 500),
 
-    shiny::conditionalPanel(
-      "input.know_doses == 'Yes'",
+    shiny::conditionalPanel("input.know_doses == 'Yes'",
+
       shiny::sliderInput("n_doses",
                          label = "How many dose levels are being tested?",
                          value = 5, min = 1, max = 10, width = 500)
@@ -57,8 +56,8 @@ ui2 <- shiny::fluidPage(
                         choices = list("No", "Yes"),
                         selected = "No", width = 500),
 
-    shiny::conditionalPanel(
-      "input.know_ttl == 'Yes'",
+    shiny::conditionalPanel("input.know_ttl == 'Yes'",
+
       shiny::sliderInput("ttl",
                          label = "What is the target toxicity level for
                          this trial?",
@@ -87,8 +86,8 @@ ui2 <- shiny::fluidPage(
                         choices = list("No", "Yes"),
                         selected = "No", width = 500),
 
-    shiny::conditionalPanel(
-      "input.cohort_vary == 'No'",
+    shiny::conditionalPanel("input.cohort_vary == 'No'",
+
       shiny::sliderInput("cohort_size",
                          label = "What size will the cohorts be?",
                          value = 3, min = 1, max = 6,
@@ -101,8 +100,8 @@ ui2 <- shiny::fluidPage(
                         choices = list("No", "Yes"),
                         selected = "No", width = 500),
 
-    shiny::conditionalPanel(
-      "input.know_max_n == 'Yes'",
+    shiny::conditionalPanel("input.know_max_n == 'Yes'",
+
       shiny::numericInput("max_n",
                           label = "What is the maximum sample
                           size for this trial?",
@@ -115,13 +114,14 @@ ui2 <- shiny::fluidPage(
                    width = 500)
     )
   ),
+
   # Simple text output giving a sentence describing singular
   # recommended method, for now.
-  textOutput("recommendations"),
+  shiny::textOutput("recommendations"),
 
-  textInput(inputId = 'inputsLocation', label = 'Inputs Location', value = "c:\Users\sdennett\Desktop\user_inputs.csv"),
-  actionButton('save_inputs', 'Save inputs'),
-  bookmarkButton()
+  shiny::textInput(inputId = "inputsLocation",
+                   label = "Save Input At Location..."),
+  shiny::actionButton("save_inputs", "Save inputs")
 
 )
 
