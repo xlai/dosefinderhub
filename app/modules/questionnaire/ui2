@@ -4,11 +4,8 @@ ui2 <- shiny::fluidPage(
 
   theme = bslib::bs_theme(bootswatch = "darkly"),
 
-  shiny::textInput(inputId = "inputsLocation",
-                   label = "Load Previously Saved Inputs:",
-                   value = ""),
-
-  shiny::actionButton("load_inputs", "Load inputs"),
+  shiny::fileInput("file_upload", "Upload Previous Responses",
+                   accept = c(".csv", ".rds")),
 
   mainPanel(
     h1("Welcome to the Dose Finder Hub!"),
@@ -119,13 +116,8 @@ ui2 <- shiny::fluidPage(
   # recommended method, for now.
   shiny::textOutput("recommendations"),
 
-  shiny::textInput(inputId = "inputsLocation",
-                   label = "Save Input At Location..."),
-  shiny::actionButton("save_inputs", "Save inputs")
+  shiny::downloadButton("save_button", "Save Responses")
 
 )
 
 shinyApp(ui2, server2, enableBookmarking = "server")
-
-
-## bookmarkButton()
