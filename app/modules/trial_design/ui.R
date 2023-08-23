@@ -11,12 +11,9 @@ library(shiny)
 #Variable values are arbitrary since we have not integrated them from the Questionnaire UI yet; I tried to stick to the defaults specified in the spreadsheet
 
 ##user_profile variables:
-#ranking <- c("3p3", "crm", "other") #Not taken from spreadhseet; first ranking possibility. Commen/uncomment and re-run script
-ranking <- c("crm", "3p3", "other") #Second ranking possibility. Commen/uncomment and re-run script
+ranking <- c("3p3", "crm", "other") #Not taken from spreadhseet; first ranking possibility. Commen/uncomment and re-run script
+#ranking <- c("crm", "3p3", "other") #Second ranking possibility. Commen/uncomment and re-run script
 #ranking <- c("other", "3p3", "crm") #Third ranking possibility. Commen/uncomment and re-run script
-design_1 <- ranking[1]
-design_2 <- ranking[2]
-design_3 <- ranking[3]
 
 ##non_spec variables (non design-specific):
 n_doses <- 5
@@ -56,6 +53,45 @@ true_dlt_ss_other_2 <- c(0, 0.1, 0.2, 0.3, 0.4) #Not taken from spreadsheet
 true_dlt_ss_other_3 <- c(0, 0, 0, 0.1, 0.2) #Not taken from spreadsheet
 n_sims_other <- 20 #Not taken from spreadsheet
 
+# #Joining some of the parameters into lists; this may be useful to send to modelling backend (Jake)
+
+# true_dlt_ss_3p3_list <- list(
+#   true_dlt_ss_3p3_1,
+#   true_dlt_ss_3p3_2,
+#   true_dlt_ss_3p3_3
+# )
+# true_dlt_ss_crm_list <- list(
+#   true_dlt_ss_crm_1,
+#   true_dlt_ss_crm_2,
+#   true_dlt_ss_crm_3
+# )
+# true_dlt_ss_other_list <- list(
+#   true_dlt_ss_other_1,
+#   true_dlt_ss_other_2,
+#   true_dlt_ss_other_3
+# )
+# true_dlt_ss_all_list <- list(
+#   true_dlt_ss_3p3_list,
+#   true_dlt_ss_crm_list,
+#   true_dlt_ss_other_list
+# )
+# names(true_dlt_ss_all_list) <- c("3p3", "crm", "other")
+# true_dlt_ss_all_list
+# true_dlt_ss_all_list$'3p3'
+# true_dlt_ss_all_list$crm
+# true_dlt_ss_all_list$other
+
+# n_sims_all_list <- list(
+#   n_sims_3p3,
+#   n_sims_crm,
+#   n_sims_other
+# )
+# names(n_sims_all_list) <- c("3p3", "crm", "other")
+# n_sims_all_list
+# n_sims_all_list$'3p3'
+# n_sims_all_list$crm
+# n_sims_all_list$other
+
 
 
 
@@ -91,7 +127,7 @@ input_func_3p3 <- function(input) {
   return(output)
 }
 
-input_fuc_crm <- function(input) {
+input_func_crm <- function(input) {
   message <-
     "CRM-specific parameters"
 
@@ -166,11 +202,11 @@ input_func_other <- function(input) {
 }
 
 #Selecting which functions to be called within UI based on ranking vector
-func_list <- list(input_func_3p3(), input_fuc_crm(), input_func_other())
+func_list <- list(input_func_3p3(), input_func_crm(), input_func_other())
 names(func_list) <- c("3p3", "crm", "other")
-func_1 <- func_list[design_1]
-func_2 <- func_list[design_2]
-func_3 <- func_list[design_3]
+func_1 <- func_list[ranking[1]]
+func_2 <- func_list[ranking[2]]
+func_3 <- func_list[ranking[3]]
 
 #fluidPage() - backbone of UI
 main_ui <- fluidPage(
@@ -184,13 +220,13 @@ main_ui <- fluidPage(
       )
     ),
     tabPanel(
-      design_1
+      ranking[1]
     ),
     tabPanel(
-      design_2
+      ranking[2]
     ),
     tabPanel(
-      design_3
+      ranking[3]
     ),
     tabPanel(
       "Cross-Method Comparison"
