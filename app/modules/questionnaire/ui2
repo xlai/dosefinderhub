@@ -126,3 +126,6 @@ ui2 <- shiny::fluidPage(
 )
 
 shinyApp(ui2, server2, enableBookmarking = "server")
+
+
+## bookmarkButton()
