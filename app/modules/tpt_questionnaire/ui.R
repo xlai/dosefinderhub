@@ -9,7 +9,7 @@ ui <- shiny::fluidPage(
                       deescalating?",
                       choices = list("Yes", "No")),
 
-  shiny::numericInput("tpt_n_sims",
+  shiny::numericInput("n_sims$tpt",
                       label = "How many simulations would you like to run?",
                       value = 20, min = 1, max = 10000),
 
