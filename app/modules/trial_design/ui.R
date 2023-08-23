@@ -11,9 +11,9 @@ library(shiny)
 #Variable values are arbitrary since we have not integrated them from the Questionnaire UI yet; I tried to stick to the defaults specified in the spreadsheet
 
 ##user_profile variables:
-ranking <- c("3p3", "crm", "other") #Not taken from spreadhseet; first ranking possibility. Commen/uncomment and re-run script
-#ranking <- c("crm", "3plus3", "other") #Second ranking possibility. Commen/uncomment and re-run script
-#ranking <- c("other", "3plus3", "crm") #Third ranking possibility. Commen/uncomment and re-run script
+#ranking <- c("3p3", "crm", "other") #Not taken from spreadhseet; first ranking possibility. Commen/uncomment and re-run script
+ranking <- c("crm", "3p3", "other") #Second ranking possibility. Commen/uncomment and re-run script
+#ranking <- c("other", "3p3", "crm") #Third ranking possibility. Commen/uncomment and re-run script
 design_1 <- ranking[1]
 design_2 <- ranking[2]
 design_3 <- ranking[3]
@@ -60,58 +60,127 @@ n_sims_other <- 20 #Not taken from spreadsheet
 
 
 
-#2.0 CODING THE MAIN UI (4 DESIGN TABS - CONFIGURATIONS, DESIGN 1-3, COMPARISON - AND 1 CONDUCT TAB)
+#2.0 CODING THE MAIN UI: 4 DESIGN TABS (CONFIGURATIONS, DESIGN 1-3, COMPARISON) PLUS 1 CONDUCT TAB
 
 #For each possible recommended design, defining a function containing its design-specific and simulation parameters
-#These will then be called inside fluidPage()
-#This is so adding new designs (beyond 3 plus 3 and CRM) and new parameters is easier
+#Depending on the ranking vector, these will be selected and then be called inside fluidPage()
+#This is so adding new designs beyond 3 plus 3 and CRM and new parameters is easier as the project advances
 
 input_func_3p3 <- function(input) {
-  tpt_allow_deesc_input <- checkboxInput("tpt_allow_deesc_input", "Allow any de-escalation for 3+3?", value = tpt_allow_deesc)
-  true_dlt_ss_3p3_1_input <- textInput("true_dlt_ss_3p3_1_input", "Simulation scenario 1 true DLT rates vector (3+3)", value = true_dlt_ss_3p3_1)
-  true_dlt_ss_3p3_2_input <- textInput("true_dlt_ss_3p3_2_input", "Simulation scenario 2 true DLT rates vector (3+3)", value = true_dlt_ss_3p3_2)
-  true_dlt_ss_3p3_3_input <- textInput("true_dlt_ss_3p3_3_input", "Simulation scenario 3 true DLT rates vector (3+3)", value = true_dlt_ss_3p3_3)
-  n_sims_3p3_input <- numericInput("n_sims_3p3_input", "Number of simulations per scenario (3+3)", value = n_sims_3p3)
-  message <- "These were 3+3-specific parameters!"
-  output <- list(tpt_allow_deesc_input, true_dlt_ss_3p3_1_input, true_dlt_ss_3p3_2_input, true_dlt_ss_3p3_3_input, n_sims_3p3_input, message)
+  message <-
+    "3+3-specific parameters"
+
+  tpt_allow_deesc_input <- checkboxInput("tpt_allow_deesc_input",
+    "Allow any de-escalation for 3+3", value = tpt_allow_deesc)
+
+  true_dlt_ss_3p3_1_input <- textInput("true_dlt_ss_3p3_1_input",
+    "Simulation scenario 1 true DLT rates vector (3+3)", value = true_dlt_ss_3p3_1)
+  true_dlt_ss_3p3_2_input <- textInput("true_dlt_ss_3p3_2_input",
+    "Simulation scenario 2 true DLT rates vector (3+3)", value = true_dlt_ss_3p3_2)
+  true_dlt_ss_3p3_3_input <- textInput("true_dlt_ss_3p3_3_input",
+    "Simulation scenario 3 true DLT rates vector (3+3)", value = true_dlt_ss_3p3_3)
+
+  n_sims_3p3_input <- numericInput("n_sims_3p3_input",
+    "Number of simulations per scenario (3+3)", value = n_sims_3p3)
+
+  output <- list(message,
+    tpt_allow_deesc_input,
+    true_dlt_ss_3p3_1_input, true_dlt_ss_3p3_2_input, true_dlt_ss_3p3_3_input,
+    n_sims_3p3_input)
+
   return(output)
 }
 
 input_fuc_crm <- function(input) {
-  UI_input_1 <- numericInput("n_sims_crm_input", "Number of Simulations (CRM)", value = n_sims_crm)
-  UI_input_2 <- textInput("true_dlt_ss_crm_1_input", "Simulation Scenario 1 True DTLs (CRM)", value = true_dlt_ss_crm_1)
-  UI_input_3 <- textInput("prior_ttp_input", "Prior DLTs", value = prior_ttp)
-  UI_input_4 <- "These were CRM-specific parameters!"
-  output <- list(UI_input_1, UI_input_2, UI_input_3, UI_input_4)
+  message <-
+    "CRM-specific parameters"
+
+  prior_mtd_input <- numericInput("prior_mtd_input",
+    "Your guess of which doese level is the MTD", value = prior_mtd)
+  prior_ttp_input <- textInput("prior_ttp_input",
+    "Prior DLT rates vector", value = prior_ttp)
+  prior_var_input <- numericInput("prior_var_input",
+    "Prior variance", value = prior_var)
+
+  skip_esc_input <- checkboxInput("skip_esc_input",
+    "Allow skipping doses while escalating", value = skip_esc)
+  skip_deesc_input <- checkboxInput("skip_deesc_input",
+    "Allow skipping doses while de-escalating", value = skip_deesc)
+  no_esc_if_observed_gt_target_input <- checkboxInput("no_esc_if_observed_gt_target_input",
+    "No escalation if current dose level's observed DLT rate > TTL", value = no_esc_if_observed_gt_target)
+
+  formula <-
+    "Formula for safety stopping: p(true DLT rate at dose > TTL + x | observed data) > y"
+  stop_tox_x_input <- sliderInput("stop_tox_x_input",
+    "Toxicity exceeding TTL (x)", 0, ttl, value = stop_tox_x)
+  stop_tox_y_input <- numericInput("stop_tox_y_input",
+    "Confidence (y)", 0, 1, value = stop_tox_y)
+  stop_n_mtd_input <- numericInput("stop_n_mtd_input",
+    "Min n at MTD for stopping", value = stop_n_mtd)
+
+  true_dlt_ss_crm_1_input <- textInput("true_dlt_ss_crm_1_input",
+    "Simulation scenario 1 true DLT rates vector (CRM)", value = true_dlt_ss_crm_1)
+  true_dlt_ss_crm_2_input <- textInput("true_dlt_ss_crm_2_input",
+    "Simulation scenario 2 true DLT rates vector (CRM)", value = true_dlt_ss_crm_2)
+  true_dlt_ss_crm_3_input <- textInput("true_dlt_ss_crm_3_input",
+    "Simulation scenario 3 true DLT rates vector (CRM)", value = true_dlt_ss_crm_3)
+
+  n_sims_crm_input <- numericInput("n_sims_crm_input",
+    "Number of simulations per scenario (CRM)", value = n_sims_crm)
+
+  output <- list(
+    message,
+    prior_mtd_input, prior_ttp_input, prior_var_input,
+    skip_esc_input, skip_deesc_input, no_esc_if_observed_gt_target_input,
+    formula, stop_tox_x_input, stop_tox_y_input,
+    stop_n_mtd_input,
+    true_dlt_ss_crm_1_input, true_dlt_ss_crm_2_input, true_dlt_ss_crm_3_input,
+    n_sims_crm_input)
+  
   return(output)
 }
 
 input_func_other <- function(input) {
-  UI_input_1 <- numericInput("n_sims_other_input", "Number of Simulations ([Design Name Here])", value = n_sims_other)
-  UI_input_2 <- textInput("true_dlt_ss_other_1_input", "Simulation Scenario 1 True DTLs ([Design Name Here])", value = true_dlt_ss_other_1)
-  UI_input_3 <- sliderInput("mock_parameter", "Mock Parameter", 0, 2, value = mock_parameter)
-  UI_input_4 <- "These were [Design Name Here]-specific parameters!"
-  output <- list(UI_input_1, UI_input_2, UI_input_3, UI_input_4)
+  message <-
+    "[Design Name Here]-specific parameters"
+
+  mock_parameter_input = sliderInput("mock_parameter_input",
+    "Mock parameter", 0, 2, value = mock_parameter)
+
+  true_dlt_ss_other_1_input = textInput("true_dlt_ss_other_1_input",
+    "Simulation scenario 1 true DLT rates vector ([Design Name Here])", value = true_dlt_ss_other_1)
+  true_dlt_ss_other_2_input = textInput("true_dlt_ss_other_2_input",
+    "Simulation scenario 2 true DLT rates vector ([Design Name Here])", value = true_dlt_ss_other_2)
+  true_dlt_ss_other_3_input = textInput("true_dlt_ss_other_3_input",
+    "Simulation scenario 3 true DLT rates vector ([Design Name Here])", value = true_dlt_ss_other_3)
+
+  n_sims_other_input = numericInput("n_sims_other_input",
+    "Number of simulations per scenario ([Design Name Here])", value = n_sims_other)
+
+  output <- list(message,
+    mock_parameter_input,
+    true_dlt_ss_other_1_input, true_dlt_ss_other_2_input, true_dlt_ss_other_3_input,
+    n_sims_other_input)
+
   return(output)
 }
 
+#Selecting which functions to be called within UI based on ranking vector
 func_list <- list(input_func_3p3(), input_fuc_crm(), input_func_other())
-names(func_list) <- c("3plus3", "crm", "other")
+names(func_list) <- c("3p3", "crm", "other")
 func_1 <- func_list[design_1]
 func_2 <- func_list[design_2]
 func_3 <- func_list[design_3]
 
+#fluidPage() - backbone of UI
 main_ui <- fluidPage(
   tabsetPanel(
     tabPanel(
-      "Parameter Configuration",
+      "Parameter Configurations",
       fluidRow(
-        column(1, width = 2, design_1,
-          func_1),
-        column(2, width = 2, design_2,
-          func_2),
-        column(3, width = 2, design_3,
-          func_3)
+        column(1, width = 3, func_1),
+        column(2, width = 3, func_2),
+        column(3, width = 3, func_3)
       )
     ),
     tabPanel(
@@ -125,6 +194,9 @@ main_ui <- fluidPage(
     ),
     tabPanel(
       "Cross-Method Comparison"
+    ),
+    tabPanel(
+      "Conduct Tab"
     )
   )
 )
