@@ -43,7 +43,7 @@ ui <- shiny::fluidPage(
                       label = "What is your prior guess of the MTD",
                       value = 2, min = 1, max = 10, step = 1),
 
-  shiny::numericInput("crm_n_sims",
+  shiny::numericInput("n_sims$crm",
                       label = "How many simulations would you like to run?",
                       value = 20, min = 1, max = 10000),
 

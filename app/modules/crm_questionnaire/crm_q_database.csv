@@ -7,4 +7,4 @@ q_number,q_type,q_variable,q_text,a_1,a_2,a_3,a_4,a_5,a_6,a_7,a_8,a_9,a_10
 6,text,prior_ttp,"What are the prior estimates of the DLT rates at each dose? Please separate each value with a comma, ie 0.1, 0.12, 0.22, 0.5 for 4 doses.",,,,,,,,,,
 7,text,true_DLT_ss,"What are the true DLT rates at each dose for this scenario? Please separate each value with a comma, ie 0.05, 0.15, 0.3, 0.7 for 4 doses.",,,,,,,,,,
 8,numeric,prior_MTD,What is your prior guess of the MTD,2,1,10,,,,,,,
-9,numeric,crm_n_sims,How many simulations would you like to run?,20,1,10000,,,,,,,
+9,numeric,n_sims$crm,How many simulations would you like to run?,20,1,10000,,,,,,,
