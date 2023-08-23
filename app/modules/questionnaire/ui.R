@@ -1,9 +1,11 @@
 library(shiny)
-library(rlang)
 
 ui <- shiny::fluidPage(
 
   theme = bslib::bs_theme(bootswatch = "darkly"),
+
+  shiny::fileInput("file_upload", "Upload Previous Responses",
+                   accept = c(".csv", ".rds")),
 
   mainPanel(
     h1("Welcome to the Dose Finder Hub!"),
@@ -24,8 +26,8 @@ ui <- shiny::fluidPage(
                         selected = "No",
                         width = 500),
 
-    shiny::conditionalPanel(
-      "input.know_doses == 'Yes'",
+    shiny::conditionalPanel("input.know_doses == 'Yes'",
+
       shiny::sliderInput("n_doses",
                          label = "How many dose levels are being tested?",
                          value = 5, min = 1, max = 10, width = 500)
@@ -51,8 +53,8 @@ ui <- shiny::fluidPage(
                         choices = list("No", "Yes"),
                         selected = "No", width = 500),
 
-    shiny::conditionalPanel(
-      "input.know_ttl == 'Yes'",
+    shiny::conditionalPanel("input.know_ttl == 'Yes'",
+
       shiny::sliderInput("ttl",
                          label = "What is the target toxicity level for
                          this trial?",
@@ -81,8 +83,8 @@ ui <- shiny::fluidPage(
                         choices = list("No", "Yes"),
                         selected = "No", width = 500),
 
-    shiny::conditionalPanel(
-      "input.cohort_vary == 'No'",
+    shiny::conditionalPanel("input.cohort_vary == 'No'",
+
       shiny::sliderInput("cohort_size",
                          label = "What size will the cohorts be?",
                          value = 3, min = 1, max = 6,
@@ -95,8 +97,8 @@ ui <- shiny::fluidPage(
                         choices = list("No", "Yes"),
                         selected = "No", width = 500),
 
-    shiny::conditionalPanel(
-      "input.know_max_n == 'Yes'",
+    shiny::conditionalPanel("input.know_max_n == 'Yes'",
+
       shiny::numericInput("max_n",
                           label = "What is the maximum sample
                           size for this trial?",
@@ -112,9 +114,9 @@ ui <- shiny::fluidPage(
 
   # Simple text output giving a sentence describing singular
   # recommended method, for now.
-  textOutput("recommendations"),
+  shiny::textOutput("recommendations"),
 
-  bookmarkButton()
+  shiny::downloadButton("save_button", "Save Responses")
 
 )
 

@@ -1,6 +1,29 @@
 library(shiny)
 
+
 server <- function(input, output, session) {
+
+  # Load button
+  observe({
+    inFile <- input$file_upload
+
+    if (is.null(inFile)) {
+      return(NULL)
+    }
+
+    ext <- tools::file_ext(inFile$datapath)
+
+    if (ext == "csv") {
+      user_responses <- read.csv(inFile$datapath)
+    } else if (ext == "rds") {
+      user_responses <- readRDS(inFile$datapath)
+    }
+    for (i in seq_len(nrow(user_responses))){
+      updateNumericInput(session,
+                         inputId = user_responses$inputId[i],
+                         value = user_responses$value[i])
+    }
+  })
 
   rand <- eventReactive(input$get_rating, {
     runif(1)
@@ -25,5 +48,30 @@ server <- function(input, output, session) {
     }
   })
 
+  # Save button
+  output$save_button <- downloadHandler(
+    filename = function() {
+      paste("user_responses-", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      inputs_to_save <- c("drug_type", "know_doses",
+                          "n_doses", "start_dose",
+                          "know_prior_tox_info",
+                          "know_ttl", "ttl",
+                          "need_tox_interval", "stats_help",
+                          "know_late_tox", "cohort_vary",
+                          "cohort_size", "know_max_n",
+                          "max_n")
+      # Declare inputs
+      inputs <- NULL
+      # Append all inputs before saving to folder
+      for (input.i in inputs_to_save){
+        inputs <- append(inputs, input[[input.i]])
+      }
+      # Inputs data.frame
+      inputs_data_frame <- data.frame(inputId = inputs_to_save, value = inputs)
+      write.csv(inputs_data_frame, file)
+    }
+  )
 
 }
