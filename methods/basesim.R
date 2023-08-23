@@ -31,12 +31,12 @@ mean_length <- list()
 
 # variables needed (UI)
 
-n_doses <- 7
+n_doses <- 5
 ttl <- 1/3
 max_n <- 18
 start_dose <- 1
 current_seed <- 12345
-true_dlt_ss <- c(0.01,0.05,0.15,1/3,0.5,0.8,0.99) 
+true_dlt_ss <- c(0.05,0.15,1/3,0.5,0.8) 
 
 best_dose <- max(true_dlt_ss[true_dlt_ss<=ttl])
 best_dose_level <- match(best_dose,true_dlt_ss)
@@ -56,7 +56,7 @@ model$tpt <- escalation::get_three_plus_three(num_doses = n_doses,
 
 n_sims$crm <- 100
 
-skeleton <- c(0.02,0.08,0.20,0.35,0.6,0.9,0.999)
+skeleton <- c(0.02,0.08,0.20,0.35,0.6)
 prior_var <- 0.8
 
 skip_esc <- FALSE
@@ -70,6 +70,8 @@ model$crm <- escalation::get_dfcrm(skeleton = skeleton, target = ttl, scale = sq
   stop_when_too_toxic(dose = 1, stop_tox_x + ttl, confidence = stop_tox_y) %>%
   stop_when_n_at_dose(n = stop_n_mtd, dose = "recommended") %>%
   stop_at_n(n=max_n) 
+
+########################################################################################################################################################
 
 ## tpt sims
 
@@ -100,20 +102,11 @@ rownames(selection_tab$tpt) <- c("Dose Selected by Model", "True Toxicity Probab
 
 # coerce into treatment table
 
-treated_df$tpt <- data.frame(treated$tpt)
+treatedpct_df$tpt <- data.frame(treatedpct$tpt)
 
-treatment_tab$tpt <- rbind(t(treated_df$tpt),true_dlt_ss)
+treatment_tab$tpt <- rbind(t(treatedpct_df$tpt),true_dlt_ss)
 
 rownames(treatment_tab$tpt) <- c("Patients Treated by Model", "True Toxicity Probabilities")
-
-# spider diagram?
-
-# arms of spider:
-# i) Accuracy. Defined as 'correct' MTD selection %
-# ii) Risk of overdosing. sum of (tox prob * % patients treated * # patients)
-# iii) Length of trial. trial_duration from escalation.
-# iv) Risk of returning no dose?
-# v) clinical benefit / underdosing?
 
 # i) accuracy
 
@@ -132,6 +125,8 @@ mean_overdose$tpt <- mean(dist_overdose$tpt)
 dist_length$tpt <- sims$tpt %>% escalation::trial_duration()
 mean_length$tpt <- mean(dist_length$tpt)
 #hist(dist_length$tpt,breaks=10)
+
+#############################################################################################################################################################
 
 ## crm sims
 
@@ -162,20 +157,11 @@ rownames(selection_tab$crm) <- c("Dose Selected by Model", "True Toxicity Probab
 
 # coerce into treatment table
 
-treated_df$crm <- data.frame(treated$crm)
+treatedpct_df$crm <- data.frame(treatedpct$crm)
 
-treatment_tab$crm <- rbind(t(treated_df$crm),true_dlt_ss)
+treatment_tab$crm <- rbind(t(treatedpct_df$crm),true_dlt_ss)
 
 rownames(treatment_tab$crm) <- c("Patients Treated by Model", "True Toxicity Probabilities")
-
-# spider diagram?
-
-# arms of spider:
-# i) Accuracy. Defined as 'correct' MTD selection %
-# ii) Risk of overdosing. sum of (tox prob * % patients treated * # patients)
-# iii) Length of trial. trial_duration from escalation.
-# iv) Risk of returning no dose?
-# v) clinical benefit / underdosing?
 
 # i) accuracy
 
@@ -194,4 +180,26 @@ mean_overdose$crm <- mean(dist_overdose$crm)
 dist_length$crm <- sims$crm %>% escalation::trial_duration()
 mean_length$crm <- mean(dist_length$crm)
 #hist(dist_length$crm,breaks=10)
+
+################################################################################################################################################################
+
+# current outputs:
+
+print(selection_tab)
+print(treatment_tab) #combine? was using to create comparative scores, but have moved away from this approach. Using this purely for visual outputs.
+print(mean_accuracy)
+print(mean_overdose)
+print(mean_length)
+
+# df for graphs:
+
+a <- cbind("tpt",dist_accuracy$tpt)
+b <- cbind("crm",dist_accuracy$crm)
+
+c <- data.frame(rbind(a,b))
+
+#ggplot2::ggplot(data = c, aes(x=X2, y=X1)) + 
+#geom_bar(stat = 'identity') +
+#scale_fill_manual(values=c("#69b3a2", "#404080")) 
+
 
