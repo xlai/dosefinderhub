@@ -1,8 +1,8 @@
 # required packages
 
-library(magrittr)
 library(escalation)
 library(ggplot2)
+`%>%` <- magrittr::`%>%`
 
 # lists
 
@@ -191,12 +191,15 @@ print(mean_accuracy)
 print(mean_overdose)
 print(mean_length)
 
+hist(dist_length$crm,breaks=10)
+abline(v=mean_length$crm, col = "red")
+
 # df for graphs:
 
-a <- cbind("tpt",dist_accuracy$tpt)
-b <- cbind("crm",dist_accuracy$crm)
+#a <- cbind("tpt",dist_accuracy$tpt)
+#b <- cbind("crm",dist_accuracy$crm)
 
-c <- data.frame(rbind(a,b))
+#c <- data.frame(rbind(a,b))
 
 #ggplot2::ggplot(data = c, aes(x=X2, y=X1)) + 
 #geom_bar(stat = 'identity') +
