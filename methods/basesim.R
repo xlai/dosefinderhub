@@ -147,13 +147,13 @@ treated$crm <- colSums(sims$crm %>%
 
 treatedpct$crm <- treated$crm / sum(treated$crm)
 
-# coerce into selection table
+# coerce into table
 
 selection_df$crm <- data.frame(selection$crm)
+treatedpct_df$crm <- data.frame(treatedpct$crm)
+selection_tab$crm <- rbind(t(selection_df$crm), c(NA,true_dlt_ss),c(NA,t(treatedpct_df$crm)))
 
-selection_tab$crm <- rbind(t(selection_df$crm), c(NA,true_dlt_ss))
-
-rownames(selection_tab$crm) <- c("Dose Selected by Model", "True Toxicity Probabilities")
+rownames(selection_tab$crm) <- c("Dose Selected by Model", "True Toxicity Probabilities", "treated")
 
 # coerce into treatment table
 
@@ -205,4 +205,10 @@ abline(v=mean_length$crm, col = "red")
 #geom_bar(stat = 'identity') +
 #scale_fill_manual(values=c("#69b3a2", "#404080")) 
 
+## trial conduct WIP
 
+# assuming we get the following:
+# id
+# dose level
+# cohort size
+# number in the cohort that had DLT
