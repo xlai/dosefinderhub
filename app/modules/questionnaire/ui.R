@@ -71,7 +71,7 @@ ui <- shiny::fluidPage(
     shiny::radioButtons("stats_help",
                         label = "Are you able and willing to provide real time
                         data to a statistician for analysis during the trial?",
-                        choices = list("No", "Yes")), width = 500,
+                        choices = list("No", "Yes"), width = 500),
 
     shiny::radioButtons("know_late_tox",
                         label = "Do you need to consider late toxicities
