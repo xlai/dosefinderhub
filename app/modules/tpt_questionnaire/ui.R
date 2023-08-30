@@ -4,23 +4,32 @@ ui <- shiny::fluidPage(
 
   theme = bslib::bs_theme(bootswatch = "darkly"),
 
-  shiny::radioButtons("tpt_allow_deesc",
-                      label = "Would you like to be able to skip doses when
-                      deescalating?",
-                      choices = list("Yes", "No")),
+  shiny::titlePanel("3+3 Design Parameters"),
 
-  shiny::numericInput("n_sims$tpt",
-                      label = "How many simulations would you like to run?",
-                      value = 20, min = 1, max = 10000),
+  shiny::mainPanel(
 
-  shiny::fluidRow(
-    actionButton("get_rating",
-                 label = "Simulate!",
-                 class = "btn-block")
+    htmltools::h4("Please answer the questions below to get 
+       comparisons between trial designs,
+       or upload previously saved responses."),
+
+    shiny::fileInput("file_upload", "Upload Previous Responses:",
+                     accept = c(".csv", ".rds")),
+
+    shiny::uiOutput("questionsUI"),
+
+    # Simple text output giving a sentence describing singular
+    # recommended method, for now.
+    shiny::textOutput("recommendations"),
+
+    shiny::downloadButton("save_button", "Save Responses"),
+
+    shiny::fluidRow(
+      actionButton("get_rating",
+                   label = "Simulate!",
+                   class = "btn-block")
+    )
+
   )
 )
-
-server <- function(input, output, session) {
-}
 
 shinyApp(ui, server)
