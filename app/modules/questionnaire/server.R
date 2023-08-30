@@ -1,22 +1,29 @@
 library(shiny)
 
+parse_params <- function(params_str) {
+  params <- strsplit(params_str, ";")[[1]]
+  param_list <- lapply(params, function(p) strsplit(p, "=")[[1]])
+  names(param_list) <- sapply(param_list, `[`, 1)
+  sapply(param_list, `[`, 2)
+}
+questions <- read.csv("app/data/questionnaire_inputs/q_database.csv")
 
 server <- function(input, output, session) {
 
   # Load button
   observe({
-    inFile <- input$file_upload
+    in_file <- input$file_upload
 
-    if (is.null(inFile)) {
+    if (is.null(in_file)) {
       return(NULL)
     }
 
-    ext <- tools::file_ext(inFile$datapath)
+    ext <- tools::file_ext(in_file$datapath)
 
     if (ext == "csv") {
-      user_responses <- read.csv(inFile$datapath)
+      user_responses <- read.csv(in_file$datapath)
     } else if (ext == "rds") {
-      user_responses <- readRDS(inFile$datapath)
+      user_responses <- readRDS(in_file$datapath)
     }
     for (i in seq_len(nrow(user_responses))){
       updateNumericInput(session,
@@ -25,6 +32,38 @@ server <- function(input, output, session) {
     }
   })
 
+  output$questionsUI <- renderUI({
+    tagList(
+      lapply(seq_len(nrow(questions)), function(i) {
+        question <- questions[questions$q_number == i, ]
+        params <- parse_params(question$params)
+
+        switch(question$q_type,
+          radioButtons = radioButtons(inputId = question$q_variable,
+                                      label = question$q_text,
+                                      choices = strsplit(params[["choices"]], ",")[[1]],
+                                      width = 500),
+          numeric = numericInput(inputId = question$q_variable,
+                                 label = question$q_text,
+                                 min = as.numeric(params[["min"]]),
+                                 value = 0,
+                                 width = 500),
+          slider = sliderInput(inputId = question$q_variable,
+                               label = question$q_text,
+                               min = as.numeric(params[["min"]]),
+                               max = as.numeric(params[["max"]]),
+                               value = as.numeric(params[["min"]]),
+                               width = 500),
+          text = textInput(inputId = question$q_variable,
+                           label = question$q_text,
+                           placeholder = "Enter your hint here",
+                           value = "", width = 500)
+        )
+      })
+    )
+  })
+
+  # Random number generation creating recommendation
   rand <- eventReactive(input$get_rating, {
     runif(1)
   })
@@ -54,14 +93,7 @@ server <- function(input, output, session) {
       paste("user_responses-", Sys.Date(), ".csv", sep = "")
     },
     content = function(file) {
-      inputs_to_save <- c("drug_type", "know_doses",
-                          "n_doses", "start_dose",
-                          "know_prior_tox_info",
-                          "know_ttl", "ttl",
-                          "need_tox_interval", "stats_help",
-                          "know_late_tox", "cohort_vary",
-                          "cohort_size", "know_max_n",
-                          "max_n")
+      inputs_to_save <- questions$q_variable
       # Declare inputs
       inputs <- NULL
       # Append all inputs before saving to folder
@@ -73,5 +105,4 @@ server <- function(input, output, session) {
       write.csv(inputs_data_frame, file)
     }
   )
-
 }
