@@ -3,7 +3,7 @@ q_number,q_type,q_variable,q_text,answer_type,params
 3,slider,n_doses,How many dose levels are being tested?,numeric_bounded,min=0;max=10;step=1
 1,radioButtons,drug_type,What type of drug is being tested?,categorical,"choices=Chemotherapy,Immunotherapy,Targeted agent"
 6,radioButtons,know_ttl,Do you know the target toxicity level for this trial?,categorical,"choices=Yes,No"
-7,slider,ttl,What is the target toxicity level for this trial?,numeric_bounded,min=0;max=1;step=0.5
+7,slider,ttl,What is the target toxicity level for this trial?,numeric_bounded,min=0;max=1;step=0.05
 8,radioButtons,need_tox_interval,Do you want to provide an indifference interval in which you are happy for the toxicity rate of the recommended dose to fall?,categorical,"choices=Yes,No"
 5,radioButtons,know_prior_tox_info,How much prior knowledge of the drug's toxicity do you have?,categorical,"choices=None,Some pre-clinical information,Lots of pre-clinical information,Some clinical information,Lots of clinical information"
 9,radioButtons,stats_help,Are you able and willing to provide real time data to a statistician for analysis during the trial?,categorical,"choices=Yes,No"
