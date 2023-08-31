@@ -1,4 +1,5 @@
 library(shiny)
+library(shinyjs)
 library(escalation)
 library(trialr)
 library(ggplot2)
@@ -14,12 +15,12 @@ library(ggplot2)
 #Variables such as n_sims should be sent to Jake in list format
 
 ##1.1 user_profile variables:
-ranking <- c("tpt", "crm", "other") #Comment/uncomment and re-run to check UI
+##ranking <- c("tpt", "crm", "other") #Comment/uncomment and re-run to check UI
 ##ranking <- c("other", "tpt", "crm")
 ##ranking <- c("tpt")
 ##ranking <- c("tpt", "crm")
 ##ranking <- c("crm", "tpt")
-##ranking <- c("tpt", "crm", "other", "other2")
+ranking <- c("tpt", "crm", "other", "other2")
 ##ranking <- c("other2", "tpt", "crm", "other")
 
 ##1.2 non_spec variables (non-design-specific):
@@ -124,23 +125,26 @@ input_func_tpt <- function() {
   message <-
     "3+3-specific parameters"
 
-  tpt_allow_deesc_input <- checkboxInput("tpt_allow_deesc_input",
-    "Allow any de-escalation for 3+3", value = tpt_allow_deesc)
+  tpt_dropdown_input <- checkboxInput("tpt_dropdown_input", "Display", value = F)
 
-  true_dlt_ss_tpt_1_input <- textInput("true_dlt_ss_tpt_1_input",
-    "Simulation scenario 1 true DLT rates vector (3+3)", value = true_dlt_ss_tpt_1)
-  true_dlt_ss_tpt_2_input <- textInput("true_dlt_ss_tpt_2_input",
-    "Simulation scenario 2 true DLT rates vector (3+3)", value = true_dlt_ss_tpt_2)
-  true_dlt_ss_tpt_3_input <- textInput("true_dlt_ss_tpt_3_input",
-    "Simulation scenario 3 true DLT rates vector (3+3)", value = true_dlt_ss_tpt_3)
+  conditional_inputs <- conditionalPanel("input.tpt_dropdown_input==1",
+    tpt_allow_deesc_input <- checkboxInput("tpt_allow_deesc_input",
+      "Allow any de-escalation for 3+3", value = tpt_allow_deesc),
 
-  n_sims_tpt_input <- numericInput("n_sims_tpt_input",
-    "Number of simulations per scenario (3+3)", value = n_sims_tpt)
+    true_dlt_ss_tpt_1_input <- textInput("true_dlt_ss_tpt_1_input",
+      "Simulation scenario 1 true DLT rates vector (3+3)", value = true_dlt_ss_tpt_1),
+    true_dlt_ss_tpt_2_input <- textInput("true_dlt_ss_tpt_2_input",
+      "Simulation scenario 2 true DLT rates vector (3+3)", value = true_dlt_ss_tpt_2),
+    true_dlt_ss_tpt_3_input <- textInput("true_dlt_ss_tpt_3_input",
+      "Simulation scenario 3 true DLT rates vector (3+3)", value = true_dlt_ss_tpt_3),
+
+    n_sims_tpt_input <- numericInput("n_sims_tpt_input",
+      "Number of simulations per scenario (3+3)", value = n_sims_tpt)
+  )
 
   output <- list(message,
-    tpt_allow_deesc_input,
-    true_dlt_ss_tpt_1_input, true_dlt_ss_tpt_2_input, true_dlt_ss_tpt_3_input,
-    n_sims_tpt_input)
+    tpt_dropdown_input,
+    conditional_inputs)
 
   return(output)
 }
@@ -149,48 +153,48 @@ input_func_tpt <- function() {
 input_func_crm <- function() {
   message <-
     "CRM-specific parameters"
+  
+  crm_dropdown_input <- checkboxInput("crm_dropdown_input", "Display", value = F)
 
+  conditional_inputs <- conditionalPanel("input.crm_dropdown_input==1",
   prior_mtd_input <- numericInput("prior_mtd_input",
-    "Your guess of which doese level is the MTD", value = prior_mtd)
+    "Your guess of which dose level is the MTD", value = prior_mtd),
   prior_ttp_input <- textInput("prior_ttp_input",
-    "Prior DLT rates vector", value = prior_ttp)
+    "Prior DLT rates vector", value = prior_ttp),
   prior_var_input <- numericInput("prior_var_input",
-    "Prior variance", value = prior_var)
+    "Prior variance", value = prior_var),
 
   skip_esc_input <- checkboxInput("skip_esc_input",
-    "Allow skipping doses while escalating", value = skip_esc)
+    "Allow skipping doses while escalating", value = skip_esc),
   skip_deesc_input <- checkboxInput("skip_deesc_input",
-    "Allow skipping doses while de-escalating", value = skip_deesc)
+    "Allow skipping doses while de-escalating", value = skip_deesc),
   no_esc_if_observed_gt_target_input <- checkboxInput("no_esc_if_observed_gt_target_input",
-    "No escalation if current dose level's observed DLT rate > TTL", value = no_esc_if_observed_gt_target)
+    "No escalation if current dose level's observed DLT rate > TTL", value = no_esc_if_observed_gt_target),
 
-  formula <-
-    "Formula for safety stopping: p(true DLT rate at dose > TTL + x | observed data) > y"
+  formula <- "Formula for safety stopping: p(true DLT rate at dose > TTL + x | observed data) > y",
   stop_tox_x_input <- sliderInput("stop_tox_x_input",
-    "Toxicity exceeding TTL (x)", 0, ttl, value = stop_tox_x)
+    "Toxicity exceeding TTL (x)", 0, ttl, value = stop_tox_x),
   stop_tox_y_input <- numericInput("stop_tox_y_input",
-    "Confidence (y)", 0, 1, value = stop_tox_y)
+    "Confidence (y)", 0, 1, value = stop_tox_y),
   stop_n_mtd_input <- numericInput("stop_n_mtd_input",
-    "Min n at MTD for stopping", value = stop_n_mtd)
+    "Min n at MTD for stopping", value = stop_n_mtd),
 
   true_dlt_ss_crm_1_input <- textInput("true_dlt_ss_crm_1_input",
-    "Simulation scenario 1 true DLT rates vector (CRM)", value = true_dlt_ss_crm_1)
+    "Simulation scenario 1 true DLT rates vector (CRM)", value = true_dlt_ss_crm_1),
   true_dlt_ss_crm_2_input <- textInput("true_dlt_ss_crm_2_input",
-    "Simulation scenario 2 true DLT rates vector (CRM)", value = true_dlt_ss_crm_2)
+    "Simulation scenario 2 true DLT rates vector (CRM)", value = true_dlt_ss_crm_2),
   true_dlt_ss_crm_3_input <- textInput("true_dlt_ss_crm_3_input",
-    "Simulation scenario 3 true DLT rates vector (CRM)", value = true_dlt_ss_crm_3)
+    "Simulation scenario 3 true DLT rates vector (CRM)", value = true_dlt_ss_crm_3),
 
   n_sims_crm_input <- numericInput("n_sims_crm_input",
     "Number of simulations per scenario (CRM)", value = n_sims_crm)
+  )
 
   output <- list(
     message,
-    prior_mtd_input, prior_ttp_input, prior_var_input,
-    skip_esc_input, skip_deesc_input, no_esc_if_observed_gt_target_input,
-    formula, stop_tox_x_input, stop_tox_y_input,
-    stop_n_mtd_input,
-    true_dlt_ss_crm_1_input, true_dlt_ss_crm_2_input, true_dlt_ss_crm_3_input,
-    n_sims_crm_input)
+    crm_dropdown_input,
+    conditional_inputs
+  )
   
   return(output)
 }
@@ -200,23 +204,26 @@ input_func_other <- function() {
   message <-
     "[Design Name Here]-specific parameters"
 
-  other_allow_deesc_input <- checkboxInput("other_allow_deesc_input",
-  "Allow any de-escalation for [Design Name Here]", value = other_allow_deesc)
+  other_dropdown_input <- checkboxInput("other_dropdown_input", "Display", value = F)
 
-  true_dlt_ss_other_1_input <- textInput("true_dlt_ss_other_1_input",
-    "Simulation scenario 1 true DLT rates vector ([Design Name Here])", value = true_dlt_ss_other_1)
-  true_dlt_ss_other_2_input <- textInput("true_dlt_ss_other_2_input",
-    "Simulation scenario 2 true DLT rates vector ([Design Name Here])", value = true_dlt_ss_other_2)
-  true_dlt_ss_other_3_input <- textInput("true_dlt_ss_other_3_input",
-    "Simulation scenario 3 true DLT rates vector ([Design Name Here])", value = true_dlt_ss_other_3)
+  conditional_inputs <- conditionalPanel("input.other_dropdown_input==1",
+    other_allow_deesc_input <- checkboxInput("other_allow_deesc_input",
+      "Allow any de-escalation for [Design Name Here]", value = other_allow_deesc),
 
-  n_sims_other_input <- numericInput("n_sims_other_input",
-    "Number of simulations per scenario ([Design Name Here])", value = n_sims_other)
+    true_dlt_ss_other_1_input <- textInput("true_dlt_ss_other_1_input",
+      "Simulation scenario 1 true DLT rates vector ([Design Name Here])", value = true_dlt_ss_other_1),
+    true_dlt_ss_other_2_input <- textInput("true_dlt_ss_other_2_input",
+      "Simulation scenario 2 true DLT rates vector ([Design Name Here])", value = true_dlt_ss_other_2),
+    true_dlt_ss_other_3_input <- textInput("true_dlt_ss_other_3_input",
+      "Simulation scenario 3 true DLT rates vector ([Design Name Here])", value = true_dlt_ss_other_3),
+
+    n_sims_other_input <- numericInput("n_sims_other_input",
+      "Number of simulations per scenario ([Design Name Here])", value = n_sims_other)
+  )
 
   output <- list(message,
-    other_allow_deesc_input,
-    true_dlt_ss_other_1_input, true_dlt_ss_other_2_input, true_dlt_ss_other_3_input,
-    n_sims_other_input)
+    other_dropdown_input,
+    conditional_inputs)
 
   return(output)
 }
@@ -289,7 +296,7 @@ select_ui_tabs <- function() {
 
   ui_tabs[[length(ranking)+2]] <- tabPanel("Cross-Method Comparison", "Cross-Method Comparison") #Function to add Comparison tab contents should be called in lieu of of this last argument
   
-  ui_tabs[[length(ranking)+3]] <- tabPanel("Conduct", "Conduct") #Functions to add Conduct tab contents should be indexed and called in lieu of this last argument
+  ui_tabs[[length(ranking)+3]] <- tabPanel("Conduct", input_func_crm_conduct()) #Functions to add Conduct tab contents should be indexed and called in lieu of this last argument
   
   return(ui_tabs)
 }
@@ -298,5 +305,5 @@ select_ui_tabs <- function() {
 main_ui <- fluidPage(
   do.call(tabsetPanel, c(select_ui_tabs()))
 )
-main_server <- function(input, output) {}
+main_server <- function(input, output, session) {}
 shinyApp(main_ui, main_server)
