@@ -1,5 +1,6 @@
 library(shiny)
 library(shinyjs)
+library(DT)
 library(escalation)
 library(trialr)
 library(ggplot2)
@@ -138,11 +139,16 @@ input_func_tpt <- function() {
     true_dlt_ss_tpt_3_input <- textInput("true_dlt_ss_tpt_3_input",
       "Simulation scenario 3 true DLT rates vector (3+3)", value = true_dlt_ss_tpt_3),
     
-    ss_table_n_rows_input <- numericInput("ss_table_n_rows_input",
-      "If you prefer entering as a table, number of rows:", value = 5),
-    add_rows_input <- actionButton("add_rows_input",
-      "Add rows"),
-    tableOutput("ss_table"),
+    ##Xiaoran's reactive table code:
+    ##ss_table_n_rows_input <- numericInput("ss_table_n_rows_input",
+      ##"If you prefer entering as a table, number of rows:", value = 5),
+    ##add_rows_input <- actionButton("add_rows_input",
+      ##"Add rows"),
+    ##tableOutput("ss_table"),
+    ##Reactive table code I found online (closer to what I was picturing):
+    my_datatable <- DTOutput("my_datatable"),
+    actionButton("go", label = "Input and plot scenarios"),
+    plotOutput("my_plot"),
 
     n_sims_tpt_input <- numericInput("n_sims_tpt_input",
       "Number of simulations per scenario (3+3)", value = n_sims_tpt)
@@ -157,17 +163,35 @@ input_func_tpt <- function() {
 
 ###2.1.1 3+3 parameter server function
 server_func_tpt <- function(input, output, session) {
-  ss_table_data_frame <- data.frame(Dose = numeric(0), Scenario = character(0)) #"Initializing data frame" (?)
-  reactive_data <- reactiveVal(ss_table_data_frame) #"Reactive value to store the data" frame (?)
+  ###Xiaoran's reactive table code:
+  ###ss_table_data_frame <- data.frame(Dose = numeric(0), Scenario = character(0)) #"Initializing data frame" (?)
+  ###reactive_data <- reactiveVal(ss_table_data_frame) #"Reactive value to store the data" frame (?)
+  ###observeEvent(input$add_rows_input, {
+    ###current_data <- reactive_data()
+    ###new_rows <- data.frame(Dose = rep(0, input$ss_table_n_rows_input), Scenario = rep("", input$ss_table_n_rows_input))
+    ###new_data <- rbind(current_data, new_rows)
+    ###reactive_data(new_data)
+  ###})
+  ###output$ss_table <- renderTable({reactive_data()})
 
-  observeEvent(input$add_rows_input, {
-    current_data <- reactive_data()
-    new_rows <- data.frame(Dose = rep(0, input$ss_table_n_rows_input), Scenario = rep("", input$ss_table_n_rows_input))
-    new_data <- rbind(current_data, new_rows)
-    reactive_data(new_data)
+  ###Reactive table code I found online (closer to what I was picturing):
+  v <- reactiveValues(data = {
+    data.frame(x = numeric(0), y = numeric(0)) %>% dplyr::add_row(x = rep(0,10), y = rep(0,10))
   })
-
-  output$ss_table <- renderTable({reactive_data()})
+  output$my_datatable <- renderDT({
+    DT::datatable(v$data, editable = TRUE)
+  })
+  observeEvent(input$my_datatable_cell_edit, {
+    info = input$my_datatable_cell_edit
+    i = as.numeric(info$row)
+    j = as.numeric(info$col)
+    k = as.numeric(info$value)
+    v$data[i,j] <- k
+  })
+  output$my_plot <- renderPlot({
+    req(input$go)
+    isolate(v$data) %>% ggplot(aes(x,y)) + geom_point() + geom_smooth(method = "lm")
+  })
 }
 
 ##2.2 CRM parameter inputs function
@@ -328,5 +352,4 @@ main_ui <- fluidPage(
 )
 main_server <- function(input, output, session) {}
 #shinyApp(main_ui, main_server)
-
 shinyApp(main_ui, server_func_tpt)
