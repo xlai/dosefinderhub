@@ -13,3 +13,4 @@ q_number,q_type,q_variable,q_text,answer_type,params
 14,numeric,max_n,What is the maximum sample size for this trial?,numeric,min=1;step=1
 4,numeric,start_dose,What is the starting dose level?,numeric_bounded,min=1;max=10;step=1
 12,slider,cohort_size,What size will the cohorts be?,numeric_bounded,min=1;max=6;step=1
+15,numeric,current_seed,Please set the seed,numeric,min=1;step=1
