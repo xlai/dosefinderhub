@@ -137,6 +137,12 @@ input_func_tpt <- function() {
       "Simulation scenario 2 true DLT rates vector (3+3)", value = true_dlt_ss_tpt_2),
     true_dlt_ss_tpt_3_input <- textInput("true_dlt_ss_tpt_3_input",
       "Simulation scenario 3 true DLT rates vector (3+3)", value = true_dlt_ss_tpt_3),
+    
+    ss_table_n_rows_input <- numericInput("ss_table_n_rows_input",
+      "If you prefer entering as a table, number of rows:", value = 5),
+    add_rows_input <- actionButton("add_rows_input",
+      "Add rows"),
+    tableOutput("ss_table"),
 
     n_sims_tpt_input <- numericInput("n_sims_tpt_input",
       "Number of simulations per scenario (3+3)", value = n_sims_tpt)
@@ -147,6 +153,21 @@ input_func_tpt <- function() {
     conditional_inputs)
 
   return(output)
+}
+
+###2.1.1 3+3 parameter server function
+server_func_tpt <- function(input, output, session) {
+  ss_table_data_frame <- data.frame(Dose = numeric(0), Scenario = character(0)) #"Initializing data frame" (?)
+  reactive_data <- reactiveVal(ss_table_data_frame) #"Reactive value to store the data" frame (?)
+
+  observeEvent(input$add_rows_input, {
+    current_data <- reactive_data()
+    new_rows <- data.frame(Dose = rep(0, input$ss_table_n_rows_input), Scenario = rep("", input$ss_table_n_rows_input))
+    new_data <- rbind(current_data, new_rows)
+    reactive_data(new_data)
+  })
+
+  output$ss_table <- renderTable({reactive_data()})
 }
 
 ##2.2 CRM parameter inputs function
@@ -282,7 +303,7 @@ model_obj_CRM <- stop_when_n_at_dose(model_obj_CRM, dose = "recommended", n = st
 
 
 
-#4.0 MAIN UI BACKBONE (CONFIGURATIONS TAB + DESIGN TABS + COMPARISON TAB + CONDUCT TAB)
+#4.0 MAIN UI (CONFIGURATIONS TAB + DESIGN TABS + COMPARISON TAB + CONDUCT TAB)
 
 ##4.1 Depending on ranking vector, selecting tabs and their content functions
 ui_tabs <- list()
@@ -306,4 +327,6 @@ main_ui <- fluidPage(
   do.call(tabsetPanel, c(select_ui_tabs()))
 )
 main_server <- function(input, output, session) {}
-shinyApp(main_ui, main_server)
+#shinyApp(main_ui, main_server)
+
+shinyApp(main_ui, server_func_tpt)
