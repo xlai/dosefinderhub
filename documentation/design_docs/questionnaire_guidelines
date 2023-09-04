@@ -26,9 +26,9 @@ For each question please describe:
 - **q_type**: the 'question type' as referred to above. This will determine the type of answer offered to the user.
 - **q_variable**: the question variable, ie the name of the questio in the UI. This should be decriptive but very concise and adhere to the coding guidelines, eg drug_type.
 - **q_text**: the question text is what will be shown to the user, eg 'What type of drug are you testing?'. Make sure this is a full sentence and is grammatically correct.
-- **answer_type**: the type of answer that is required by the question. This could be categorical (Yes, No), numeric (ie the prior variance), numeric_bounded (used mainly for sliders where there is a maximum value), or comma-separated list (for text boxes to record toxicity profiles).
+- **answer_type**: the type of answer that is required by the question. This could be categorical (Yes, No), numeric (used for numeric inputs where there is no maximum value, ie the prior variance), numeric_bounded (used for sliders and numeric inputs where there is a maximum value), or comma-separated list (for text boxes to record toxicity profiles).
 - **params**: answers should be recorded in this column in a very specific way. 
-  - For categorical answer types, answers should be listed and separated by a comma only (no spaces) and be preceeded by 'choices='. For example 'choices=Yes,No'.
+  - For categorical answer types, params should begin with 'choices=' and followed by answers listed and separated by a comma only (no spaces). For example 'choices=Yes,No'.
   - For numeric answer types, specify the minimum value using 'min=' and the size of the step using 'step=', with these separated by a semicolon and no spaces. For example 'min=1;step=0.5'.
   - For numeric_bounded answer types, specify the minimum, maximum and step size, similarly as above. For example 'min=1;max=10;step=1'.
   - For comma-separated list, leave param blank.
