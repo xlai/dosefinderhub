@@ -17,10 +17,6 @@ ui <- shiny::fluidPage(
 
     shiny::uiOutput("questionsUI"),
 
-    # Simple text output giving a sentence describing singular
-    # recommended method, for now.
-    shiny::textOutput("recommendations"),
-
     shiny::downloadButton("save_button", "Save Responses"),
 
     shiny::fluidRow(

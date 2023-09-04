@@ -15,25 +15,14 @@ ui <- shiny::fluidPage(
     shiny::fileInput("file_upload", "Upload Previous Responses:",
                      accept = c(".csv", ".rds")),
 
-    uiOutput("questionsUI"),
-
-    shiny::fluidRow(
-      actionButton("get_rating",
-                   label = "Generate recommendations!",
-                   width = 500)
-    ),
-
-    # Simple text output giving a sentence describing singular
-    # recommended method, for now.
-    shiny::textOutput("recommendations"),
+    shiny::uiOutput("questionsUI"),
 
     shiny::downloadButton("save_button", "Save Responses"),
 
-  ),
-
-  shiny::fluidRow(actionButton("get_rating",
-                               label = "Simulate!",
-                               class = "btn-block"))
+    shiny::fluidRow(actionButton("get_rating",
+                                 label = "Simulate!",
+                                 class = "btn-block"))
+  )
 )
 
 shinyApp(ui, server)
