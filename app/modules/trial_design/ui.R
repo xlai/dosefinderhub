@@ -38,6 +38,7 @@ tpt_allow_deesc <- FALSE
 true_dlt_ss_tpt_1 <- c(0.2, 0.3, 0.4, 0.5, 0.6)
 true_dlt_ss_tpt_2 <- c(0, 0.1, 0.2, 0.3, 0.4)
 true_dlt_ss_tpt_3 <- c(0, 0, 0, 0.1, 0.2)
+n_scenarios_tpt <- 5 #Defining this because it should be a constumaziable parameter for the scenarios table
 n_sims_tpt <- 20
 
 ##1.4 spec_crm variables (design-specific, particularly CRM):
@@ -55,6 +56,7 @@ stop_n_mtd <- 12 #12 default value not taken from spreadsheet because 25 seemed 
 true_dlt_ss_crm_1 <- c(0.2, 0.3, 0.4, 0.5, 0.6)
 true_dlt_ss_crm_2 <- c(0, 0.1, 0.2, 0.3, 0.4)
 true_dlt_ss_crm_3 <- c(0, 0, 0, 0.1, 0.2)
+n_scenarios_crm <- 5 #Defining this because it should be a constumaziable parameter for the scenarios table
 n_sims_crm <- 20
 
 ##1.5 spec_other variables (design-specific, particularly "other" design):
@@ -62,6 +64,7 @@ other_allow_deesc <- FALSE
 true_dlt_ss_other_1 <- c(0.2, 0.3, 0.4, 0.5, 0.6)
 true_dlt_ss_other_2 <- c(0, 0.1, 0.2, 0.3, 0.4)
 true_dlt_ss_other_3 <- c(0, 0, 0, 0.1, 0.2)
+n_scenarios_other <- 5 #Defining this because it should be a constumaziable parameter for the scenarios table
 n_sims_other <- 20
 
 ##1.6 spec_other2 variables (design-specific, particularly "other2" design):
@@ -140,12 +143,16 @@ input_func_tpt <- function() {
       "Simulation scenario 3 true DLT rates vector (3+3)", value = true_dlt_ss_tpt_3),
     
     ##Xiaoran's reactive table code:
+    ##If you prefer entering scenario information as a table:",
     ##ss_table_n_rows_input <- numericInput("ss_table_n_rows_input",
       ##"If you prefer entering as a table, number of rows:", value = 5),
     ##add_rows_input <- actionButton("add_rows_input",
       ##"Add rows"),
     ##tableOutput("ss_table"),
     ##Reactive table code I found online (closer to what I was picturing):
+    "If you prefer entering scenario information into a table:",
+    numericInput("n_doses_tpt_input", "Please confirm the number of doses", value = n_doses), #This is non-design-specific, so shouldn't be in Configurations tab, but it will determine the table's number of columns and I want to make it reactive
+    sliderInput("n_scenarios_tpt_input", "How many scenarios would you like to run?", 1, 10, value = n_scenarios_tpt),
     my_datatable <- DTOutput("my_datatable"),
     actionButton("go", label = "Input and plot scenarios"),
     plotOutput("my_plot"),
@@ -174,9 +181,11 @@ server_func_tpt <- function(input, output, session) {
   ###})
   ###output$ss_table <- renderTable({reactive_data()})
 
-  ###Reactive table code I found online (closer to what I was picturing):
+  ###Reactive table code I found online (closer to what I was picturing)
+  ###So far, user inputs 2 variables into a table and then pushes a button to press them
+  ###Currently changing it to fit our purposes
   v <- reactiveValues(data = {
-    data.frame(x = numeric(0), y = numeric(0)) %>% dplyr::add_row(x = rep(0,10), y = rep(0,10))
+    data.frame(x = numeric(0), y = numeric(0)) %>% dplyr::add_row(x = rep(0,5), y = rep(0,5), )
   })
   output$my_datatable <- renderDT({
     DT::datatable(v$data, editable = TRUE)
