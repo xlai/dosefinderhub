@@ -57,7 +57,7 @@ server <- function(input, output, session) {
                                width = 500),
           text = textInput(inputId = question$q_variable,
                            label = question$q_text,
-                           placeholder = "Enter your hint here",
+                           placeholder = "i.e. 0.05, 0.15, 0.3, 0.7",
                            value = "", width = 500)
         )
       })
