@@ -1,0 +1,41 @@
+# Questionnaire Conventions
+This document outlines the conventions for creating questions to be asked in the questionnaire as part of the DoseFinderHub project. The purpose of the questionnaire is to gain insight into the needs of the user and their prospective dose finding trial in order to streamline the comparisons drawn between trial designs and the recommendations returned to the user by our system. Adhering to these guidleines will ensure that questions presented to users are clear and concise, simple to answer, and consistently named for subsequent use in the system. 
+
+## Question Style
+It is critical that the questions presented to users are clear, unambiguous, and easy to understand. When considering which questions should be asked to users, one should consider:
+- Is the question relevant to the needs of the user and their trial?
+- Would the answer to the question help to determine suitability of differnet trial designs?
+- Is the question user friendly and does it use any language that might need an explanation?
+- Is the question impartial?
+- Is the 'question type' the most appropriate? 
+
+N.B. The 'question type' determines what type of answer the user can give in the Shiny app. Examples include 'text' (open-ended answer), 'numeric' (numeric answers only), 'select' (drop down box with prespecified answers), and 'slider' (an interactive scale to select a numeric value), etc.
+
+## Answer Style
+Asking a great question means nothing to us without a great answer, so we must carefully consider the answer options offered to the user to ensure we extract the most accurate information possible. When considering which answers should be offered to the user, one should consider:
+- Are the answers presented an appropriate response to the question asked?
+- Is the range of answers too limited or narrow? Are any options/values missing?
+- Is the range of answers too broad or ambiguous? Are there answers that overlap eachother?
+- Is the user able to answer in the most appropriate way? Would a different 'question type' be more suitable?
+
+## Storing Questions and Answers in the database
+Once the questions and corresponding answers have been decided, the next step is to store them in the questionnaire databse. The questionnaire database is called 'q_database' and can be found at app/modules/questionnaire/q_database. It's a csv file and follows a set structure, described below. 
+
+For each question please describe:
+- **q_number**: the question number, ie question number 1 means the first question asked to the user. If rearranging numbers, ensure to re-label every question so there are no duplicated or missing numbers.
+- **q_type**: the 'question type' as referred to above. This will determine the type of answer offered to the user.
+- **q_variable**: the question variable, ie the name of the questio in the UI. This should be decriptive but very concise and adhere to the coding guidelines, eg drug_type.
+- **q_text**: the question text is what will be shown to the user, eg 'What type of drug are you testing?'. Make sure this is a full sentence and is grammatically correct.
+- **answer_type**: the type of answer that is required by the question. This could be categorical (Yes, No), numeric (used for numeric inputs where there is no maximum value, ie the prior variance), numeric_bounded (used for sliders and numeric inputs where there is a maximum value), or comma-separated list (for text boxes to record toxicity profiles).
+- **params**: answers should be recorded in this column in a very specific way. 
+  - For categorical answer types, params should begin with 'choices=' and followed by answers listed and separated by a comma only (no spaces). For example 'choices=Yes,No'.
+  - For numeric answer types, specify the minimum value using 'min=' and the size of the step using 'step=', with these separated by a semicolon and no spaces. For example 'min=1;step=0.5'.
+  - For numeric_bounded answer types, specify the minimum, maximum and step size, similarly as above. For example 'min=1;max=10;step=1'.
+  - For comma-separated list, leave param blank.
+
+Here is an example of what a q_database should look like:
+
+| q_number | q_type | q_variable | q_text | answer_type | params |
+| ----------- | ----------- | ----------- | ----------- | ----------- | ----------- |
+| 1 | radioButtons | drug_type | What type of drug are you using? | categorical | choices=Chemotherapy,Immunotherapy,Targeted agent | 
+| 2 | slider | ttl | What is the target toxicity level? | numeric_bounded | min=0;max=1;step=0.05 | 
