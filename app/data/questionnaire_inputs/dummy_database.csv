@@ -1,5 +1,5 @@
 q_number,q_type,q_variable,q_text,answer_type,params
-1,slider,n_doses,How many dose levels are being tested?,numeric_bounded,min=0;max=10;step=1
+1,slider,n_doses,How many dose levels are being tested?,numeric_bounded,min=2;max=10;step=1
 2,slider,ttl,What is the target toxicity level for this trial?,numeric_bounded,min=0;max=1;step=0.05
 3,radioButtons,know_max_n,Is there a maximum sample size for this trial?,categorical,"choices=Yes,No"
 4,numeric,max_n,What is the maximum sample size for this trial?,numeric,min=1;step=1

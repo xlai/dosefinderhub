@@ -1,6 +1,6 @@
 q_number,q_type,q_variable,q_text,answer_type,params
 2,radioButtons,know_doses,Do you know how many dose levels are being tested?,categorical,"choices=Yes,No"
-3,slider,n_doses,How many dose levels are being tested?,numeric_bounded,min=0;max=10;step=1
+3,slider,n_doses,How many dose levels are being tested?,numeric_bounded,min=2;max=10;step=1
 1,radioButtons,drug_type,What type of drug is being tested?,categorical,"choices=Chemotherapy,Immunotherapy,Targeted agent"
 6,radioButtons,know_ttl,Do you know the target toxicity level for this trial?,categorical,"choices=Yes,No"
 7,slider,ttl,What is the target toxicity level for this trial?,numeric_bounded,min=0;max=1;step=0.05
