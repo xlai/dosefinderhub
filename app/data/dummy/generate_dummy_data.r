@@ -1,4 +1,3 @@
-library(rlang)
 
 parse_params <- function(params_str) {
   params <- strsplit(params_str, ";")[[1]]
