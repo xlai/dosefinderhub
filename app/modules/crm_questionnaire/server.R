@@ -7,7 +7,8 @@ parse_params <- function(params_str) {
   sapply(param_list, `[`, 2)
 }
 
-questions <- read.csv("app/data/questionnaire_inputs/crm_q_database.csv")
+data <- read.csv("app/data/questionnaire_inputs/method_q_database.csv")
+questions <- data[data$design == "crm", ]
 
 server <- function(input, output, session) {
 
@@ -83,3 +84,4 @@ server <- function(input, output, session) {
     }
   )
 }
+

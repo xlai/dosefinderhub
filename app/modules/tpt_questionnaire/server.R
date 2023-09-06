@@ -6,7 +6,9 @@ parse_params <- function(params_str) {
   names(param_list) <- sapply(param_list, `[`, 1)
   sapply(param_list, `[`, 2)
 }
-questions <- read.csv("app/data/questionnaire_inputs/tpt_q_database.csv")
+
+data <- read.csv("app/data/questionnaire_inputs/method_q_database.csv")
+questions <- data[data$design == "tpt", ]
 
 server <- function(input, output, session) {
 
