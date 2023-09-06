@@ -64,6 +64,7 @@ for (i in config_questions[config_questions$config == "Y", ]$q_number) {
   dummy_answers <- rbind(dummy_answers, answer)
 }
 
+# First dataframe
 trial <- cbind(config_questions[config_questions$config == "Y", ], value = dummy_answers)
 
 dummy_answers <- NULL # reset
@@ -101,13 +102,13 @@ for (i in seq_len(nrow(method_questions))) {
     }
   }
 
+# Second dataframe
 method <- cbind(method_questions, value = dummy_answers)
 
 # define a df called ranking, first column is method, second column is the numeric ranking
-ranking <- data.frame(
-  method = c("tpt", "crm", "other")
-)
-
+## CODE FOR FUTURE WHEN WE HAVE MANY DESIGNS:
+# ranking <- data.frame(method = unique(method_questions$design))
+ranking <- data.frame(method = c("tpt", "crm", "other"))
 ranking$ranking <- sample(seq_along(ranking$method), nrow(ranking), replace = FALSE)
 
 return(
@@ -121,5 +122,6 @@ dummy_data <- generate_dummy_data(
   "app/data/questionnaire_inputs/method_q_database.csv"
 )
 print(dummy_data)
-write.csv(dummy_data, 'dummy_data1.csv')
-dummy_data["max_n",]$answer
+head(dummy_data)
+saveRDS(dummy_data, 'dummy_data3.RData')
+
