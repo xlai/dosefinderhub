@@ -10,7 +10,6 @@ N,9,radioButtons,stats_help,Are you able and willing to provide real time data t
 N,10,radioButtons,know_late_tox,Do you need to consider late toxicities occurring in your trial?,categorical,"choices=Yes,No"
 N,11,radioButtons,cohort_vary,Do you want to have varying cohort sizes?,categorical,"choices=Yes,No"
 N,13,radioButtons,know_max_n,Is there a maximum sample size for this trial?,categorical,"choices=Yes,No"
-Y,14,numeric,max_n,What is the maximum sample size for this trial?,numeric,min=1;dummy_max=100;step=1
+Y,14,numeric,max_n,What is the maximum sample size for this trial?,numeric,min=10;dummy_max=100;step=1
 Y,4,numeric,start_dose,What is the starting dose level?,numeric_bounded,min=1;max=10;step=1
 Y,12,slider,cohort_size,What size will the cohorts be?,numeric_bounded,min=1;max=6;step=1
-Y,15,numeric,current_seed,Please set the seed,numeric,min=1;dummy_max=100000;step=1
