@@ -1,4 +1,0 @@
-q_number,q_type,q_variable,q_text,answer_type,params
-1,radioButtons,tpt_allow_deesc,Would you like to be able to skip doses when deescalating?,categorical,"choices=Yes,No"
-2,numeric,n_sims$tpt,How many simulations would you like to run?,numeric_bounded,min=1;max=10000;step=1
-3,text,true_dlt_ss$tpt,"What are the true DLT rates at each dose for this scenario? Please make this an increasing list and separate each value with a comma.",comma-separated list,
