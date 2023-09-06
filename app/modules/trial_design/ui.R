@@ -141,24 +141,14 @@ input_func_tpt <- function() {
       "Simulation scenario 2 true DLT rates vector (3+3)", value = true_dlt_ss_tpt_2),
     true_dlt_ss_tpt_3_input <- textInput("true_dlt_ss_tpt_3_input",
       "Simulation scenario 3 true DLT rates vector (3+3)", value = true_dlt_ss_tpt_3),
-    
-    ##Xiaoran's reactive table code:
-    ##If you prefer entering scenario information as a table:",
-    ##ss_table_n_rows_input <- numericInput("ss_table_n_rows_input",
-      ##"If you prefer entering as a table, number of rows:", value = 5),
-    ##add_rows_input <- actionButton("add_rows_input",
-      ##"Add rows"),
-    ##tableOutput("ss_table"),
-    ##Reactive table code I found online (closer to what I was picturing):
-    "If you prefer entering scenario information into a table:",
-    numericInput("n_doses_tpt_input", "Please confirm the number of doses", value = n_doses), #This is non-design-specific, so shouldn't be in Configurations tab, but it will determine the table's number of columns and I want to make it reactive
-    sliderInput("n_scenarios_tpt_input", "How many scenarios would you like to run?", 1, 10, value = n_scenarios_tpt),
-    my_datatable <- DTOutput("my_datatable"),
-    actionButton("go", label = "Input and plot scenarios"),
-    plotOutput("my_plot"),
-
     n_sims_tpt_input <- numericInput("n_sims_tpt_input",
-      "Number of simulations per scenario (3+3)", value = n_sims_tpt)
+      "Number of simulations per scenario (3+3)", value = n_sims_tpt),
+    
+    "Simulation scenarios DLT rates input table:",
+    numericInput("n_scenarios_tpt_input", "How many scenarios would you like to run?", min = 1, value = n_scenarios_tpt),
+    DTOutput("table_output"),
+    actionButton("plot_button", label = "Plot scenarios"),
+    plotOutput("plot")
   )
 
   output <- list(message,
@@ -169,37 +159,75 @@ input_func_tpt <- function() {
 }
 
 ###2.1.1 3+3 parameter server function
+column_names <- sprintf("d(%d)", 1:n_doses)
+###Xiaoran's reactive table code:
 server_func_tpt <- function(input, output, session) {
-  ###Xiaoran's reactive table code:
-  ###ss_table_data_frame <- data.frame(Dose = numeric(0), Scenario = character(0)) #"Initializing data frame" (?)
-  ###reactive_data <- reactiveVal(ss_table_data_frame) #"Reactive value to store the data" frame (?)
-  ###observeEvent(input$add_rows_input, {
-    ###current_data <- reactive_data()
-    ###new_rows <- data.frame(Dose = rep(0, input$ss_table_n_rows_input), Scenario = rep("", input$ss_table_n_rows_input))
-    ###new_data <- rbind(current_data, new_rows)
-    ###reactive_data(new_data)
-  ###})
-  ###output$ss_table <- renderTable({reactive_data()})
-
-  ###Reactive table code I found online (closer to what I was picturing)
-  ###So far, user inputs 2 variables into a table and then pushes a button to press them
-  ###Currently changing it to fit our purposes
-  v <- reactiveValues(data = {
-    data.frame(x = numeric(0), y = numeric(0)) %>% dplyr::add_row(x = rep(0,5), y = rep(0,5), )
+  # Initialize empty data frame with specified columns
+  reactive_table_data <- reactiveVal(data.frame(matrix(ncol = n_doses, nrow = 0, dimnames = list(NULL, column_names))))
+  
+  observe({
+    # Capture current data
+    current_data <- reactive_table_data()
+    
+    # Calculate rows to add or remove
+    target_rows <- as.numeric(input$n_scenarios_tpt_input)
+    current_rows <- nrow(current_data)
+    rows_to_add <- target_rows - current_rows
+    
+    # Update data based on the difference
+    if (rows_to_add > 0) {
+      new_rows <- data.frame(
+        Scenario = seq_len(rows_to_add) + current_rows,
+        matrix(0, ncol = n_doses, nrow = rows_to_add, dimnames = list(NULL, column_names))
+        )
+      updated_data <- rbind(current_data, new_rows)
+    } else {
+      updated_data <- head(current_data, target_rows)
+    }
+    
+    # Update reactive data frame
+    reactive_table_data(updated_data)
   })
-  output$my_datatable <- renderDT({
-    DT::datatable(v$data, editable = TRUE)
+  
+  output$editable_table <- renderDT({
+    datatable(reactive_table_data(), editable = TRUE, 
+              options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"),
+                                               list(targets = 0, className = "not-editable")
+              )
+              ),
+              rownames = F
+    )
+  }, server = FALSE)
+  
+  output$table_output <- renderDT({
+    datatable(reactive_table_data(), editable = TRUE, options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"))), rownames = F)
   })
-  observeEvent(input$my_datatable_cell_edit, {
-    info = input$my_datatable_cell_edit
-    i = as.numeric(info$row)
-    j = as.numeric(info$col)
-    k = as.numeric(info$value)
-    v$data[i,j] <- k
+  
+  observeEvent(input$table_output_cell_edit, {
+    info <- input$table_output_cell_edit
+    modified_data <- reactive_table_data()
+    modified_data[info$row, (info$col + 1)] <- as.numeric(info$value)
+    reactive_table_data(modified_data)
   })
-  output$my_plot <- renderPlot({
-    req(input$go)
-    isolate(v$data) %>% ggplot(aes(x,y)) + geom_point() + geom_smooth(method = "lm")
+  
+  observeEvent(input$plot_button, {
+    # Capture current data and transform for plotting
+    current_data <- reactive_table_data()
+    plot_data <- tidyr::gather(current_data[, -1, drop = FALSE], key = "Dose Level", value = "Value")
+    plot_data$Scenario <- rep(current_data$Scenario, each = ncol(current_data) - 1)
+    
+    # Create the plot
+    p <- ggplot(plot_data, aes(x = `Dose Level`, y = Value)) +
+      geom_line() +
+      geom_point(aes(color = Scenario)) +
+      labs(x = "Dose Levels",
+           y = "'True' DLT Rates") +
+      theme_minimal()
+    
+    # Render the plot
+    output$plot <- renderPlot({
+      p
+    })
   })
 }
 
