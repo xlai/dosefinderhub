@@ -6,7 +6,9 @@ parse_params <- function(params_str) {
   names(param_list) <- sapply(param_list, `[`, 1)
   sapply(param_list, `[`, 2)
 }
-questions <- read.csv("app/data/questionnaire_inputs/q_database.csv")
+
+data <- read.csv("app/data/questionnaire_inputs/method_q_database.csv")
+questions <- data[data$design == "tpt", ]
 
 server <- function(input, output, session) {
 
@@ -56,35 +58,11 @@ server <- function(input, output, session) {
                                width = 500),
           text = textInput(inputId = question$q_variable,
                            label = question$q_text,
-                           placeholder = "Enter your hint here",
+                           placeholder = "i.e. 0.05, 0.15, 0.3, 0.7",
                            value = "", width = 500)
         )
       })
     )
-  })
-
-  # Random number generation creating recommendation
-  rand <- eventReactive(input$get_rating, {
-    runif(1)
-  })
-
-  output$recommendations <- renderText({
-    if (rand() > 0 & rand() < 1 / 3) {
-
-      rating <- c("crm", "tpt", "other")
-      "First choice is CRM, second choice is 3+3, third choice is other."
-
-    } else if (rand() > 1 / 3 & rand() < 2 / 3) {
-
-      rating <- c("tpt", "crm", "other")
-      "First choice is 3+3, second choice is CRM, third choice is other."
-
-    } else {
-
-      rating <- c("other", "tpt", "crm")
-      "First choice is other, second choice is 3+3, third choice is CRM."
-
-    }
   })
 
   # Save button
