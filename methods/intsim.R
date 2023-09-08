@@ -29,20 +29,32 @@ process_config <- function(model_config, model_type){
   config_processed_list <- as.list(config_processed$answer)
   names(config_processed_list) <- as.list(config_processed$X)
 
+  # convert to numeric
+  config_processed_list <- sapply(config_processed_list, function(x) {
+    if (is.na(as.numeric(x))){
+      return(x)
+      } else {
+        return(as.numeric(x))
+             }
+
 return(config_processed_list)
+})
+
 }
 
+test <- process_config(read.csv("methods/dummy_data1.csv"), "tpt")
+
 # function for model creation
-create_model <- function(model_type, model_config) {
+create_model <- function(model_config, model_type) {
   # pre-process config
-  config <- process_config(model_config)
+  config <- process_config(model_config, model_type)
   # map the variables from config to the corresponding escalation functions
   func_name <- get_function_from_package(config$func)
   model <- do.call(func_name, config$args)
   model <- switch(model_type,
-  tpt = model %>%
+  tpt = escalation::get_three_plus_three(model_config) %>%
     escalation::stop_at_n(n = config$max_n),
-  crm = model %>% 
+  crm = escalation::get_dfcrm(model_config) %>% 
     escalation::dont_skip_doses(when_escalating = 1-config$skip_esc, when_deescalating = 1-config$skip_deesc) %>% 
     escalation::stop_when_too_toxic(dose = 1, config$stop_tox_x + config$target, confidence = config$stop_tox_y) %>%
     escalation::stop_when_n_at_dose(n = config$stop_n_mtd, dose = "recommended") %>%
@@ -97,4 +109,3 @@ o_sims <- o_model %>% process_sims(start_dose = 1, n_sims = 10, true_dlt_ss = c(
 # add error for number of doses in true_dlt_ss being different to num_doses!
 # or programmatically make it impossible? reactibve table input?
 
-test <- process_config(read.csv("methods/dummy_data1.csv"), "tpt")
