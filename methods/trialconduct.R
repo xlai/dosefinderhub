@@ -100,7 +100,7 @@ tc_o_df <- tc_model_fit %>% escalation::model_frame()
 
 # the posterior updates
 
-tc_o_posterior <- lapply((tc_model_fit %>% escalation::prob_tox_samples())[,2:num_doses],median)
+#tc_o_posterior <- lapply((tc_model_fit %>% escalation::prob_tox_samples())[,2:num_doses],median)
 
 # the dose path object
 
