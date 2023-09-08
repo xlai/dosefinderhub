@@ -390,3 +390,19 @@ main_ui <- fluidPage(
 main_server <- function(input, output, session) {}
 #shinyApp(main_ui, main_server)
 shinyApp(main_ui, server_func_tpt)
+
+
+
+
+
+
+
+
+
+
+dummy_data <- readRDS("app/modules/trial_design/dummy_data1.RData")
+View(dummy_data)
+dummy_data$trial
+
+jake_output <- readRDS("app/modules/trial_design/graph_length.rds")
+View(jake_output)
