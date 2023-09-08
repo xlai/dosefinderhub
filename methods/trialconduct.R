@@ -100,6 +100,7 @@ tc_o_df <- tc_model_fit %>% escalation::model_frame()
 
 # the posterior updates
 
+# for this, there is a function called something like does_it_support_sampling() in escalation that we can use as a switch to run this if it does
 #tc_o_posterior <- lapply((tc_model_fit %>% escalation::prob_tox_samples())[,2:num_doses],median)
 
 # the dose path object
