@@ -3,19 +3,13 @@ tpt:
   args:
     allow_deescalate: TRUE
     num_doses: 5
-  max_n: 24
 
   
 crm:
   func: escalation::get_dfcrm
   args:
     skeleton: [0.02,0.08,0.20,0.35,0.6]
-    target: 0.3
+    target: 0.55
     scale: 0.64
-    skip_esc: FALSE
-    skip_deesc: TRUE
-    stop_tox_x: 0.1 
-    stop_tox_y: 0.7
-    stop_n_mtd: 25
     num_doses: 4
-  max_n: 24
+
