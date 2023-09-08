@@ -32,18 +32,18 @@ mean_length <- list()
 # variables needed (UI)
 
 n_doses <- 5
-ttl <- 1/3
-max_n <- 18
-start_dose <- 1
+ttl <- 0.55
+max_n <- 86
+start_dose <- 3
 current_seed <- 12345
-true_dlt_ss <- c(0.05,0.15,1/3,0.5,0.8) 
+true_dlt_ss <- c(0.05,0.15,1/3,0.5,0.8) # not dummy
 
 best_dose <- max(true_dlt_ss[true_dlt_ss<=ttl])
 best_dose_level <- match(best_dose,true_dlt_ss)
 
 # model tpt
 
-n_sims$tpt <- 100
+n_sims$tpt <- 500
 
 tpt_allow_deesc <- TRUE
 
@@ -54,16 +54,16 @@ model$tpt <- escalation::get_three_plus_three(num_doses = n_doses,
 
 # model crm
 
-n_sims$crm <- 100
+n_sims$crm <- 200
 
-skeleton <- c(0.02,0.08,0.20,0.35,0.6)
-prior_var <- 0.8
+skeleton <- c(0.108321683015674,0.255548628279939,0.425089891767129,0.576775912195444,0.817103320499882)
+prior_var <- 0.01
 
 skip_esc <- FALSE
-skip_deesc <- TRUE
-stop_tox_x <- 0.1 
-stop_tox_y <- 0.7
-stop_n_mtd <- 25
+skip_deesc <- FALSE
+stop_tox_x <- 0.11 
+stop_tox_y <- 0.06
+stop_n_mtd <- 45
 
 model$crm <- escalation::get_dfcrm(skeleton = skeleton, target = ttl, scale = sqrt(prior_var)) %>% 
   dont_skip_doses(when_escalating = 1-skip_esc, when_deescalating = 1-skip_deesc) %>% 
@@ -151,9 +151,9 @@ treatedpct$crm <- treated$crm / sum(treated$crm)
 
 selection_df$crm <- data.frame(selection$crm)
 treatedpct_df$crm <- data.frame(treatedpct$crm)
-selection_tab$crm <- rbind(t(selection_df$crm), c(NA,true_dlt_ss),c(NA,t(treatedpct_df$crm)))
+selection_tab$crm <- rbind(t(selection_df$crm), c(NA,true_dlt_ss))
 
-rownames(selection_tab$crm) <- c("Dose Selected by Model", "True Toxicity Probabilities", "treated")
+rownames(selection_tab$crm) <- c("Dose Selected by Model", "True Toxicity Probabilities")
 
 # coerce into treatment table
 
@@ -184,15 +184,15 @@ mean_length$crm <- mean(dist_length$crm)
 ################################################################################################################################################################
 
 # current outputs:
-
+metrics <- list(accuracy = mean_accuracy, overdose = mean_overdose, duration = mean_length)
 print(selection_tab)
 print(treatment_tab) #combine? was using to create comparative scores, but have moved away from this approach. Using this purely for visual outputs.
-print(mean_accuracy)
-print(mean_overdose)
-print(mean_length)
+print(metrics)
 
-hist(dist_length$crm,breaks=10)
-abline(v=mean_length$crm, col = "red")
+#par(mfrow = c(1,3))
+graph_accuracy <- hist(dist_accuracy$tpt,breaks=11) %>% abline(v=mean_accuracy$tpt, col = "red")
+graph_overdose <- hist(dist_overdose$tpt,breaks=11) %>% abline(v=mean_overdose$tpt, col = "red")
+graph_length <- hist(dist_length$tpt,breaks=11) %>% abline(v=mean_length$tpt, col = "red")
 
 # df for graphs:
 
