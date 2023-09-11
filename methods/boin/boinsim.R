@@ -69,9 +69,15 @@ model$boin <- escalation::get_boin(
   stop_at_n(n = max_n)
 
 # run sims
-
+patient_arrivals_func <- function(current_data) cohorts_of_n(n = cohort_size)
 sims$boin <- model$boin %>%
-  escalation::simulate_trials(next_dose = start_dose, num_sims = n_sims$boin, true_prob_tox = true_dlt_ss, true_prob_eff = NULL)
+  escalation::simulate_trials(
+    next_dose = start_dose,
+    num_sims = n_sims$boin,
+    true_prob_tox = true_dlt_ss,
+    true_prob_eff = NULL,
+    sample_patient_arrivals = patient_arrivals_func
+  )
 
 # find selection probs
 
@@ -88,6 +94,7 @@ treatedpct$boin
 # coerce into selection table
 
 selection_df$boin <- data.frame(selection$boin)
+
 
 selection_tab <- rbind(t(selection_df$boin), c(NA, true_dlt_ss))
 
@@ -127,18 +134,3 @@ hist(dist_overdose$boin,breaks=10)
 dist_length$boin <- sims$boin %>% escalation::trial_duration()
 mean_length$boin <- mean(dist_length$boin)
 #hist(dist_length$boin,breaks=10)
-
-
-create_dummy_sims <- function(n_doses) {
-  n_sims <- sample(seq(20, 100, 10), 1)
-
-  true_dlt_ss <- list()
-  true_dlt_ss$S1 <- sort(sample(seq(0, 1, 0.01), n_doses))
-  true_dlt_ss$S2 <- sort(sample(seq(0, 1, 0.01), n_doses))
-  true_dlt_ss$S3 <- sort(sample(seq(0, 1, 0.01), n_doses))
-  
-  value <- list(n_sims = n_sims, true_dlt_ss = true_dlt_ss)
-  saveRDS(value, "dummy_sims_data")
-  return(dummy_sims_data)
-}
-
