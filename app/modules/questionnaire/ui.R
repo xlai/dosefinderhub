@@ -1,5 +1,3 @@
-library(shiny)
-
 ui <- shiny::fluidPage(
 
   theme = bslib::bs_theme(bootswatch = "darkly"),
