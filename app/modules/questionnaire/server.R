@@ -1,5 +1,3 @@
-library(shiny)
-
 parse_params <- function(params_str) {
   params <- strsplit(params_str, ";")[[1]]
   param_list <- lapply(params, function(p) strsplit(p, "=")[[1]])
@@ -26,9 +24,9 @@ server <- function(input, output, session) {
       user_responses <- readRDS(in_file$datapath)
     }
     for (i in seq_len(nrow(user_responses))){
-      updateNumericInput(session,
-                         inputId = user_responses$inputId[i],
-                         value = user_responses$value[i])
+      shiny::updateNumericInput(session,
+                                inputId = user_responses$inputId[i],
+                                value = user_responses$value[i])
     }
   })
 
@@ -39,36 +37,36 @@ server <- function(input, output, session) {
         params <- parse_params(question$params)
 
         switch(question$q_type,
-          radioButtons = radioButtons(inputId = question$q_variable,
+          radioButtons = shiny::radioButtons(inputId = question$q_variable,
+                                             label = question$q_text,
+                                             choices = strsplit(params[["choices"]], ",")[[1]],
+                                             width = 500),
+          numeric = shiny::numericInput(inputId = question$q_variable,
+                                        label = question$q_text,
+                                        min = as.numeric(params[["min"]]),
+                                        value = 0,
+                                        width = 500),
+          slider = shiny::sliderInput(inputId = question$q_variable,
                                       label = question$q_text,
-                                      choices = strsplit(params[["choices"]], ",")[[1]],
+                                      min = as.numeric(params[["min"]]),
+                                      max = as.numeric(params[["max"]]),
+                                      value = as.numeric(params[["min"]]),
                                       width = 500),
-          numeric = numericInput(inputId = question$q_variable,
-                                 label = question$q_text,
-                                 min = as.numeric(params[["min"]]),
-                                 value = 0,
-                                 width = 500),
-          slider = sliderInput(inputId = question$q_variable,
-                               label = question$q_text,
-                               min = as.numeric(params[["min"]]),
-                               max = as.numeric(params[["max"]]),
-                               value = as.numeric(params[["min"]]),
-                               width = 500),
-          text = textInput(inputId = question$q_variable,
-                           label = question$q_text,
-                           placeholder = "Enter your hint here",
-                           value = "", width = 500)
-        )
+          text = shiny::textInput(inputId = question$q_variable,
+                                  label = question$q_text,
+                                  placeholder = "Enter your hint here",
+                                  value = "", width = 500)
+          )
       })
     )
   })
 
   # Random number generation creating recommendation
-  rand <- eventReactive(input$get_rating, {
+  rand <- shiny::eventReactive(input$get_rating, {
     runif(1)
   })
 
-  output$recommendations <- renderText({
+  output$recommendations <- shiny::renderText({
     if (rand() > 0 & rand() < 1 / 3) {
 
       rating <- c("crm", "tpt", "other")
@@ -88,7 +86,7 @@ server <- function(input, output, session) {
   })
 
   # Save button
-  output$save_button <- downloadHandler(
+  output$save_button <- shiny::downloadHandler(
     filename = function() {
       paste("user_responses-", Sys.Date(), ".csv", sep = "")
     },
