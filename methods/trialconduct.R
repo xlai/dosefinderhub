@@ -76,54 +76,58 @@ create_model <- function(model_config, model_type) {
   return(model)
 }
 
-# quick define variables
-
-design <- "tpt" # note: tpt does NOT support sampling (not bayesian, no posterior)
-
-outcomes <- '1NNN 2NNT'
-
-n_cohorts <- 2
-cohort_size <- 3
-
 # reading in the reactive table to find the outcome string (e.g. 1NN 2NNT)
 
 # Make up some data
 prev_outcomes <- data.frame(
-  cohort = c(1, 1, 1, 2, 2, 2),
-  dose_level = c(1, 1, 1, 2, 2, 2),
-  dlt = c(0, 0, 0, 1, 0, 0),
-  evaluable = c(1, 1, 1, 1, 1, 1)
+  participant = c(1, 2, 3, 4, 5, 6, 7, 8, 9),
+  cohort_n = c(1, 1, 1, 2, 2, 2, 3, 3, 3),
+  dose_level = c(1, 1, 1, 2, 2, 2, 2, 2, 2),
+  dlt = c(0, 0, 0, 1, 0, 0, 0, 1, 0)
 )
 
+# convert to escalation notation
 prev_outcomes$dlt_nt <- ifelse(prev_outcomes$dlt == 1, "T", "N")
 
-# Define the parameters
-n_cohorts <- max(prev_outcomes$cohort)
-cohort_size <- sum(prev_outcomes$cohort == 1)
+# remove non-evaluables
+#prev_outcomes <- prev_outcomes[prev_outcomes$evaluable == 1, ]
 
 # Initialize the outcome_string vector
-outcome_string <- character(n_cohorts)
+outcome_string <- character()
 
-# Loop through the data
-for (i in 1:nrow(prev_outcomes)) {
-  cohort_number <- prev_outcomes$cohort[i]
-  dose_level <- prev_outcomes$dose_level[i]
-  dlt_nt <- prev_outcomes$dlt_nt[i]
-  
-  if (i %% cohort_size == 1) {
-    outcome_string[cohort_number] <- paste(dose_level, dlt_nt, collapse = " ")
-  } else {
-    outcome_string[cohort_number] <- paste(outcome_string[cohort_number], dlt_nt, collapse = "")
-  }
+for (i in 1:nrow(prev_outcomes)){
+if (i == 1) {
+outcome_string[i] <- paste(prev_outcomes$dose_level[i], prev_outcomes$dlt_nt[i], sep="")
 }
 
+else if (prev_outcomes$cohort_n[i] > prev_outcomes$cohort_n[i-1]){
+outcome_string[i] <- paste(" ",prev_outcomes$dose_level[i], prev_outcomes$dlt_nt[i], sep="")
+}
+
+else {
+  outcome_string[i] <- paste(prev_outcomes$dlt_nt[i])
+}
+}
+
+outcome_string <- paste(outcome_string,collapse="")
+
+
+
+#n_cohorts <- max(prev_outcomes$cohort)
+
 # Combine the cohort-specific strings
-outcome_string <- paste(outcome_string, collapse = " ")
+#outcome_string <- paste(outcome_string, collapse = " ")
 
 # Print the outcome_string
-print(outcome_string)
+#print(outcome_string)
 
 # outputs
+
+# needed variables
+# (fixed) size of cohorts
+cohort_size <- 3
+# how many doses to look ahead in the dose paths (min 1)
+dtp_doses <- 2
 
 # the model
 
@@ -131,7 +135,7 @@ tc_model <- create_model(data, design)
 
 # the fitted outcomes to the model
 
-tc_model_fit <- tc_model %>% escalation::fit(outcomes)
+tc_model_fit <- tc_model %>% escalation::fit(outcome_string)
 
 # the should this trial continue T/F indicator
 
@@ -149,11 +153,11 @@ tc_o_df <- tc_model_fit %>% escalation::model_frame()
 
 # the dose path object
 
-tc_o_dose_paths <- tc_model %>% escalation::get_dose_paths(previous_outcomes = outcomes, cohort_sizes = rep(cohort_size,3))
+tc_o_dose_paths <- tc_model %>% escalation::get_dose_paths(previous_outcomes = outcome_string, cohort_sizes = rep(cohort_size,dtp_doses))
 
 # the dose path table
 
-tc_o_dose_paths_table <- escalation::spread_paths(dose_finding_paths = dplyr::as_tibble(tc_o_dose_paths),max_depth = 3) %>%
+tc_o_dose_paths_table <- escalation::spread_paths(dose_finding_paths = dplyr::as_tibble(tc_o_dose_paths),max_depth = dtp_doses) %>%
 dplyr::select(outcomes0, next_dose0, outcomes1, next_dose1, outcomes2, next_dose2)
 
 # unspread tibble
