@@ -66,7 +66,7 @@ create_model <- function(model_config, model_type) {
   model <- switch(model_type,
   tpt = escalation::get_three_plus_three(config$n_doses, config$tpt_allow_deesc) %>%
     escalation::stop_at_n(n = config$max_n),
-  crm = escalation::get_dfcrm(skeleton = config$prior_ttp, target = config$ttl, scale = config$prior_var, cohort_size = 1) %>% 
+  crm = escalation::get_dfcrm(skeleton = config$prior_ttp, target = config$ttl, scale = config$prior_var) %>% 
     escalation::dont_skip_doses(when_escalating = as.logical(1-config$skip_esc), when_deescalating = as.logical(1-config$skip_deesc)) %>% 
     escalation::stop_when_too_toxic(dose = 1, config$stop_tox_x + config$target, confidence = config$stop_tox_y) %>%
     escalation::stop_when_n_at_dose(n = config$stop_n_mtd, dose = "recommended") %>%
@@ -84,6 +84,7 @@ process_sims <- function(model_config, model_type, sim_data) {
   model <- create_model(model_config, model_type)
   sim_data <- create_dummy_sims(4)
 
+  #for (i in 1:nrow(simdata)){}
   sims <- model %>%
   escalation::simulate_trials(next_dose = config$start_dose, num_sims = sim_data$n_sims, true_prob_tox = sim_data$true_dlt_ss$S1)
   
@@ -103,13 +104,15 @@ process_sims <- function(model_config, model_type, sim_data) {
   
   rownames(selection_tab) <- c("% Dose Selected as MTD", "% Patients Treated at Dose", "True Toxicity Probabilities") 
 
-  # return both sims object and table
+  # quick and ugly listing of variables
+  o_config <- rbind(design,data.frame(unlist(config)))
 
-  pslist <- list(design, sims, selection_tab)
-  return(pslist)
+  pslist <- list(o_config, selection_tab)
+  return(sim_data)
 }
 
 o_sims <- process_sims(data, design, sim_data)
+
 
 # add error for number of doses in true_dlt_ss being different to num_doses!
 # or programmatically make it impossible? reactibve table input?
