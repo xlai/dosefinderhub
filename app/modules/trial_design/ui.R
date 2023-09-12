@@ -127,17 +127,26 @@ non_specific_column_func <- function() {
 }
 
 ##Defining Configurations tab columns
+display_input_id <- list()
+display_condition <- list()
 specific_columns <- list()
 select_specific_columns <- function() {
   for(n in 1:(length(ranking))) {
-    specific_columns[[n]] <- column(n, paste0(": ", pretty_ranking[n]), specific_ui_inputs[[n]], width = 2)
+    display_input_id[[n]] <- paste0("display_input_", ranking[n], sep="")
+    display_condition[[n]] <- paste0("input.", display_input_id[[n]], "==1", sep="")
+    specific_columns[[n]] <- column(
+      n,
+      paste0(": ", pretty_ranking[n]),
+      checkboxInput(display_input_id[[n]], "Display parameters", value = F),
+      conditionalPanel(condition = display_condition[[n]], specific_ui_inputs[[n]]),
+      width = 4)
   }
   return(specific_columns)
 }
-config_tab_func <- function() {
+config_tab_input_func <- function() {
   sidebarLayout(
     sidebarPanel(non_specific_column_func(), width = 4),
-    mainPanel(select_specific_columns())
+    mainPanel(select_specific_columns()),
   )
 }
 
@@ -353,7 +362,7 @@ server_all <- function(input, output, session) {
 ##Defining UI tabs
 ui_tabs <- list()
 ui_tabs[[1]] <- tabPanel("Configurations",
-  config_tab_func()
+  config_tab_input_func()
 )
 ui_tabs[[2]] <- tabPanel("Simulations",
   sim_tab_input_func()
