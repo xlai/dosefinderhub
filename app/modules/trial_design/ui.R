@@ -31,6 +31,7 @@ prettify_ranking <- function(ranking_argument) {
   return(pretty_ranking)
 }
 pretty_ranking <- prettify_ranking(ranking)
+#THIS FUNCTION IS NOT FUTURE-PROOF!!!!! I HAVE SPOKEN WITH SIAN ABOUT ADDING "PRETTY" DESIGN NAMES TO DATABASE
 
 ##Function to change parameter strings in preparation for extracting UI specs
 parse_params <- function(params_str) {
@@ -117,13 +118,14 @@ for (n in 1:length(ranking)) {
 ##Defining non-design-specific + simulation parameters column inputs function
 non_specific_column_func <- function() {
   title <- "General Trial Parameters"
-  non_specific_ui_inputs
+  display_button <- checkboxInput("display_input_all", "Display parameters", value = F)
+  conditional_non_specific_ui_inputs <- conditionalPanel(condition = "input.display_input_all==1", non_specific_ui_inputs)
   text <- "Simulation scenarios 'True' DLT rates input table:"
   n_scenarios_input <- numericInput("n_scenarios_input", "How many scenarios would you like to simulate?", min = 1, value = 3)
   table_output <- DT::DTOutput("table_output")
   plot_button <- actionButton("plot_button", label = "Test plot")
   plot <- plotOutput("plot")
-  return <- list(title, non_specific_ui_inputs, text, n_scenarios_input, table_output, plot_button, plot)
+  return <- list(title, display_button, conditional_non_specific_ui_inputs, text, n_scenarios_input, table_output, plot_button, plot)
 }
 
 ##Defining Configurations tab columns
@@ -208,7 +210,7 @@ cond_tab_input_func <- function() {
     
     sidebarPanel(
         radioButtons("conduct_design_selection_input", "Select which design to update during trial conduct",
-          choices = c(unique(dummy_data_method$design)),
+          choices = c(unique(pretty_ranking)),
           width = 500),
         "Observed DLTs input table:",
         treated_participants_input <- numericInput("treated_participants_input", "How many participants have been treated & observed for DTL?", min = 1, value = dummy_data_trial[dummy_data_trial$q_variable == "cohort_size", "value"]),
