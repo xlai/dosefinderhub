@@ -116,7 +116,7 @@ for (n in 1:length(ranking)) {
 
 ##Defining non-design-specific + simulation parameters column inputs function
 non_specific_column_func <- function() {
-  title <- ": General trial parameters"
+  title <- "General Trial Parameters"
   non_specific_ui_inputs
   text <- "Simulation scenarios 'True' DLT rates input table:"
   n_scenarios_input <- numericInput("n_scenarios_input", "How many scenarios would you like to simulate?", min = 1, value = 3)
@@ -127,13 +127,18 @@ non_specific_column_func <- function() {
 }
 
 ##Defining Configurations tab columns
-configuration_columns <- list()
-configuration_columns[[1]] <- column(1, non_specific_column_func(), width = 4) #CHANGE
-select_configuration_columns <- function() {
-  for(n in 2:(length(ranking)+1)) {
-    configuration_columns[[n]] <- column(n, paste0(": ", pretty_ranking[n-1]), specific_ui_inputs[[n-1]], width = 2)
+specific_columns <- list()
+select_specific_columns <- function() {
+  for(n in 1:(length(ranking))) {
+    specific_columns[[n]] <- column(n, paste0(": ", pretty_ranking[n]), specific_ui_inputs[[n]], width = 2)
   }
-  return(configuration_columns)
+  return(specific_columns)
+}
+config_tab_func <- function() {
+  sidebarLayout(
+    sidebarPanel(non_specific_column_func(), width = 4),
+    mainPanel(select_specific_columns())
+  )
 }
 
 
@@ -150,7 +155,7 @@ sim_tab_input_func <- function() {
         multiple = TRUE,
         options = list(plugins = list('remove_button'))),
       
-      textOutput("n_scenarios_for_sim_tab"),
+      #textOutput("n_scenarios_for_sim_tab"),
       
       selectizeInput("scenario_selection_input", "Select scenarios",
         choices = paste0("Scenario ", 1:10),
@@ -220,7 +225,7 @@ column_names <- sprintf("d(%d)", 1:n_doses)
 
 server_all <- function(input, output, session) {
   
-  ####################Simulation scenarios table code####################
+  ######################################## Simulation scenarios table code ########################################
 
   #Initialize empty data frame with specified columns
   reactive_table_data <- reactiveVal(data.frame(matrix(ncol = n_doses, nrow = 0, dimnames = list(NULL, column_names))))
@@ -250,13 +255,8 @@ server_all <- function(input, output, session) {
   })
   
   output$editable_table <- renderDT({
-    datatable(reactive_table_data(), editable = TRUE, 
-              options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"),
-                                               list(targets = 0, className = "not-editable")
-              )
-              ),
-              rownames = F
-    )
+    datatable(reactive_table_data(), editable = TRUE, options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"), list(targets = 0, className = "not-editable"))),
+              rownames = FALSE)
   }, server = FALSE)
   
   output$table_output <- renderDT({
@@ -290,7 +290,7 @@ server_all <- function(input, output, session) {
     })
   })
   
-  ####################Simulation tab server (carryover of n_sims onto Simulation tab - not working so far)####################
+  ######################################## Simulation tab server (carryover of n_sims onto Simulation tab - not working so far) ########################################
   observe({
     n_scenarios_for_sim_tab <- as.numeric(input$n_scenarios_input)
     output$n_scenarios_for_sim_tab <- renderText(n_scenarios_for_sim_tab)
@@ -302,7 +302,7 @@ server_all <- function(input, output, session) {
     #DIDN'T WORK
   })
 
-  ####################Conduct tab server####################
+  ######################################## Conduct tab server ########################################
   conduct_reactive_table_data <- reactiveVal(data.frame(matrix(ncol = 3, nrow = 0, dimnames = list(NULL, c("Cohort number", "Dose level", "DLT?")))))
 
   observe({
@@ -353,9 +353,7 @@ server_all <- function(input, output, session) {
 ##Defining UI tabs
 ui_tabs <- list()
 ui_tabs[[1]] <- tabPanel("Configurations",
-  fluidRow(
-    select_configuration_columns()
-  )
+  config_tab_func()
 )
 ui_tabs[[2]] <- tabPanel("Simulations",
   sim_tab_input_func()
