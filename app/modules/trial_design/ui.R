@@ -167,13 +167,11 @@ sim_tab_input_func <- function() {
         options = list(plugins = list('remove_button'))),
       
       #textOutput("n_scenarios_for_sim_tab"),
-      
-      selectizeInput("scenario_selection_input", "Select scenarios",
-        choices = paste0("Scenario ", 1:10),
-        multiple = TRUE,
-        list(plugins = list('remove_button'))),
-      
-      #uiOutput("sssss"), #PART OF SECOND TRY; DIDN'T WORK
+      #selectizeInput("scenario_selection_input", "Select scenarios",
+        #choices = paste0("Scenario ", 1:10),
+        #multiple = TRUE,
+        #list(plugins = list('remove_button'))),
+      uiOutput("scen_output_question"),
       
       selectizeInput("metric_selection_input", "Select outputs/metrics",
         choices = c("% participants treated at dose",
@@ -302,15 +300,18 @@ server_all <- function(input, output, session) {
   })
   
   ######################################## Simulation tab server (carryover of n_sims onto Simulation tab - not working so far) ########################################
-  observe({
-    n_scenarios_for_sim_tab <- as.numeric(input$n_scenarios_input)
-    output$n_scenarios_for_sim_tab <- renderText(n_scenarios_for_sim_tab)
-    #Second try
-    #choices <- paste0("Scenario ", 1:n_scenarios_for_sim_tab)
-    #output$sssss <- renderUI({
-      #selectizeInput("sssss", "SSSSS", choices = choices, multiple = TRUE, options = list(plugins = list('remove_button')))
-    #})
-    #DIDN'T WORK
+  #observe({
+    #n_scenarios_for_sim_tab <- as.numeric(input$n_scenarios_input)
+    #output$n_scenarios_for_sim_tab <- renderText(n_scenarios_for_sim_tab)
+  #})
+  new_n_scen <- reactive(as.numeric(input$n_scenarios_input))
+  updated_scen_choices <- reactive(paste0("Scenario ", 1:new_n_scen()))
+  #
+  output$scen_output_question <- renderUI({
+    tagList(
+      selectizeInput("scen_output_input", "Select scenarios", choices = updated_scen_choices(),
+        multiple = TRUE, list(plugins = list('remove_button')))
+    )
   })
 
   ######################################## Conduct tab server ########################################
