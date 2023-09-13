@@ -84,7 +84,7 @@ process_sims <- function(model_config, model_type, sim_data) {
   model <- create_model(model_config, model_type)
   sim_data <- create_dummy_sims(4)
 
-  #for (i in 1:nrow(simdata)){}
+  #for (i in 1:nrow(sim_data)){}
   sims <- model %>%
   escalation::simulate_trials(next_dose = config$start_dose, num_sims = sim_data$n_sims, true_prob_tox = sim_data$true_dlt_ss$S1)
   
@@ -107,8 +107,32 @@ process_sims <- function(model_config, model_type, sim_data) {
   # quick and ugly listing of variables
   o_config <- rbind(design,data.frame(unlist(config)))
 
-  pslist <- list(o_config, selection_tab)
-  return(sim_data)
+  # metrics
+
+  best_dose <- max(sim_data$true_dlt_ss$S1[sim_data$true_dlt_ss$S1<=config$ttl])
+  best_dose_level <- match(best_dose,sim_data$true_dlt_ss$S1)
+
+  # i) accuracy
+
+  dist_accuracy <- escalation::recommended_dose(sims)
+  mean_accuracy <- length(subset(dist_accuracy,dist_accuracy == best_dose_level)) / sim_data$n_sims
+
+  # ii) risk of overdosing
+
+  dist_overdose <- escalation::num_tox(sims)
+  mean_overdose <- mean(dist_overdose)
+
+  # iii) trial length
+
+  dist_length <- sims %>% escalation::trial_duration()
+  mean_length <- mean(dist_length)
+
+  # metrics combined;
+
+  metrics <- data.frame("Accuracy" = mean_accuracy, "Risk of Overdose" = mean_overdose, "Trial Duration" = mean_length)
+
+  pslist <- list(o_config, selection_tab, metrics)
+  return(pslist)
 }
 
 o_sims <- process_sims(data, design, sim_data)
