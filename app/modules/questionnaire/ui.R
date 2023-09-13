@@ -15,19 +15,30 @@ ui <- shiny::fluidPage(
 
     shiny::uiOutput("questionsUI"),
 
+    shiny::tags$hr(),
+
+    shiny::textOutput("progress"),
+    # Previous, Next, Reset button
+    shiny::actionButton("previous", "Previous"),
+
+    shiny::actionButton("next_button", "Next"),
+
+    shiny::actionButton("reset", "Reset"),
+
     shiny::fluidRow(
-      shiny::actionButton("get_rating",
-                          label = "Generate recommendations!",
-                          width = 500)
+      shiny::downloadButton("save_button", "Save Responses"),
     )
   ),
 
-  # Simple text output giving a sentence describing singular
-  # recommended method, for now.
-  shiny::textOutput("recommendations"),
-
-  shiny::downloadButton("save_button", "Save Responses")
-
+  shiny::sidebarPanel(
+    shiny::fluidRow(
+      shiny::actionButton("get_rating",
+                          label = "Generate recommendations!")
+    ),
+    # Simple text output giving a sentence describing singular
+    # recommended method, for now.
+    shiny::textOutput("recommendations")
+  )
 )
 
 shiny::shinyApp(ui, server)
