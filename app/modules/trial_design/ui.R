@@ -2,8 +2,6 @@ library(shiny)
 library(DT)
 library(ggplot2)
 
-
-
 #DUMMY DATA MANIPULATION
 
 dummy_data <- readRDS("app/modules/trial_design/dummy_data1.RData")
@@ -190,15 +188,6 @@ cond_tab_input_func <- function() {
 
   )
 }
-
-
-
-
-#SERVER
-
-
-column_names <- sprintf("d(%d)", 1:n_doses)
-#reactive_cohort_size <- dummy_data_trial[which(dummy_data_trial$q_variable=="cohort_size"), "value"]
 
 #MAIN UI
 
