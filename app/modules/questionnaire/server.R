@@ -1,5 +1,6 @@
 questions_df <- read.csv("app/data/questionnaire_inputs/q_database.csv")
-
+# sort questions by q_number before proceed
+questions_df <- questions_df[order(questions_df$q_number), ]
 parse_params <- function(params_str) {
   params <- strsplit(params_str, ";")[[1]]
   param_list <- lapply(params, function(p) strsplit(p, "=")[[1]])
@@ -7,15 +8,25 @@ parse_params <- function(params_str) {
   sapply(param_list, `[`, 2)
 }
 
-check_validation <- function(current_index) {
+check_validation <- function(current_index, input) {
   if (current_index <= nrow(questions_df)) {
     current_question <- questions_df[questions_df$q_number == current_index, ]
     validation_expr <- current_question$condition
-
+    print(current_question)
+    print(input)
+    observe({
+      print(input$know_doses)
+    })
     # If the validation expression is not empty, evaluate it
     if (nchar(validation_expr) > 0) {
-      condition_met <- eval(parse(text = validation_expr),
-                            envir = list2env(input))
+      # Create a new environment for evaluation
+      eval_env <- new.env()
+      # Assign values from input to this environment
+      list2env(x = input, envir = eval_env)
+      # Parent environment should be the server environment to have access to other necessary objects
+      parent.env(eval_env) <- environment()
+      # Evaluate the expression within the new environment
+      condition_met <- eval(parse(text = validation_expr), envir = eval_env)
       if (condition_met) {
         return(current_index + 1)
       }
@@ -23,6 +34,7 @@ check_validation <- function(current_index) {
   }
   return(current_index)
 }
+
 
 generate_UI <- function(current_question) {
   params <- parse_params(current_question$params)
@@ -86,7 +98,7 @@ server <- function(input, output, session) {
   shiny::observeEvent(
     input$next_button, {
       new_index <- current_index() + 1
-      new_index <- check_validation(new_index)
+  #    new_index <- check_validation(new_index, input)
       current_index(new_index)
     }
   )
