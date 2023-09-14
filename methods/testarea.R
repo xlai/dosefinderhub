@@ -2,10 +2,27 @@
 design <- "crm"
 data <- readRDS("dummy_data1.RData")
 attach(data)
-# the data can now be called directly with trial, method, ranking
+# the data can now be called directly with trial, method, ranking subsets
 
 # setup piping. we want to avoid loading packages with library()
 `%>%` <- magrittr::`%>%`
+
+# create some sim data
+create_dummy_sims <- function(n_doses) {
+
+  n_sims <- sample(seq(20, 100, 10), 1)
+
+  true_dlt_ss <- list()
+  true_dlt_ss[[1]] <- sort(sample(seq(0, 1, 0.01), n_doses))
+  true_dlt_ss[[2]] <- sort(sample(seq(0, 1, 0.01), n_doses))
+  true_dlt_ss[[3]] <- sort(sample(seq(0, 1, 0.01), n_doses))
+
+  value <- list(n_sims = n_sims, true_dlt_ss = true_dlt_ss)
+
+  saveRDS(value, "dummy_sims_data")
+  dummy_sims_data <- readRDS("dummy_sims_data")
+  return(dummy_sims_data)
+}
 
 # function that processes config into machine-readable format
 process_config <- function(model_config, model_type){
@@ -61,40 +78,46 @@ create_model <- function(model_config, model_type) {
 
 # function for conducting sims and returning output
 
-process_sims <- function(model_config, model_type, sim_config) {
+
+process_sims <- function(model_config, model_type, sim_data) {
+
 
   config <- process_config(model_config, model_type)
   model <- create_model(model_config, model_type)
-  # IMPORTANT: sim_config <- process_config(sim_config)
-  # sim_config is a list that consists scenarios, n_sims and display options. to be expanded upon with UI development
+  sim_data <- create_dummy_sims(4)
 
-  # sim_scenarios <- as.list(sim_config$scenarios)
-  # assume n_sims is a list (name of each element would be model_type)
+# for each sim scenario
+  i <- 1
 
-  sims <- model %>%
-  escalation::simulate_trials(next_dose = config$start_dose, num_sims = 100, true_prob_tox = c(0.05,0.1,0.3,0.4))
-  # note: temp direct use of n_sims, true DLTs. this SHOULD be part of sim_config
+  # pre-create list objects?
+
+  sims <- list()
+  selection <- list()
+  treated <- list()
+  treatedpct <- list()
+  selection_df <- list()
+  treatedpct_df <- list()
+  selection_tab <- list()
+  best_dose <- list()
+  best_dose_level <- list()
+  dist_accruacy <- list()
+  mean_accruacy <- list()
+  dist_overdose <- list()
+  mean_overdose <- list()
+  dist_length <- list()
+  mean_length <- list()
+  metrics <- list()
   
-  # find selection probs
-  selection <- sims %>% 
-  escalation::prob_recommend()
-  
-  # find no. treated at dose
-  treated <- colSums(sims %>% 
-  escalation::n_at_dose())
-  treatedpct <- treated / sum(treated)
-  
-  # coerce into table
-  selection_df <- data.frame(selection)
-  treatedpct_df <- data.frame(treatedpct)
-  selection_tab <- rbind(t(selection_df), c(NA,t(treatedpct_df)), c(NA,c(0.2,0.55,0.6,0.99)))
-  
-  rownames(selection_tab) <- c("% Dose Selected as MTD", "% Patients Treated at Dose", "True Toxicity Probabilities") 
 
-  # return both sims object and table
+  sims[[i]] <- model %>%
+  escalation::simulate_trials(next_dose = config$start_dose, num_sims = sim_data$n_sims, true_prob_tox = sim_data$true_dlt_ss[[i]])
+  
+  return(sims)
+  }
 
-  pslist <- list(design, sims, selection_tab)
-  return(pslist)
-}
 
-o_sims <- process_sims(data, design)
+o_sims <- process_sims(data, design, sim_data)
+
+
+# add error for number of doses in true_dlt_ss being different to num_doses!
+# or programmatically make it impossible? reactibve table input?
