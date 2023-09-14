@@ -1,7 +1,54 @@
+questions <- dummy_data
+
 column_names <- sprintf("d(%d)", 1:n_doses)
 
 server_all <- function(input, output, session) {
+
+
+  ######################################## Configuration tab's file upload/download ########################################
+
+  observe({
     
+    in_file <- input$config_file_upload
+
+    if (is.null(in_file)) {
+      return(NULL)
+    }
+
+    ext <- tools::file_ext(in_file$datapath)
+
+    if (ext == "csv") {
+      user_responses <- read.csv(in_file$datapath)
+    } else if (ext == "rds") {
+      user_responses <- readRDS(in_file$datapath)
+    }
+
+    for (i in seq_len(nrow(user_responses))) {
+      updateNumericInput(session, inputId = user_responses$inputId[i], value = user_responses$value[i])
+    }
+
+  })
+
+  output$config_save_button <- shiny::downloadHandler(
+    filename = function() {
+      paste("user_responses-", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      inputs_to_save <- c((questions$trial)$q_variable, (questions$method)$q_variable, (questions$ranking)$q_variable)
+      # Declare inputs
+      inputs <- NULL
+      # Append all inputs before saving to folder
+      for (input.i in inputs_to_save){
+        inputs <- append(inputs, input[[input.i]])
+      }
+      # Inputs data.frame
+      inputs_data_frame <- data.frame(inputId = inputs_to_save, value = inputs)
+      write.csv(inputs_data_frame, file)
+    }
+  
+  )
+
+
   ######################################## Configuration tab's simulation scenarios table code ########################################
 
   #Initialize empty data frame with specified columns

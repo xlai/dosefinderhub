@@ -93,7 +93,7 @@ specific_ui_inputs <- lapply(ranking, function(method_current) {
 ##Defining non-design-specific + simulation parameters column inputs function
 non_specific_column_func <- function() {
   #label <- "Input file with all configurations"
-  upload_button <- fileInput("config_filed_upload", "Input file with all configurations", accept = c(".csv", ".rds"))
+  upload_button <- fileInput("config_file_upload", "Input file with all configurations", accept = c(".csv", ".rds"))
   #label_2 <- "Download file with all configurations"
   download_button <- downloadButton("config_save_button", "Download file with all configurations")
   separator <- "___________________________________________"
