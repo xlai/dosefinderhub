@@ -40,76 +40,51 @@ parse_params <- function(params_str) {
   sapply(param_list, '[', 2)
 }
 
-##Extracting non-design-specific UI specs
-non_specific_ui_inputs <-
-  tagList(
-    lapply(dummy_data_trial$q_number, function(i) {
-      question <- dummy_data_trial[dummy_data_trial$q_number == i, ]
-      params <- parse_params(question$params)
-      switch(question$q_type,
-          radioButtons = radioButtons(inputId = question$q_variable,
-                                      label = question$q_text,
-                                      choices = strsplit(params[["choices"]], ",")[[1]],
-                                      width = 500,
-                                      selected = question$value),
-          numeric = numericInput(inputId = question$q_variable,
-                                 label = question$q_text,
-                                 min = as.numeric(params[["min"]]),
-                                 value = question$value,
-                                 width = 500),
-          slider = sliderInput(inputId = question$q_variable,
-                               label = question$q_text,
-                               min = as.numeric(params[["min"]]),
-                               max = as.numeric(params[["max"]]),
-                               value = question$value,
-                               width = 500),
-          text = textInput(inputId = question$q_variable,
+# Helper function to generate UI element
+generate_ui_element <- function(question) {
+  params <- parse_params(question$params)
+  switch(question$q_type,
+    radioButtons = radioButtons(inputId = question$q_variable,
+                                label = question$q_text,
+                                choices = strsplit(params[["choices"]], ",")[[1]],
+                                width = 500,
+                                selected = question$value),
+    numeric = numericInput(inputId = question$q_variable,
                            label = question$q_text,
-                           placeholder = "Enter your hint here",
-                           value = question$value, width = 500)
-      )
-    })
+                           min = as.numeric(params[["min"]]),
+                           value = question$value,
+                           width = 500),
+    slider = sliderInput(inputId = question$q_variable,
+                         label = question$q_text,
+                         min = as.numeric(params[["min"]]),
+                         max = as.numeric(params[["max"]]),
+                         value = question$value,
+                         width = 500),
+    text = textInput(inputId = question$q_variable,
+                     label = question$q_text,
+                     placeholder = "Enter your hint here",
+                     value = question$value, width = 500)
   )
-
-##Extracting design-specific UI specs
-method_current <- list()
-dummy_data_method_current <- list()
-specific_ui_inputs <- list()
-for (n in 1:length(ranking)) {
-  method_current <- ranking[n]
-  dummy_data_method_current <- dummy_data_method[dummy_data_method$design == method_current, ]
-  specific_ui_inputs[[n]] <-
-    tagList(
-    lapply(dummy_data_method_current$q_number, function(i) {
-      question <- dummy_data_method_current[dummy_data_method_current$q_number == i, ]
-      params <- parse_params(question$params)
-      switch(question$q_type,
-          radioButtons = radioButtons(inputId = question$q_variable,
-                                      label = question$q_text,
-                                      choices = strsplit(params[["choices"]], ",")[[1]],
-                                      width = 500,
-                                      selected = question$value),
-          numeric = numericInput(inputId = question$q_variable,
-                                 label = question$q_text,
-                                 min = as.numeric(params[["min"]]),
-                                 value = question$value,
-                                 width = 500),
-          slider = sliderInput(inputId = question$q_variable,
-                               label = question$q_text,
-                               min = as.numeric(params[["min"]]),
-                               max = as.numeric(params[["max"]]),
-                               value = question$value,
-                               width = 500),
-          text = textInput(inputId = question$q_variable,
-                           label = question$q_text,
-                           placeholder = "Enter your hint here",
-                           value = question$value, width = 500)
-      )
-    })
-    )
 }
 
+# Extracting non-design-specific UI specs
+non_specific_ui_inputs <- tagList(
+  lapply(dummy_data_trial$q_number, function(i) {
+    question <- subset(dummy_data_trial, q_number == i)
+    generate_ui_element(question)
+  })
+)
 
+# Extracting design-specific UI specs
+specific_ui_inputs <- lapply(ranking, function(method_current) {
+  dummy_data_method_current <- subset(dummy_data_method, design == method_current)
+  tagList(
+    lapply(dummy_data_method_current$q_number, function(i) {
+      question <- subset(dummy_data_method_current, q_number == i)
+      generate_ui_element(question)
+    })
+  )
+})
 
 
 #CONFIGURATIONS TAB
@@ -150,7 +125,6 @@ config_tab_input_func <- function() {
     mainPanel(select_specific_columns()),
   )
 }
-
 
 
 #SIMULATIONS TAB
