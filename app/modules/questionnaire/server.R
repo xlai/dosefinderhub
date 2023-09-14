@@ -1,5 +1,6 @@
-questions <- read.csv("app/data/questionnaire_inputs/q_database.csv")
-
+questions_df <- read.csv("app/data/questionnaire_inputs/q_database.csv")
+# sort questions by q_number before proceed
+questions_df <- questions_df[order(questions_df$q_number), ]
 parse_params <- function(params_str) {
   params <- strsplit(params_str, ";")[[1]]
   param_list <- lapply(params, function(p) strsplit(p, "=")[[1]])
@@ -7,15 +8,25 @@ parse_params <- function(params_str) {
   sapply(param_list, `[`, 2)
 }
 
-check_validation <- function(current_index) {
-  if (current_index <= nrow(questions)) {
-    current_question <- questions[questions$q_number == current_index, ]
+check_validation <- function(current_index, input) {
+  if (current_index <= nrow(questions_df)) {
+    current_question <- questions_df[questions_df$q_number == current_index, ]
     validation_expr <- current_question$condition
-
+    print(current_question)
+    print(input)
+    observe({
+      print(input$know_doses)
+    })
     # If the validation expression is not empty, evaluate it
     if (nchar(validation_expr) > 0) {
-      condition_met <- eval(parse(text = validation_expr),
-                            envir = list2env(input))
+      # Create a new environment for evaluation
+      eval_env <- new.env()
+      # Assign values from input to this environment
+      list2env(x = input, envir = eval_env)
+      # Parent environment should be the server environment to have access to other necessary objects
+      parent.env(eval_env) <- environment()
+      # Evaluate the expression within the new environment
+      condition_met <- eval(parse(text = validation_expr), envir = eval_env)
       if (condition_met) {
         return(current_index + 1)
       }
@@ -24,6 +35,32 @@ check_validation <- function(current_index) {
   return(current_index)
 }
 
+
+generate_UI <- function(current_question) {
+  params <- parse_params(current_question$params)
+
+  switch(current_question$q_type,
+    radioButtons = shiny::radioButtons(inputId = current_question$q_variable,
+                                       label = current_question$q_text,
+                                       choices = strsplit(params[["choices"]], ",")[[1]],
+                                       width = 500),
+    numeric = shiny::numericInput(inputId = current_question$q_variable,
+                                  label = current_question$q_text,
+                                  min = as.numeric(params[["min"]]),
+                                  value = 0,
+                                  width = 500),
+    slider = shiny::sliderInput(inputId = current_question$q_variable,
+                                label = current_question$q_text,
+                                min = as.numeric(params[["min"]]),
+                                max = as.numeric(params[["max"]]),
+                                value = as.numeric(params[["min"]]),
+                                width = 500),
+    text = shiny::textInput(inputId = current_question$q_variable,
+                            label = current_question$q_text,
+                            placeholder = "i.e. 0.05, 0.15, 0.3, 0.7",
+                            value = "", width = 500)
+  )
+}
 
 server <- function(input, output, session) {
 
@@ -51,47 +88,17 @@ server <- function(input, output, session) {
 
   current_index <- shiny::reactiveVal(1)
 
-  # Update the current question in the UI
-  output$questionsUI <- shiny::renderUI({
-    current_q <- current_index()
-    if (current_q <= nrow(questions)) {
-      question <- questions[questions$q_number == current_q, ]
-      params <- parse_params(question$params)
-
-      switch(question$q_type,
-        radioButtons = shiny::radioButtons(inputId = question$q_variable,
-                                           label = question$q_text,
-                                           choices = strsplit(params[["choices"]], ",")[[1]],
-                                           width = 500),
-        numeric = shiny::numericInput(inputId = question$q_variable,
-                                      label = question$q_text,
-                                      min = as.numeric(params[["min"]]),
-                                      value = 0,
-                                      width = 500),
-        slider = shiny::sliderInput(inputId = question$q_variable,
-                                    label = question$q_text,
-                                    min = as.numeric(params[["min"]]),
-                                    max = as.numeric(params[["max"]]),
-                                    value = as.numeric(params[["min"]]),
-                                    width = 500),
-        text = shiny::textInput(inputId = question$q_variable,
-                                label = question$q_text,
-                                placeholder = "i.e. 0.05, 0.15, 0.3, 0.7",
-                                value = "", width = 500)
-      )
-    }
-  })
 
   # Update the progress bar
   output$progress <- shiny::renderText({
-    paste("Progress:", current_index(), "/", nrow(questions))
+    paste("Progress:", current_index(), "/", nrow(questions_df))
   })
 
   # Update the current question when the next button is clicked
   shiny::observeEvent(
     input$next_button, {
       new_index <- current_index() + 1
-      new_index <- check_validation(new_index)
+  #    new_index <- check_validation(new_index, input)
       current_index(new_index)
     }
   )
@@ -110,6 +117,11 @@ server <- function(input, output, session) {
     }
   )
 
+  # Render the UI for the current question
+  output$questionsUI <- renderUI({
+    current_question <- questions_df[current_index(), ]
+    generate_UI(current_question)
+  })
 
   # Random number generation creating recommendation
   rand <- shiny::eventReactive(input$get_rating, {
@@ -141,7 +153,7 @@ server <- function(input, output, session) {
       paste("user_responses-", Sys.Date(), ".csv", sep = "")
     },
     content = function(file) {
-      inputs_to_save <- questions$q_variable
+      inputs_to_save <- questions_df$q_variable
       # Declare inputs
       inputs <- NULL
       # Append all inputs before saving to folder
