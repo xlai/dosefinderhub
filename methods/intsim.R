@@ -13,9 +13,9 @@ create_dummy_sims <- function(n_doses) {
   n_sims <- sample(seq(20, 100, 10), 1)
 
   true_dlt_ss <- list()
-  true_dlt_ss$S1 <- sort(sample(seq(0, 1, 0.01), n_doses))
-  true_dlt_ss$S2 <- sort(sample(seq(0, 1, 0.01), n_doses))
-  true_dlt_ss$S3 <- sort(sample(seq(0, 1, 0.01), n_doses))
+  true_dlt_ss[[1]] <- sort(sample(seq(0, 1, 0.01), n_doses))
+  true_dlt_ss[[2]] <- sort(sample(seq(0, 1, 0.01), n_doses))
+  true_dlt_ss[[3]] <- sort(sample(seq(0, 1, 0.01), n_doses))
 
   value <- list(n_sims = n_sims, true_dlt_ss = true_dlt_ss)
 
@@ -78,61 +78,88 @@ create_model <- function(model_config, model_type) {
 
 # function for conducting sims and returning output
 
+
 process_sims <- function(model_config, model_type, sim_data) {
+
 
   config <- process_config(model_config, model_type)
   model <- create_model(model_config, model_type)
   sim_data <- create_dummy_sims(4)
 
-  #for (i in 1:nrow(sim_data)){}
-  sims <- model %>%
-  escalation::simulate_trials(next_dose = config$start_dose, num_sims = sim_data$n_sims, true_prob_tox = sim_data$true_dlt_ss$S1)
+  # pre-create list objects?
+
+  sims <- list()
+  selection <- list()
+  treated <- list()
+  treatedpct <- list()
+  selection_df <- list()
+  treatedpct_df <- list()
+  selection_tab <- list()
+  best_dose <- list()
+  best_dose_level <- list()
+  dist_accuracy <- list()
+  mean_accuracy <- list()
+  dist_overdose <- list()
+  mean_overdose <- list()
+  dist_length <- list()
+  mean_length <- list()
+  metrics <- list()
+  pslist <- list()
+
+  # for each sim scenario
+  for (i in 1:length(sim_data$true_dlt_ss)){
+  
+
+  sims[[i]] <- model %>%
+  escalation::simulate_trials(next_dose = config$start_dose, num_sims = sim_data$n_sims, true_prob_tox = sim_data$true_dlt_ss[[i]])
   
   # find selection probs
-  selection <- sims %>% 
+  selection[[i]] <- sims[[i]] %>% 
   escalation::prob_recommend()
   
   # find no. treated at dose
-  treated <- colSums(sims %>% 
+  treated[[i]] <- colSums(sims[[i]] %>% 
   escalation::n_at_dose())
-  treatedpct <- treated / sum(treated)
+  treatedpct[[i]] <- treated[[i]] / sum(treated[[i]])
   
   # coerce into table
-  selection_df <- data.frame(selection)
-  treatedpct_df <- data.frame(treatedpct)
-  selection_tab <- rbind(t(selection_df), c(NA,t(treatedpct_df)), c(NA,sim_data$true_dlt_ss$S1))
+  selection_df[[i]] <- data.frame(selection[[i]])
+  treatedpct_df[[i]] <- data.frame(treatedpct[[i]])
+  selection_tab[[i]] <- rbind(t(selection_df[[i]]), c(NA,t(treatedpct_df[[i]])), c(NA,sim_data$true_dlt_ss[[i]]))
   
-  rownames(selection_tab) <- c("% Dose Selected as MTD", "% Patients Treated at Dose", "True Toxicity Probabilities") 
+  rownames(selection_tab[[i]]) <- c("% Dose Selected as MTD", "% Patients Treated at Dose", "True Toxicity Probabilities") 
 
   # quick and ugly listing of variables
   o_config <- rbind(design,data.frame(unlist(config)))
 
   # metrics
 
-  best_dose <- max(sim_data$true_dlt_ss$S1[sim_data$true_dlt_ss$S1<=config$ttl])
-  best_dose_level <- match(best_dose,sim_data$true_dlt_ss$S1)
+  best_dose[[i]] <- max(sim_data$true_dlt_ss[[i]][sim_data$true_dlt_ss[[i]]<=config$ttl])
+  best_dose_level[[i]] <- match(best_dose[[i]],sim_data$true_dlt_ss[[i]])
 
   # i) accuracy
 
-  dist_accuracy <- escalation::recommended_dose(sims)
-  mean_accuracy <- length(subset(dist_accuracy,dist_accuracy == best_dose_level)) / sim_data$n_sims
+  dist_accuracy[[i]] <- escalation::recommended_dose(sims[[i]])
+  mean_accuracy[[i]] <- length(subset(dist_accuracy[[i]],dist_accuracy[[i]] == best_dose_level[[i]])) / sim_data$n_sims
 
   # ii) risk of overdosing
 
-  dist_overdose <- escalation::num_tox(sims)
-  mean_overdose <- mean(dist_overdose)
+  dist_overdose[[i]] <- escalation::num_tox(sims[[i]])
+  mean_overdose[[i]] <- mean(dist_overdose[[i]])
 
   # iii) trial length
 
-  dist_length <- sims %>% escalation::trial_duration()
-  mean_length <- mean(dist_length)
+  dist_length[[i]] <- sims[[i]] %>% escalation::trial_duration()
+  mean_length[[i]] <- mean(dist_length[[i]])
 
   # metrics combined;
 
-  metrics <- data.frame("Accuracy" = mean_accuracy, "Risk of Overdose" = mean_overdose, "Trial Duration" = mean_length)
+  metrics[[i]] <- data.frame("Accuracy" = mean_accuracy[[i]], "Risk of Overdose" = mean_overdose[[i]], "Trial Duration" = mean_length[[i]])
 
-  pslist <- list(o_config, selection_tab, metrics)
-  return(pslist)
+  pslist[[i]] <- list(Table = selection_tab[[i]], Metrics = metrics[[i]])
+  }
+  o_final <- list(Configurations = o_config, Output = pslist)
+  return(o_final)
 }
 
 o_sims <- process_sims(data, design, sim_data)
