@@ -1,6 +1,4 @@
-
 column_names <- sprintf("d(%d)", 1:n_doses)
-#reactive_cohort_size <- dummy_data_trial[which(dummy_data_trial$q_variable=="cohort_size"), "value"]
 
 server_all <- function(input, output, session) {
     
@@ -83,36 +81,14 @@ server_all <- function(input, output, session) {
   })
 
 
-  ######################################## Conduct tab server code ########################################
-
-  reactive_cohort_size <- reactive(as.numeric(input$cohort_size))
-
-  output$treated_participants_question <- renderUI({
-    tagList(
-      numericInput("treated_participants", "How many participants have been treated and observed for DLT?", value = reactive_cohort_size())
-    )
-  })
-
-
   ######################################## Conduct tab table code ########################################
 
-conduct_reactive_table_data <- reactiveVal(data.frame(matrix(ncol = 3, nrow = 0, dimnames = list(NULL, c("Cohort number", "Dose level", "DLT?")))))
-
-observe({
+  conduct_reactive_table_data <- reactiveVal(data.frame(matrix(ncol = 3, nrow = 0, dimnames = list(NULL, c("Cohort number", "Dose level", "DLT?")))))
+  observe({
     conduct_current_data <- conduct_reactive_table_data()
-    
-    # Check if conduct_current_data is not NULL or empty
-    if (is.null(conduct_current_data) || nrow(conduct_current_data) == 0) return()
-    
+    conduct_target_rows <- as.numeric(input$treated_participants_input)
     conduct_current_rows <- nrow(conduct_current_data)
-
-    # Check if input$treated_participants is available
-    if (is.null(input$treated_participants)) return()
-    
-    reactive_treated_participants <- as.numeric(input$treated_participants)
-    conduct_target_rows <- reactive_treated_participants
-    conduct_rows_to_add <- conduct_target_rows-conduct_current_rows
-
+    conduct_rows_to_add <- conduct_target_rows - conduct_current_rows
     if (conduct_rows_to_add > 0) {
       conduct_new_rows <- data.frame(
         Participants = seq_len(conduct_rows_to_add) + conduct_current_rows,
@@ -122,28 +98,23 @@ observe({
     } else {
       conduct_updated_data <- head(conduct_current_data, conduct_target_rows)
     }
-
     conduct_reactive_table_data(conduct_updated_data)
-})
-
-
-output$conduct_editable_table <- renderDT({
-  datable(conduct_reactive_table_data(), editable = TRUE,
-  options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"),
-    list(targets = 0, className = "not-editable")
-  )))
-}, server = FALSE)
-
-output$conduct_table_output <- renderDT({
-  datatable(conduct_reactive_table_data(), editable = TRUE, options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"))), rownames = F)
-})
-
-observeEvent(input$conduct_table_output_cell_edit, {
-  conduct_info <- input$conduct_table_output_cell_edit
-  conduct_modified_data <- conduct_reactive_table_data()
-  conduct_modified_data[conduct_info$row, (conduct_info$col + 1)] <- as.numeric(conduct_info$value)
-  conduct_reactive_table_data(conduct_modified_data)
-})
+  })
+  output$conduct_editable_table <- renderDT({
+    datable(conduct_reactive_table_data(), editable = TRUE,
+    options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"),
+      list(targets = 0, className = "not-editable")
+    )))
+  }, server = FALSE)
+  output$conduct_table_output <- renderDT({
+    datatable(conduct_reactive_table_data(), editable = TRUE, options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"))), rownames = F)
+  })
+  observeEvent(input$conduct_table_output_cell_edit, {
+    conduct_info <- input$conduct_table_output_cell_edit
+    conduct_modified_data <- conduct_reactive_table_data()
+    conduct_modified_data[conduct_info$row, (conduct_info$col + 1)] <- as.numeric(conduct_info$value)
+    conduct_reactive_table_data(conduct_modified_data)
+  })
 
 
 }

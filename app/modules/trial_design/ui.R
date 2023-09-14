@@ -2,6 +2,8 @@ library(shiny)
 library(DT)
 library(ggplot2)
 
+
+
 #DUMMY DATA MANIPULATION
 
 dummy_data <- readRDS("app/modules/trial_design/dummy_data1.RData")
@@ -83,6 +85,7 @@ specific_ui_inputs <- lapply(ranking, function(method_current) {
     })
   )
 })
+
 
 
 #CONFIGURATIONS TAB
@@ -177,17 +180,17 @@ cond_tab_input_func <- function() {
           choices = c(unique(pretty_ranking)),
           width = 500),
         "Observed DLTs input table:",
-        uiOutput("treated_participants_question"),
+        treated_participants_input <- numericInput("treated_participants_input", "How many participants have been treated & observed for DTL?", min = 1, value = dummy_data_trial[dummy_data_trial$q_variable == "cohort_size", "value"]),
         conduct_table_output <- DT::DTOutput("conduct_table_output"),
         #conduct_plot_button <- actionButton("conduct_plot_button", label = "Test plot"),
         #conduct_plot <- plotOutput("conduct_plot"),
         width = 5
     ),
-
     mainPanel("INSERT DYNAMIC CONDUCT OUTPUTS HERE")
-
   )
 }
+
+
 
 #MAIN UI
 
@@ -207,4 +210,4 @@ ui_tabs[[3]] <- tabPanel("Conduct",
 ui <- fluidPage(
   do.call(tabsetPanel, c(ui_tabs))
 )
-#shinyApp(ui, server_all)
+shinyApp(ui, server_all)
