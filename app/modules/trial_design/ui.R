@@ -166,11 +166,6 @@ sim_tab_input_func <- function() {
         multiple = TRUE,
         options = list(plugins = list('remove_button'))),
       
-      #textOutput("n_scenarios_for_sim_tab"),
-      #selectizeInput("scenario_selection_input", "Select scenarios",
-        #choices = paste0("Scenario ", 1:10),
-        #multiple = TRUE,
-        #list(plugins = list('remove_button'))),
       uiOutput("scen_output_question"),
       
       selectizeInput("metric_selection_input", "Select outputs/metrics",
@@ -211,7 +206,7 @@ cond_tab_input_func <- function() {
           choices = c(unique(pretty_ranking)),
           width = 500),
         "Observed DLTs input table:",
-        treated_participants_input <- numericInput("treated_participants_input", "How many participants have been treated & observed for DTL?", min = 1, value = dummy_data_trial[dummy_data_trial$q_variable == "cohort_size", "value"]),
+        uiOutput("treated_participants_question"),
         conduct_table_output <- DT::DTOutput("conduct_table_output"),
         #conduct_plot_button <- actionButton("conduct_plot_button", label = "Test plot"),
         #conduct_plot <- plotOutput("conduct_plot"),
@@ -228,13 +223,14 @@ cond_tab_input_func <- function() {
 
 #SERVER
 
-##Most of it is the simulation scenarios table code
 
 column_names <- sprintf("d(%d)", 1:n_doses)
+#reactive_cohort_size <- dummy_data_trial[which(dummy_data_trial$q_variable=="cohort_size"), "value"]
 
 server_all <- function(input, output, session) {
   
-  ######################################## Simulation scenarios table code ########################################
+
+  ######################################## Configuration tab's simulation scenarios table code ########################################
 
   #Initialize empty data frame with specified columns
   reactive_table_data <- reactiveVal(data.frame(matrix(ncol = n_doses, nrow = 0, dimnames = list(NULL, column_names))))
@@ -299,14 +295,12 @@ server_all <- function(input, output, session) {
     })
   })
   
-  ######################################## Simulation tab server (carryover of n_sims onto Simulation tab - not working so far) ########################################
-  #observe({
-    #n_scenarios_for_sim_tab <- as.numeric(input$n_scenarios_input)
-    #output$n_scenarios_for_sim_tab <- renderText(n_scenarios_for_sim_tab)
-  #})
+
+  ######################################## Simulation tab server code ########################################
+
   new_n_scen <- reactive(as.numeric(input$n_scenarios_input))
   updated_scen_choices <- reactive(paste0("Scenario ", 1:new_n_scen()))
-  #
+  
   output$scen_output_question <- renderUI({
     tagList(
       selectizeInput("scen_output_input", "Select scenarios", choices = updated_scen_choices(),
@@ -314,15 +308,28 @@ server_all <- function(input, output, session) {
     )
   })
 
-  ######################################## Conduct tab server ########################################
-  conduct_reactive_table_data <- reactiveVal(data.frame(matrix(ncol = 3, nrow = 0, dimnames = list(NULL, c("Cohort number", "Dose level", "DLT?")))))
+
+  ######################################## Conduct tab server code ########################################
+
+  reactive_cohort_size <- reactive(as.numeric(input$cohort_size))
+
+  output$treated_participants_question <- renderUI({
+    tagList(
+      numericInput("treated_participants", "How many participants have been treated and observed for DLT?", value = reactive_cohort_size())
+    )
+  })
+
+
+  ######################################## Conduct tab table code ########################################
+
+conduct_reactive_table_data <- reactiveVal(data.frame(matrix(ncol = 3, nrow = 0, dimnames = list(NULL, c("Cohort number", "Dose level", "DLT?")))))
 
   observe({
     conduct_current_data <- conduct_reactive_table_data()
-
-    conduct_target_rows <- as.numeric(input$treated_participants_input)
     conduct_current_rows <- nrow(conduct_current_data)
-    conduct_rows_to_add <- conduct_target_rows - conduct_current_rows
+    reactive_treated_participants <- as.numeric(input$treated_participants)
+    conduct_target_rows <- reactive_treated_participants
+    conduct_rows_to_add <- conduct_target_rows-conduct_current_rows
 
     if (conduct_rows_to_add > 0) {
       conduct_new_rows <- data.frame(
@@ -355,7 +362,9 @@ server_all <- function(input, output, session) {
     conduct_reactive_table_data(conduct_modified_data)
   })
 
-  ####################End of server function####################
+
+  ######################################## End of server function ########################################
+
 }
 
 
