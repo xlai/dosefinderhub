@@ -52,17 +52,17 @@ server <- function(input, output, session) {
   current_index <- shiny::reactiveVal(1)
 
   # Update the current question in the UI
-  output$questionUI <- shiny::renderUI({
+  output$questionsUI <- shiny::renderUI({
     current_q <- current_index()
     if (current_q <= nrow(questions)) {
       question <- questions[questions$q_number == current_q, ]
-      params <- parse_params(question$params, question$q_type)
+      params <- parse_params(question$params)
 
       switch(question$q_type,
         radioButtons = shiny::radioButtons(inputId = question$q_variable,
-                                          label = question$q_text,
-                                          choices = strsplit(params[["choices"]], ",")[[1]],
-                                          width = 500),
+                                           label = question$q_text,
+                                           choices = strsplit(params[["choices"]], ",")[[1]],
+                                           width = 500),
         numeric = shiny::numericInput(inputId = question$q_variable,
                                       label = question$q_text,
                                       min = as.numeric(params[["min"]]),
