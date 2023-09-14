@@ -92,15 +92,21 @@ specific_ui_inputs <- lapply(ranking, function(method_current) {
 
 ##Defining non-design-specific + simulation parameters column inputs function
 non_specific_column_func <- function() {
-  title <- "General Trial Parameters"
+  #label <- "Input file with all configurations"
+  upload_button <- fileInput("config_filed_upload", "Input file with all configurations", accept = c(".csv", ".rds"))
+  #label_2 <- "Download file with all configurations"
+  download_button <- downloadButton("config_save_button", "Download file with all configurations")
+  separator <- "___________________________________________"
+  title <- "GENERAL TRIAL PARAMETERS"
   display_button <- checkboxInput("display_input_all", "Display parameters", value = F)
   conditional_non_specific_ui_inputs <- conditionalPanel(condition = "input.display_input_all==1", non_specific_ui_inputs)
-  text <- "Simulation scenarios 'True' DLT rates input table:"
+  separator <- "___________________________________________"
+  text <- "SIMULATION SCENARIOS' 'TRUE' DLT RATES INPUT TABLE"
   n_scenarios_input <- numericInput("n_scenarios_input", "How many scenarios would you like to simulate?", min = 1, value = 3)
   table_output <- DT::DTOutput("table_output")
-  plot_button <- actionButton("plot_button", label = "Test plot")
-  plot <- plotOutput("plot")
-  return <- list(title, display_button, conditional_non_specific_ui_inputs, text, n_scenarios_input, table_output, plot_button, plot)
+  #plot_button <- actionButton("plot_button", label = "Test plot")
+  #plot <- plotOutput("plot")
+  return <- list(upload_button, download_button, separator, title, display_button, conditional_non_specific_ui_inputs, separator, text, n_scenarios_input, table_output)
 }
 
 ##Defining Configurations tab columns
@@ -120,6 +126,8 @@ select_specific_columns <- function() {
   }
   return(specific_columns)
 }
+
+##Defining Configurations tab input function
 config_tab_input_func <- function() {
   sidebarLayout(
     sidebarPanel(non_specific_column_func(), width = 4),
@@ -210,4 +218,7 @@ ui_tabs[[3]] <- tabPanel("Conduct",
 ui <- fluidPage(
   do.call(tabsetPanel, c(ui_tabs))
 )
-shinyApp(ui, server_all)
+
+
+
+#shinyApp(ui, server_all)

@@ -32,12 +32,15 @@ server_all <- function(input, output, session) {
   })
   
   output$editable_table <- renderDT({
-    datatable(reactive_table_data(), editable = TRUE, options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"), list(targets = 0, className = "not-editable"))),
-              rownames = FALSE)
+    datatable(reactive_table_data(), editable = TRUE, options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"), list(targets = 0, className = "not-editable"))), rownames = FALSE)
+      #scrollX = TRUE, scrollX="250px", paging = FALSE
+    #options = list(scrollX = TRUE, scrollX="250px", paging = FALSE) #Did not work
   }, server = FALSE)
   
   output$table_output <- renderDT({
-    datatable(reactive_table_data(), editable = TRUE, options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"))), rownames = F)
+    datatable(reactive_table_data(), editable = TRUE, options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"))), rownames = FALSE)
+      #scrollX = TRUE, scrollX="250px", paging = FALSE
+    #options = list(scrollX = TRUE, scrollX="250px", paging = FALSE) #Did not work
   })
   
   observeEvent(input$table_output_cell_edit, {
@@ -118,3 +121,7 @@ server_all <- function(input, output, session) {
 
 
 }
+
+
+
+shinyApp(ui, server_all)
