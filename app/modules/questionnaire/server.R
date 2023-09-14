@@ -1,6 +1,5 @@
 questions_df <- read.csv("app/data/questionnaire_inputs/q_database.csv")
-# sort questions by q_number before proceed
-questions_df <- questions_df[order(questions_df$q_number), ]
+
 parse_params <- function(params_str) {
   params <- strsplit(params_str, ";")[[1]]
   param_list <- lapply(params, function(p) strsplit(p, "=")[[1]])
@@ -14,7 +13,7 @@ check_validation <- function(current_index, input) {
     validation_expr <- current_question$condition
     print(current_question)
     print(input)
-    observe({
+    shiny::observe({
       print(input$know_doses)
     })
     # If the validation expression is not empty, evaluate it
@@ -32,9 +31,7 @@ check_validation <- function(current_index, input) {
       }
     }
   }
-  return(current_index)
 }
-
 
 generate_UI <- function(current_question) {
   params <- parse_params(current_question$params)
@@ -88,6 +85,11 @@ server <- function(input, output, session) {
 
   current_index <- shiny::reactiveVal(1)
 
+  # Render the UI for the current question
+  output$questionsUI <- shiny::renderUI({
+    current_question <- questions_df[current_index(), ]
+    generate_UI(current_question)
+  })
 
   # Update the progress bar
   output$progress <- shiny::renderText({
@@ -98,7 +100,7 @@ server <- function(input, output, session) {
   shiny::observeEvent(
     input$next_button, {
       new_index <- current_index() + 1
-  #    new_index <- check_validation(new_index, input)
+      #new_index <- check_validation(new_index, input)
       current_index(new_index)
     }
   )
@@ -116,12 +118,6 @@ server <- function(input, output, session) {
       current_index(1)
     }
   )
-
-  # Render the UI for the current question
-  output$questionsUI <- renderUI({
-    current_question <- questions_df[current_index(), ]
-    generate_UI(current_question)
-  })
 
   # Random number generation creating recommendation
   rand <- shiny::eventReactive(input$get_rating, {
