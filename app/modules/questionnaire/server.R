@@ -1,4 +1,4 @@
-questions <- read.csv("app/data/questionnaire_inputs/q_database.csv")
+questions_df <- read.csv("app/data/questionnaire_inputs/q_database.csv")
 
 parse_params <- function(params_str) {
   params <- strsplit(params_str, ";")[[1]]
@@ -8,8 +8,8 @@ parse_params <- function(params_str) {
 }
 
 check_validation <- function(current_index) {
-  if (current_index <= nrow(questions)) {
-    current_question <- questions[questions$q_number == current_index, ]
+  if (current_index <= nrow(questions_df)) {
+    current_question <- questions_df[questions_df$q_number == current_index, ]
     validation_expr <- current_question$condition
 
     # If the validation expression is not empty, evaluate it
@@ -24,6 +24,31 @@ check_validation <- function(current_index) {
   return(current_index)
 }
 
+generate_UI <- function(current_question) {
+  params <- parse_params(current_question$params)
+
+  switch(current_question$q_type,
+    radioButtons = shiny::radioButtons(inputId = current_question$q_variable,
+                                       label = current_question$q_text,
+                                       choices = strsplit(params[["choices"]], ",")[[1]],
+                                       width = 500),
+    numeric = shiny::numericInput(inputId = current_question$q_variable,
+                                  label = current_question$q_text,
+                                  min = as.numeric(params[["min"]]),
+                                  value = 0,
+                                  width = 500),
+    slider = shiny::sliderInput(inputId = current_question$q_variable,
+                                label = current_question$q_text,
+                                min = as.numeric(params[["min"]]),
+                                max = as.numeric(params[["max"]]),
+                                value = as.numeric(params[["min"]]),
+                                width = 500),
+    text = shiny::textInput(inputId = current_question$q_variable,
+                            label = current_question$q_text,
+                            placeholder = "i.e. 0.05, 0.15, 0.3, 0.7",
+                            value = "", width = 500)
+  )
+}
 
 server <- function(input, output, session) {
 
@@ -51,40 +76,10 @@ server <- function(input, output, session) {
 
   current_index <- shiny::reactiveVal(1)
 
-  # Update the current question in the UI
-  output$questionUI <- shiny::renderUI({
-    current_q <- current_index()
-    if (current_q <= nrow(questions)) {
-      question <- questions[questions$q_number == current_q, ]
-      params <- parse_params(question$params, question$q_type)
-
-      switch(question$q_type,
-        radioButtons = shiny::radioButtons(inputId = question$q_variable,
-                                          label = question$q_text,
-                                          choices = strsplit(params[["choices"]], ",")[[1]],
-                                          width = 500),
-        numeric = shiny::numericInput(inputId = question$q_variable,
-                                      label = question$q_text,
-                                      min = as.numeric(params[["min"]]),
-                                      value = 0,
-                                      width = 500),
-        slider = shiny::sliderInput(inputId = question$q_variable,
-                                    label = question$q_text,
-                                    min = as.numeric(params[["min"]]),
-                                    max = as.numeric(params[["max"]]),
-                                    value = as.numeric(params[["min"]]),
-                                    width = 500),
-        text = shiny::textInput(inputId = question$q_variable,
-                                label = question$q_text,
-                                placeholder = "i.e. 0.05, 0.15, 0.3, 0.7",
-                                value = "", width = 500)
-      )
-    }
-  })
 
   # Update the progress bar
   output$progress <- shiny::renderText({
-    paste("Progress:", current_index(), "/", nrow(questions))
+    paste("Progress:", current_index(), "/", nrow(questions_df))
   })
 
   # Update the current question when the next button is clicked
@@ -110,6 +105,11 @@ server <- function(input, output, session) {
     }
   )
 
+  # Render the UI for the current question
+  output$questionsUI <- renderUI({
+    current_question <- questions_df[current_index(), ]
+    generate_UI(current_question)
+  })
 
   # Random number generation creating recommendation
   rand <- shiny::eventReactive(input$get_rating, {
@@ -141,7 +141,7 @@ server <- function(input, output, session) {
       paste("user_responses-", Sys.Date(), ".csv", sep = "")
     },
     content = function(file) {
-      inputs_to_save <- questions$q_variable
+      inputs_to_save <- questions_df$q_variable
       # Declare inputs
       inputs <- NULL
       # Append all inputs before saving to folder
