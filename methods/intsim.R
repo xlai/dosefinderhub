@@ -130,47 +130,60 @@ return(
 )
 }
 
-generate_histograms_and_plot_list <- function(data, design, sim_data) {
- 
+# Create a function that generates histograms and returns them along with the plot_list
+generate_graphs <- function(data, design, sim_data) {
+  # Process the data to obtain o_sims
   o_sims <- process_sims(data, design, sim_data)
   
-  # list of selection tables
-  plot_list <- purrr::map(o_sims$Output, function(output) {
+  # Create a plot_list to store the table data and histograms
+  plot_list <- purrr::map2(
+    o_sims$Output,
+    1:length(o_sims$Sim.Configurations$true_dlt_ss), # Create a sequence of group indices
+    function(output, group) { 
+      # Extract the relevant data frame and preserve column names as characters
+      df <- as.data.frame(output$Table, stringsAsFactors = FALSE)
+      
+      df <- df %>%
+        dplyr::filter(row.names(df) == "% Dose Selected as MTD")
+      
+      # Reshape the data frame into a long format
+      df_long <- df %>%
+        tidyr::gather(key = "DoseLevel", value = "Percentage")
+      
+      # Put NoDose on the left
+      df_long$DoseLevel <- factor(df_long$DoseLevel, levels = unique(df_long$DoseLevel))
+      
+      # Add a "group" column to the data frame
+      df_long$group <- group 
 
-    # extract while preserving colnames
-    df <- as.data.frame(output$Table, stringsAsFactors = FALSE)
-    
-    df <- df %>%
-      dplyr::filter(row.names(df) == "% Dose Selected as MTD")
-    
-    # Reshape the data frame into a long format
-    df_long <- df %>%
-      tidyr::gather(key = "DoseLevel", value = "Percentage")
-    
-    # put NoDose on the left
-    df_long$DoseLevel <- factor(df_long$DoseLevel, levels = unique(df_long$DoseLevel))
-    
-    # create bar plot
-    graph <- ggplot2::ggplot(df_long, ggplot2::aes(x = DoseLevel, y = Percentage, fill = DoseLevel)) +
-      ggplot2::geom_bar(stat = "identity") +
-      ggplot2::labs(x = "Dose Level", y = "% Selected as MTD", title = "Histogram") +
-      ggplot2::theme_bw() 
-    
-    return(graph)
+      return(df_long)
   })
-  
-
-  # Set up the layout
-par( mfrow= c(1, length(plot_list)) )
-
-  # Plot each graph
-  for (i in 1:length(plot_list)) {
-   a[[i]] <- print(plot_list[[i]])
-  }
-  return(a)
+    
+  return(plot_list)
 }
 
-b <- generate_histograms_and_plot_list(data, design, sim_data)
+
+compare_designs <- function(designs){
+graph <- list()
+  for (i in designs){
+    plot_list <- generate_graphs(data, i, sim_data)
+  
+  plot_list_d <- dplyr::bind_rows(plot_list)
+   #  Create a bar plot using ggplot2
+   graph[[i]] <- ggplot2::ggplot(plot_list_d, ggplot2::aes(x = DoseLevel, y = Percentage, fill = DoseLevel)) +
+    ggplot2::geom_bar(stat = "identity") +
+    ggplot2::labs(x = "Dose Level", y = "% Selected as MTD", title = "Histogram") +
+    ggplot2::theme_bw() +
+    ggplot2::scale_fill_brewer(palette = "Spectral") +
+    ggplot2::facet_wrap(. ~ group)
+  }
+  
+return(graph)
+}
+
+ew <- compare_designs(c("crm","tpt"))
+
+
 
 
 
