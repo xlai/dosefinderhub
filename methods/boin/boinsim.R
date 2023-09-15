@@ -45,28 +45,13 @@ p_saf <- 0.1
 use_stopping_rule <- TRUE
 n_cohorts <- 10
 
-best_dose <- max(true_dlt_ss[true_dlt_ss<=ttl])
-best_dose_level <- match(best_dose,true_dlt_ss)
+best_dose <- max(true_dlt_ss[true_dlt_ss <= ttl])
+best_dose_level <- match(best_dose, true_dlt_ss)
 
-# model
-model$boin <- escalation::get_boin(
-  num_doses = n_doses,
-  target = ttl,
-  use_stopping_rule = use_stopping_rule,
-  ncohort = n_cohorts,
-  cohortsize = cohort_size,
-  n.earlystop = stop_n_mtd,
-  p.saf = p_saf, p.tox = p_tox
-)
-
-model$boin <- escalation::get_boin(
-  num_doses = n_doses,
-  target = ttl,
-  use_stopping_rule = use_stopping_rule,
-  p.saf = p_saf, p.tox = p_tox
-  ) %>%
-  stop_when_n_at_dose(n=stop_n_mtd, dose = "recommended") %>%
-  stop_at_n(n = max_n)
+model$boin <- get_boin(num_doses = n_doses, target = ttl, use_stopping_rule = use_stopping_rule, p.saf = p_saf, p.tox = p_tox,
+                       cutoff.eli = 0.95, extrasafe = FALSE, offset = 0.05) %>%
+  escalation::stop_when_n_at_dose(n = 14, dose = "recommended") %>%
+  escalation::stop_at_n(n = max_n)
 
 # run sims
 patient_arrivals_func <- function(current_data) cohorts_of_n(n = cohort_size)
