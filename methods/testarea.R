@@ -1,6 +1,6 @@
 # read in .rData file
-design <- "crm"
-data <- readRDS("dummy_data1.RData")
+design <- "boin"
+data <- readRDS("dummy_data4.RData")
 attach(data)
 # the data can now be called directly with trial, method, ranking subsets
 
@@ -89,7 +89,7 @@ process_sims <- function(model_config, model_type, sim_data) {
 
   config <- process_config(model_config, model_type)
   model <- create_model(model_config, model_type)
-  sim_data <- create_dummy_sims(4)
+  sim_data <- create_dummy_sims(config$n_doses)
 
 # for each sim scenario
   i <- 1
@@ -163,10 +163,9 @@ process_sims_cohort_size <- function(model_config, model_type, sim_data) {
 
 
 
-o_sims <- process_sims(data, design, sim_data)
+o_sims <- process_sims(data, design, dummy_sims_data)
 o_sims
 
 # add error for number of doses in true_dlt_ss being different to num_doses!
 # or programmatically make it impossible? reactibve table input?
 
-o_sims
