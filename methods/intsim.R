@@ -71,13 +71,15 @@ create_model <- function(model_config, model_type) {
     escalation::stop_when_too_toxic(dose = 1, config$stop_tox_x + config$target, confidence = config$stop_tox_y) %>%
     escalation::stop_when_n_at_dose(n = config$stop_n_mtd, dose = "recommended") %>%
     escalation::stop_at_n(n = config$max_n)
-  )
+  boin = escalation::get_boin(num_doses = config$n_doses, target = config$ttl, use_stopping_rule = use_stopping_rule, p.saf = config$p_saf, p.tox = config$p_tox,
+    cutoff.eli = config$cutoff_eli, extrasafe = config$extrasafe, offset = config$offset) %>%
+    escalation::stop_when_n_at_dose(n=config$n_earlystop, dose = "recommended") %>%
+    escalation::stop_at_n(n = config$max_n))
 
   return(model)
 }
 
 # function for conducting sims and returning output
-
 
 process_sims <- function(model_config, model_type, sim_data) {
 
@@ -85,7 +87,6 @@ process_sims <- function(model_config, model_type, sim_data) {
   config <- process_config(model_config, model_type)
   model <- create_model(model_config, model_type)
   sim_data <- create_dummy_sims(4)
-
   # pre-create list objects?
 
   sims <- list()

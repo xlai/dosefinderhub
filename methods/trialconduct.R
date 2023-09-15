@@ -70,7 +70,11 @@ create_model <- function(model_config, model_type) {
     escalation::dont_skip_doses(when_escalating = as.logical(1-config$skip_esc), when_deescalating = as.logical(1-config$skip_deesc)) %>% 
     escalation::stop_when_too_toxic(dose = 1, config$stop_tox_x + config$target, confidence = config$stop_tox_y) %>%
     escalation::stop_when_n_at_dose(n = config$stop_n_mtd, dose = "recommended") %>%
-    escalation::stop_at_n(n = config$max_n)
+    escalation::stop_at_n(n = config$max_n),
+  boin = escalation::get_boin(num_doses = n_doses, target = ttl, use_stopping_rule = use_stopping_rule, p.saf = p_saf, 
+                              p.tox = p_tox, cutoff.eli = 0.95, extrasafe = FALSE, offset = 0.05) %>%
+  escalation::stop_when_n_at_dose(n = 14, dose = "recommended") %>%
+  escalation::stop_at_n(n = max_n)  
   )
 
   return(model)
