@@ -155,6 +155,8 @@ generate_graphs <- function(data, design, sim_data) {
       
       # Add a "group" column to the data frame
       df_long$group <- group 
+      # Add design column 
+      df_long$design <- design
 
       return(df_long)
   })
@@ -165,23 +167,27 @@ generate_graphs <- function(data, design, sim_data) {
 
 compare_designs <- function(designs){
 graph <- list()
+plot_list_d <- list()
   for (i in designs){
     plot_list <- generate_graphs(data, i, sim_data)
-  
-  plot_list_d <- dplyr::bind_rows(plot_list)
-   #  Create a bar plot using ggplot2
+
+    plot_list_d[[i]] <- dplyr::bind_rows(plot_list)
+  }
+   #Create a bar plot using ggplot2
+   plot_list_d <- dplyr::bind_rows(plot_list_d)
    graph[[i]] <- ggplot2::ggplot(plot_list_d, ggplot2::aes(x = DoseLevel, y = Percentage, fill = DoseLevel)) +
     ggplot2::geom_bar(stat = "identity") +
     ggplot2::labs(x = "Dose Level", y = "% Selected as MTD", title = "Histogram") +
     ggplot2::theme_bw() +
     ggplot2::scale_fill_brewer(palette = "Spectral") +
-    ggplot2::facet_wrap(. ~ group)
+    ggplot2::facet_wrap(design ~ group)
+    return(graph)
   }
   
-return(graph)
-}
 
-ew <- compare_designs(c("crm","tpt"))
+
+
+ew <- compare_designs(c("tpt","crm"))
 
 
 
