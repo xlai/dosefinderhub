@@ -130,42 +130,50 @@ return(
 )
 }
 
-# Create a function that generates histograms and returns them along with the plot_list
 generate_histograms_and_plot_list <- function(data, design, sim_data) {
-  # Process the data to obtain o_sims
+ 
   o_sims <- process_sims(data, design, sim_data)
   
-  # Create a plot_list to store the table data and histograms
+  # list of selection tables
   plot_list <- purrr::map(o_sims$Output, function(output) {
-    # Extract the relevant data frame and preserve column names as characters
-    df <- as.data.frame(output$Table, stringsAsFactors = FALSE)
 
-     df <- df %>%
+    # extract while preserving colnames
+    df <- as.data.frame(output$Table, stringsAsFactors = FALSE)
+    
+    df <- df %>%
       dplyr::filter(row.names(df) == "% Dose Selected as MTD")
     
-  # Reshape the data frame into a long format
-  df_long <- df %>%
-  tidyr::gather(key = "DoseLevel", value = "Percentage")
-  
- # Use factor() to reorder DoseLevel and ensure "NoDose" is on the left
-    df_long$DoseLevel <- factor(df_long$DoseLevel, levels = unique(df_long$DoseLevel))
-
-  # Create a bar plot using ggplot2
-  graph <- ggplot2::ggplot(df_long, ggplot2::aes(x = DoseLevel, y = Percentage, fill = DoseLevel)) +
-  ggplot2::geom_bar(stat = "identity") +
-  ggplot2::labs(x = "Dose Level", y = "% Selected as MTD", title = "Histogram") +
-  ggplot2::theme_bw() 
+    # Reshape the data frame into a long format
+    df_long <- df %>%
+      tidyr::gather(key = "DoseLevel", value = "Percentage")
     
-  return(list(data = df, graph = graph))
+    # put NoDose on the left
+    df_long$DoseLevel <- factor(df_long$DoseLevel, levels = unique(df_long$DoseLevel))
+    
+    # create bar plot
+    graph <- ggplot2::ggplot(df_long, ggplot2::aes(x = DoseLevel, y = Percentage, fill = DoseLevel)) +
+      ggplot2::geom_bar(stat = "identity") +
+      ggplot2::labs(x = "Dose Level", y = "% Selected as MTD", title = "Histogram") +
+      ggplot2::theme_bw() 
+    
+    return(graph)
   })
   
-  return(plot_list)
+
+  # Set up the layout
+par( mfrow= c(1, length(plot_list)) )
+
+  # Plot each graph
+  for (i in 1:length(plot_list)) {
+   a[[i]] <- print(plot_list[[i]])
+  }
+  return(a)
 }
 
-# Call the function to generate histograms and plot_list
-result <- generate_histograms_and_plot_list(data, design, sim_data)
+b <- generate_histograms_and_plot_list(data, design, sim_data)
 
-# Access data frames as result[[i]]$data and histograms as result[[i]]$histogram
+
+
 
 
 
