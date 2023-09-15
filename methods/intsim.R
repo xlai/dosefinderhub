@@ -71,12 +71,14 @@ create_model <- function(model_config, model_type) {
     escalation::stop_when_too_toxic(dose = 1, config$stop_tox_x + config$target, confidence = config$stop_tox_y) %>%
     escalation::stop_when_n_at_dose(n = config$stop_n_mtd, dose = "recommended") %>%
     escalation::stop_at_n(n = config$max_n)
-  boin = escalation::get_boin(num_doses = config$n_doses, target = config$ttl, use_stopping_rule = use_stopping_rule, p.saf = config$p_saf, p.tox = config$p_tox,
-    cutoff.eli = config$cutoff_eli, extrasafe = config$extrasafe, offset = config$offset) %>%
-    escalation::stop_when_n_at_dose(n=config$n_earlystop, dose = "recommended") %>%
-    escalation::stop_at_n(n = config$max_n))
+  boin = escalation::get_boin(num_doses = n_doses, target = ttl, use_stopping_rule = use_stopping_rule, p.saf = p_saf,
+                              p.tox = p_tox, cutoff.eli = 0.95, extrasafe = FALSE, offset = 0.05) %>%
+    escalation::stop_when_n_at_dose(n=14, dose = "recommended") %>%
+    escalation::stop_at_n(n = max_n)
+  )
 
   return(model)
+
 }
 
 # function for conducting sims and returning output
@@ -86,7 +88,7 @@ process_sims <- function(model_config, model_type, sim_data) {
 
   config <- process_config(model_config, model_type)
   model <- create_model(model_config, model_type)
-  sim_data <- create_dummy_sims(4)
+  sim_data <- create_dummy_sims(config$n_doses)
   # pre-create list objects?
 
   sims <- list()
@@ -164,7 +166,11 @@ process_sims <- function(model_config, model_type, sim_data) {
 }
 
 o_sims <- process_sims(data, design, sim_data)
-
+o_sims
 
 # add error for number of doses in true_dlt_ss being different to num_doses!
 # or programmatically make it impossible? reactibve table input?
+
+
+
+
