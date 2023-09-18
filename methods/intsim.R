@@ -78,64 +78,60 @@ create_model <- function(model_config, model_type) {
     escalation::stop_at_n(n = config$max_n),
   boin = escalation::get_boin(
     num_doses = config$n_doses, target = config$ttl, 
-    use_stopping_rule = config$use_stopping_rule, p.saf = config$p_saf,
+    use_stopping_rule = TRUE, p.saf = config$p_saf,
     p.tox = config$p_tox, cutoff.eli = 0.95, extrasafe = FALSE, offset = 0.05) %>%
-    escalation::stop_when_n_at_dose(n=config$stop_n_mtd, dose = "recommended") %>%
+    escalation::stop_when_n_at_dose(n=config$n_earlystop, dose = "recommended") %>%
     escalation::stop_at_n(n = config$max_n)
   )
 
-  return(model)
+return(model)
 
 }
 
 # function for conducting sims and returning output
-
-
 process_sims <- function(model_config, model_type, sim_data) {
-
-
+  
   config <- process_config(model_config, model_type)
   model <- create_model(model_config, model_type)
-  sim_data <- create_dummy_sims(config$n_doses)
+#  sim_data <- create_dummy_sims(config$n_doses)
 
+  results <- lapply(sim_data$true_dlt_ss, function(dlt_ss) {
+    sims <- model %>%
+      escalation::simulate_trials(next_dose = config$start_dose, num_sims = sim_data$n_sims, true_prob_tox = dlt_ss)
+    # find selection probs
+    selection <- sims %>% escalation::prob_recommend()
+    # find no. treated at dose
+    treated <- colSums(sims %>% escalation::n_at_dose())
+    treatedpct <- treated / sum(treated)
+    # coerce into table
+    selection_df <- data.frame(selection)
+    treatedpct_df <- data.frame(treatedpct)
+    selection_tab <- rbind(t(selection_df), c(NA, t(treatedpct_df)), c(NA, dlt_ss))
+    rownames(selection_tab) <- c("% Dose Selected as MTD", "% Patients Treated at Dose", "True Toxicity Probabilities")
 
-results <- lapply(sim_data$true_dlt_ss, function(dlt_ss) {
-  sims <- model %>%
-    escalation::simulate_trials(next_dose = config$start_dose, num_sims = sim_data$n_sims, true_prob_tox = dlt_ss)
-  # find selection probs
-  selection <- sims %>% escalation::prob_recommend()
-  # find no. treated at dose
-  treated <- colSums(sims %>% escalation::n_at_dose())
-  treatedpct <- treated / sum(treated)
-  # coerce into table
-  selection_df <- data.frame(selection)
-  treatedpct_df <- data.frame(treatedpct)
-  selection_tab <- rbind(t(selection_df), c(NA, t(treatedpct_df)), c(NA, dlt_ss))
-  rownames(selection_tab) <- c("% Dose Selected as MTD", "% Patients Treated at Dose", "True Toxicity Probabilities")
+    # metrics
+    best_dose <- max(dlt_ss[dlt_ss <= config$ttl])
+    best_dose_level <- match(best_dose, dlt_ss)
+    # i) accuracy
+    dist_accuracy <- escalation::recommended_dose(sims)
+    mean_accuracy <- mean(dist_accuracy == best_dose_level)
+    # ii) risk of overdosing
+    dist_overdose <- escalation::num_tox(sims)
+    mean_overdose <- mean(dist_overdose)
+    # iii) trial length
+    dist_length <- sims %>% escalation::trial_duration()
+    mean_length <- mean(dist_length)
 
-  # metrics
-  best_dose <- max(dlt_ss[dlt_ss <= config$ttl])
-  best_dose_level <- match(best_dose, dlt_ss)
-  # i) accuracy
-  dist_accuracy <- escalation::recommended_dose(sims)
-  mean_accuracy <- mean(dist_accuracy == best_dose_level)
-  # ii) risk of overdosing
-  dist_overdose <- escalation::num_tox(sims)
-  mean_overdose <- mean(dist_overdose)
-  # iii) trial length
-  dist_length <- sims %>% escalation::trial_duration()
-  mean_length <- mean(dist_length)
-
-  # metrics combined
-  metrics <- data.frame("Accuracy" = mean_accuracy, "Risk of Overdose" = mean_overdose, "Trial Duration" = mean_length)
-  
-  list(Table = selection_tab, Metrics = metrics)
-})
+    # metrics combined
+    metrics <- data.frame("Accuracy" = mean_accuracy, "Risk of Overdose" = mean_overdose, "Trial Duration" = mean_length)
+    
+    list(Table = selection_tab, Metrics = metrics)
+  })
 
 
 return(
-  list(Configurations = rbind(design = config$design, data.frame(unlist(config))), Sim.Configurations = sim_data, Output = results)
-)
+  list(Configurations = rbind(design = model_type, data.frame(unlist(config))), Sim.Configurations = sim_data, Output = results)
+  )
 }
 
 # Create a function that generates histograms and returns them along with the plot_list
