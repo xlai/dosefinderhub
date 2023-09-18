@@ -1,12 +1,28 @@
 # read in .rData file
 design <- "crm"
-data <- readRDS("dummy_data1.RData")
+data <- readRDS("dummy_data.RData")
 attach(data)
 # the data can now be called directly with trial, method, ranking subsets
 
 # setup piping. we want to avoid loading packages with library()
 `%>%` <- magrittr::`%>%`
 
+# create some sim data
+create_dummy_sims <- function(n_doses) {
+
+  n_sims <- sample(seq(20, 100, 10), 1)
+
+  true_dlt_ss <- list()
+  true_dlt_ss[[1]] <- sort(sample(seq(0, 1, 0.01), n_doses))
+  true_dlt_ss[[2]] <- sort(sample(seq(0, 1, 0.01), n_doses))
+  true_dlt_ss[[3]] <- sort(sample(seq(0, 1, 0.01), n_doses))
+
+  value <- list(n_sims = n_sims, true_dlt_ss = true_dlt_ss)
+
+  saveRDS(value, "dummy_sims_data")
+  dummy_sims_data <- readRDS("dummy_sims_data")
+  return(dummy_sims_data)
+}
 # create some sim data
 create_dummy_sims <- function(n_doses) {
 
@@ -57,6 +73,20 @@ process_config <- function(model_config, model_type){
         config_processed_list[[i]] <- as.numeric(unlist(strsplit(config_processed_list[[i]],",")))}
   }
 
+  # format all data
+  for (i in 1:length(config_processed_list)){
+      if (config_processed$answer_type[i] == "numeric"){
+        config_processed_list[[i]] <- as.numeric(config_processed$value[i])}
+      else if (config_processed$answer_type[i] == "numeric_bounded"){
+        config_processed_list[[i]] <- as.numeric(config_processed$value[i])}
+      else if (config_processed$value[i] == "No"){
+        config_processed_list[[i]] <- FALSE}
+      else if (config_processed$value[i] == "Yes"){
+        config_processed_list[[i]] <- TRUE}
+      else if (config_processed$answer_type[i] == "comma-separated list"){
+        config_processed_list[[i]] <- as.numeric(unlist(strsplit(config_processed_list[[i]],",")))}
+      }
+
 return(config_processed_list)
 }
 
@@ -74,10 +104,15 @@ create_model <- function(model_config, model_type) {
     escalation::dont_skip_doses(when_escalating = as.logical(1-config$skip_esc), when_deescalating = as.logical(1-config$skip_deesc)) %>% 
     escalation::stop_when_too_toxic(dose = 1, config$stop_tox_x + config$target, confidence = config$stop_tox_y) %>%
     escalation::stop_when_n_at_dose(n = config$stop_n_mtd, dose = "recommended") %>%
-    escalation::stop_at_n(n = config$max_n)
+    escalation::stop_at_n(n = config$max_n),
+  boin = escalation::get_boin(num_doses = n_doses, target = ttl, use_stopping_rule = use_stopping_rule, p.saf = p_saf,
+                              p.tox = p_tox, cutoff.eli = 0.95, extrasafe = FALSE, offset = 0.05) %>%
+    escalation::stop_when_n_at_dose(n=14, dose = "recommended") %>%
+    escalation::stop_at_n(n = max_n)
   )
 
   return(model)
+
 }
 
 # function for conducting sims and returning output
@@ -88,7 +123,7 @@ process_sims <- function(model_config, model_type, sim_data) {
 
   config <- process_config(model_config, model_type)
   model <- create_model(model_config, model_type)
-  sim_data <- create_dummy_sims(4)
+  sim_data <- create_dummy_sims(config$n_doses)
 
 
 results <- lapply(sim_data$true_dlt_ss, function(dlt_ss) {
@@ -126,7 +161,7 @@ results <- lapply(sim_data$true_dlt_ss, function(dlt_ss) {
 
 
 return(
-  list(Configurations = rbind(design, data.frame(unlist(config))), Sim.Configurations = sim_data, Output = results)
+  list(Configurations = rbind(design = config$design, data.frame(unlist(config))), Sim.Configurations = sim_data, Output = results)
 )
 }
 
