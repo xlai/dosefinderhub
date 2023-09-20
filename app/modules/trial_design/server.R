@@ -7,6 +7,7 @@ server_all <- function(input, output, session) {
 
   ######################################## Configuration tab's file upload/download ########################################
 
+  #Upload
   observe({
     
     in_file <- input$config_file_upload
@@ -29,24 +30,26 @@ server_all <- function(input, output, session) {
 
   })
 
+  #Download
+
   output$config_save_button <- shiny::downloadHandler(
     filename = function() {
       paste("user_responses-", Sys.Date(), ".csv", sep = "")
     },
+
     content = function(file) {
-      inputs_to_save <- c((questions$trial)$q_variable, (questions$method)$q_variable, (questions$ranking)$q_variable)
-      # Declare inputs
-      inputs <- NULL
-      # Append all inputs before saving to folder
-      for (input.i in inputs_to_save){
-        inputs <- append(inputs, input[[input.i]])
-      }
-      # Inputs data.frame
-      inputs_data_frame <- data.frame(inputId = inputs_to_save, value = inputs)
-      write.csv(inputs_data_frame, file)
-    }
+        input_ids_for_df <- c((questions$trial)$q_variable, (questions$method)$q_variable, (questions$ranking)$q_variable)
+
+        inputs_for_df <- c()
+        for (input.i in 1:length(input_ids_for_df)){
+          inputs_for_df <- append(inputs_for_df, input[[input_ids_for_df[input.i]]])
+        }
   
+        inputs_data_frame <- data.frame(inputId=c(input_ids_for_df), value=c(inputs_for_df))
+        write.csv(inputs_data_frame, file)
+    }
   )
+
 
 
   ######################################## Configuration tab's simulation scenarios table code ########################################

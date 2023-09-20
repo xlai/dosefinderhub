@@ -101,12 +101,14 @@ non_specific_column_func <- function() {
   display_button <- checkboxInput("display_input_all", "Display parameters", value = F)
   conditional_non_specific_ui_inputs <- conditionalPanel(condition = "input.display_input_all==1", non_specific_ui_inputs)
   separator <- "___________________________________________"
-  text <- "SIMULATION SCENARIOS' 'TRUE' DLT RATES INPUT TABLE"
+  text <- "SIMULATION PARAMETERS"
+  n_sims_input <- numericInput("n_sims_input", "How many simulations would you like to run per design per scenario?", value = 10)
   n_scenarios_input <- numericInput("n_scenarios_input", "How many scenarios would you like to simulate?", min = 1, value = 3)
+  text2 <- "Please fill out each scenario's and each dose's 'True' Dose Limiting Toxicity probabilities in the table below:"
   table_output <- DT::DTOutput("table_output")
   #plot_button <- actionButton("plot_button", label = "Test plot")
   #plot <- plotOutput("plot")
-  return <- list(upload_button, download_button, separator, title, display_button, conditional_non_specific_ui_inputs, separator, text, n_scenarios_input, table_output)
+  return <- list(upload_button, download_button, separator, title, display_button, conditional_non_specific_ui_inputs, separator, text, n_sims_input, n_scenarios_input, text2, table_output)
 }
 
 ##Defining Configurations tab columns
@@ -159,10 +161,10 @@ sim_tab_input_func <- function() {
         multiple = TRUE,
         list(plugins = list('remove_button'))),
       
-      selectizeInput("visual_selection_input", "Select type of output",
-        choices = c("Table", "Plot"),
-        multiple = TRUE,
-        list(plugins = list('remove_button'))),
+      #selectizeInput("visual_selection_input", "Select type of output",
+        #choices = c("Table", "Plot"),
+        #multiple = TRUE,
+        #list(plugins = list('remove_button'))),
 
       actionButton("submit", "Submit"),
 
