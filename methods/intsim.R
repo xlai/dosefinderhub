@@ -95,19 +95,27 @@ process_sims <- function(model_config, model_type, sim_data) {
   model <- create_model(model_config, model_type)
 #  sim_data <- create_dummy_sims(config$n_doses)
 
-  results <- lapply(sim_data$true_dlt_ss, function(dlt_ss) {
+  results <- lapply(seq_along(sim_data$true_dlt_ss), function(i) {
+    dlt_ss <- sim_data$true_dlt_ss[[i]]
     sims <- model %>%
       escalation::simulate_trials(next_dose = config$start_dose, num_sims = sim_data$n_sims, true_prob_tox = dlt_ss)
     # find selection probs
     selection <- sims %>% escalation::prob_recommend()
     # find no. treated at dose
     treated <- colSums(sims %>% escalation::n_at_dose())
-    treatedpct <- treated / sum(treated)
-    # coerce into table
-    selection_df <- data.frame(selection)
-    treatedpct_df <- data.frame(treatedpct)
-    selection_tab <- rbind(t(selection_df), c(NA, t(treatedpct_df)), c(NA, dlt_ss))
-    rownames(selection_tab) <- c("% Dose Selected as MTD", "% Patients Treated at Dose", "True Toxicity Probabilities")
+    treatedpct <- treated / sum(treated) 
+    # coerce into long table with dose level and values of metrics
+    dlt_df <- dlt_ss %>% data.frame(
+        Dose = as.character(1:length(dlt_ss)), Value = .
+      ) %>%
+      mutate(Type = 'True DLT')
+
+    treatedpct_df <- treatedpct%>%
+      data.frame(Dose = names(.), Value = .) %>%
+      mutate(Type = 'Pct. Patients Treated at Dose')
+    selection_df <- selection %>%
+      data.frame(Dose = names(.), Value = .) %>%
+      mutate(Type = 'Pct. Dose Selected as MTD')
 
     # metrics
     best_dose <- max(dlt_ss[dlt_ss <= config$ttl])
@@ -123,22 +131,31 @@ process_sims <- function(model_config, model_type, sim_data) {
     mean_length <- mean(dist_length)
 
     # metrics combined
-    metrics <- data.frame("Accuracy" = mean_accuracy, "Risk of Overdose" = mean_overdose, "Trial Duration" = mean_length)
+    metrics <- data.frame(
+      "Dose" = NA,      
+      "Value" = c(mean_accuracy, mean_overdose, mean_length),
+      "Type" = c("Accuracy", "Risk of Overdose", "Trial Duration")
+      )
+
+    combined <- bind_rows(
+        metrics, treatedpct_df, selection_df, dlt_df
+      ) %>%
+      mutate(Design = model_type, Scenario = paste0("Scenario ", i))
     
-    list(Table = selection_tab, Metrics = metrics)
   })
 
 
 return(
-  list(Configurations = rbind(design = model_type, data.frame(unlist(config))), Sim.Configurations = sim_data, Output = results)
+  list(
+    Configurations = data.frame(unlist(config)), 
+    Sim.Configurations = sim_data, 
+    Output = do.call(rbind, results)
+    )
   )
 }
 
 # Create a function that generates histograms and returns them along with the plot_list
-generate_graphs <- function(data, design, sim_data) {
-  # Process the data to obtain o_sims
-  o_sims <- process_sims(data, design, sim_data)
-  
+generate_graphs <- function(o_sims) {
   # Create a plot_list to store the table data and histograms
   plot_list <- purrr::map2(
     o_sims$Output,
@@ -160,7 +177,7 @@ generate_graphs <- function(data, design, sim_data) {
       # Add a "group" column to the data frame
       df_long$group <- group 
       # Add design column 
-      df_long$design <- design
+      df_long$design <- o_sims$design
 
       return(df_long)
   })
