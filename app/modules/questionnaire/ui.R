@@ -1,5 +1,14 @@
 ui <- shiny::fluidPage(
-
+  tags$head(
+    tags$style(HTML("
+      .center-contents {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 20vh;  # This uses 80% of the viewport height; adjust as needed
+      }
+    "))
+  ),
   theme = bslib::bs_theme(bootswatch = "darkly"),
 
   shiny::titlePanel("Welcome to the Dose Finder Hub!"),
@@ -10,24 +19,32 @@ ui <- shiny::fluidPage(
        recommended trial designs tailored to your
        needs, or upload previously saved responses."),
 
-    shiny::fileInput("file_upload", "Upload Previous Responses:",
-                     accept = c(".csv", ".rds")),
+    div(style = "display: inline-block; width: 48%; vertical-align: top;", 
+      shiny::fileInput("file_upload", "Upload Previous Responses:",
+                     accept = c(".csv", ".rds"))
+    ),
+    div(style = "display: inline-block; width: 40%; vertical-align: top;", 
+      shiny::downloadButton("save_button", "Save Responses"),
+    ),
 
-    shiny::uiOutput("questionsUI"),
-
+    div(class = "center-contents text-center",    
+      shiny::uiOutput("questionsUI")
+    ),
+    
     shiny::tags$hr(),
 
-    shiny::textOutput("progress"),
-    # Previous, Next, Reset button
-    shiny::actionButton("previous", "Previous"),
-
-    shiny::actionButton("next_button", "Next"),
-
-    shiny::actionButton("reset", "Reset"),
-
-    shiny::fluidRow(
-      shiny::downloadButton("save_button", "Save Responses"),
+    fluidRow(
+      column(8, uiOutput("progress_bar")),  # Progress bar taking up 8/12 of the width
+      column(4, 
+            div(style="display: flex; align-items: center;",  # CSS to vertically center the content
+                actionButton("prev", "Previous"), 
+                actionButton("next", "Next"),
+                actionButton("reset", "Reset")
+            )
+      )
     )
+
+
   ),
 
   shiny::sidebarPanel(
@@ -41,4 +58,4 @@ ui <- shiny::fluidPage(
   )
 )
 
-shiny::shinyApp(ui, server)
+#shiny::shinyApp(ui, server)

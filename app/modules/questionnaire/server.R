@@ -92,9 +92,24 @@ server <- function(input, output, session) {
   })
 
   # Update the progress bar
-  output$progress <- shiny::renderText({
-    paste("Progress:", current_index(), "/", nrow(questions_df))
+  output$progress_bar <- renderUI({
+    
+    progress_value <- (current_index() / nrow(questions_df)) * 100
+    
+    div(style = "width: 100%; display: flex; align-items: center;",  # CSS to vertically center the content
+      div(id = "progressBar", class = "progress", style="height: 20px; width: 300px;", 
+        div(class = "progress-bar", role = "progressbar", 
+            `aria-valuenow` = progress_value, `aria-valuemin` = "0", 
+            `aria-valuemax` = "100", style = sprintf("width: %s%%;", progress_value)
+        )
+      ),
+      tags$span(style="margin-left: 10px;", 
+                sprintf("%s/%s questions answered", current_index(), nrow(questions_df)))
+    )
+    
   })
+
+
 
   # Update the current question when the next button is clicked
   shiny::observeEvent(
