@@ -7,6 +7,17 @@ data <- readRDS("dummy_data.RData")
 # setup piping. we want to avoid loading packages with library()
 `%>%` <- magrittr::`%>%`
 
+find_closest_element <- function(vec, num) {
+  # Find the index of the closest element in the vector to the given number
+  closest_index <- which.min(abs(vec - num))
+  
+  # Create a boolean vector with 1 for the closest index and 0 otherwise
+  boolean_vec <- rep(0, length(vec))
+  boolean_vec[closest_index] <- 1
+  
+  return(boolean_vec)
+}
+
 # create some sim data
 create_dummy_sims <- function(n_doses) {
 
@@ -108,14 +119,18 @@ process_sims <- function(model_config, model_type, sim_data) {
     dlt_df <- dlt_ss %>% data.frame(
         Dose = as.character(1:length(dlt_ss)), Value = .
       ) %>%
-      mutate(Type = 'True DLT')
+      dplyr::mutate(Type = 'True DLT')
 
     treatedpct_df <- treatedpct%>%
       data.frame(Dose = names(.), Value = .) %>%
-      mutate(Type = 'Pct. Patients Treated at Dose')
+      dplyr::mutate(Type = 'Pct. Patients Treated at Dose')
     selection_df <- selection %>%
       data.frame(Dose = names(.), Value = .) %>%
-      mutate(Type = 'Pct. Dose Selected as MTD')
+      dplyr::mutate(Type = 'Pct. Dose Selected as MTD')
+    # Identify the true MTD from each simulation scenario
+    true_mtd_boolean <- find_closest_element(vec = dlt_ss, num = config$ttl) %>%
+      data.frame(Dose = as.character(1:length(dlt_ss)), Value = .) %>%
+      dplyr::mutate(Type = 'True MTD')
 
     # metrics
     best_dose <- max(dlt_ss[dlt_ss <= config$ttl])
@@ -137,8 +152,9 @@ process_sims <- function(model_config, model_type, sim_data) {
       "Type" = c("Accuracy", "Risk of Overdose", "Trial Duration")
       )
 
-    combined <- bind_rows(
-        metrics, treatedpct_df, selection_df, dlt_df
+    combined <- dplyr::bind_rows(
+        metrics, treatedpct_df, selection_df, dlt_df,
+        true_MTD = true_mtd_boolean
       ) %>%
       mutate(Design = model_type, Scenario = paste0("Scenario ", i))
     
@@ -154,63 +170,52 @@ return(
   )
 }
 
-# Create a function that generates histograms and returns them along with the plot_list
-generate_graphs <- function(o_sims) {
-  # Create a plot_list to store the table data and histograms
-  plot_list <- purrr::map2(
-    o_sims$Output,
-    1:length(o_sims$Sim.Configurations$true_dlt_ss), # Create a sequence of group indices
-    function(output, group) { 
-      # Extract the relevant data frame and preserve column names as characters
-      df <- as.data.frame(output$Table, stringsAsFactors = FALSE)
-      
-      df <- df %>%
-        dplyr::filter(row.names(df) == "% Dose Selected as MTD")
-      
-      # Reshape the data frame into a long format
-      df_long <- df %>%
-        tidyr::gather(key = "DoseLevel", value = "Percentage")
-      
-      # Put NoDose on the left
-      df_long$DoseLevel <- factor(df_long$DoseLevel, levels = unique(df_long$DoseLevel))
-      
-      # Add a "group" column to the data frame
-      df_long$group <- group 
-      # Add design column 
-      df_long$design <- o_sims$design
-
-      return(df_long)
-  })
-    
-  return(plot_list)
-}
-
-
-compare_designs <- function(designs){
-graph <- list()
-plot_list_d <- list()
-  for (i in designs){
-    plot_list <- generate_graphs(data, i, sim_data)
-
-    plot_list_d[[i]] <- dplyr::bind_rows(plot_list)
-  }
-   #Create a bar plot using ggplot2
-   plot_list_d <- dplyr::bind_rows(plot_list_d)
-   graph[[i]] <- ggplot2::ggplot(plot_list_d, ggplot2::aes(x = DoseLevel, y = Percentage, fill = DoseLevel)) +
-    ggplot2::geom_bar(stat = "identity") +
-    ggplot2::labs(x = "Dose Level", y = "% Selected as MTD", title = "Histogram") +
-    ggplot2::theme_bw() +
-    ggplot2::scale_fill_brewer(palette = "Spectral") +
-    ggplot2::facet_wrap(design ~ group)
-    return(graph)
-  }
+# Create a function that generates histograms and returns them along with the plot
+generate_histogram <- function(tidy_results, selected_type, selected_design) {
   
+  true_mtd_dose <- tidy_results %>%
+    dplyr::filter(Design %in% selected_design) %>%  
+    dplyr::filter(Type == "True MTD") %>%
+    dplyr::pull(Value)
 
+  plot_data <- tidy_results %>% 
+    dplyr::filter(Type == selected_type) %>%
+    dplyr::filter(Design %in% selected_design)
+  
+  if (all(is.na(plot_data$Dose))) {
+    # If all Dose values are NA, plot without x and alpha aesthetics
+    p <- ggplot(plot_data, aes(x = Type, y = Value, fill = Design)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      facet_wrap(~ Scenario) +
+      labs(x = NULL, y = selected_type) +
+      theme_minimal() +
+      theme(axis.title.x=element_blank(),
+            axis.text.x=element_blank(),
+            axis.ticks.x=element_blank())
+    
+    return(p)
+  }
 
-
-ew <- compare_designs(c("tpt","crm"))
-
-
+  plot_data <- plot_data %>% dplyr::mutate(alpha_value = ifelse(true_mtd_dose == 1, 1, 0.3))
+  
+  p <- ggplot2::ggplot(plot_data, aes(x = Dose, y = Value, fill = Design, alpha = factor(alpha_value))) +
+    ggplot2::geom_col(position = "dodge") +
+    ggplot2::facet_wrap(~Scenario, scales = "free", nrow = 1) +
+    labs(
+      title = paste("Histogram for", selected_type),
+      x = "Dose Levels",
+      y = selected_type,
+      fill = "Design"
+    ) +
+    scale_alpha_manual(name = "True MTD",
+                       values = c(1, 0.3),
+                       breaks = c(1, 0.3),
+                       labels = c("True", "False"))     
+    theme_minimal() +
+    theme(legend.position = "top")
+  
+  return(p)
+}
 
 
 
