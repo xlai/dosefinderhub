@@ -1,8 +1,4 @@
-# read in .rData file
 
-data <- readRDS("dummy_data.RData")
-#attach(data)
-# the data can now be called directly with trial, method, ranking subsets
 
 # setup piping. we want to avoid loading packages with library()
 `%>%` <- magrittr::`%>%`
