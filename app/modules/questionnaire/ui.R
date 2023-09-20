@@ -37,9 +37,9 @@ ui <- shiny::fluidPage(
       column(8, uiOutput("progress_bar")),  # Progress bar taking up 8/12 of the width
       column(4, 
             div(style="display: flex; align-items: center;",  # CSS to vertically center the content
-                actionButton("prev", "Previous"), 
-                actionButton("next", "Next"),
-                actionButton("reset", "Reset")
+                actionButton("prev_button", "Previous"), 
+                actionButton("next_button", "Next"),
+                actionButton("reset_button", "Reset")
             )
       )
     )

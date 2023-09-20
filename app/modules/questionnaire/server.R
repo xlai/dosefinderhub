@@ -121,7 +121,7 @@ server <- function(input, output, session) {
   )
 
   shiny::observeEvent(
-    input$previous, {
+    input$previous_button, {
       if (current_index() > 1) {
         current_index(current_index() - 1)
       }
@@ -129,7 +129,7 @@ server <- function(input, output, session) {
   )
 
   shiny::observeEvent(
-    input$reset, {
+    input$reset_button, {
       current_index(1)
     }
   )
