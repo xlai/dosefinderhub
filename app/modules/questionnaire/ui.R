@@ -28,7 +28,7 @@ ui <- shiny::fluidPage(
     ),
 
     div(class = "center-contents text-center",    
-      shiny::uiOutput("questionsUI")
+      shiny::uiOutput("questionsUI", style = "font-size: 18px;")
     ),
     
     shiny::tags$hr(),
@@ -38,7 +38,7 @@ ui <- shiny::fluidPage(
       column(4, 
             div(style="display: flex; align-items: center;",  # CSS to vertically center the content
                 actionButton("prev_button", "Previous"), 
-                actionButton("next_button", "Next"),
+                uiOutput("next_or_recommend_button"),
                 actionButton("reset_button", "Reset")
             )
       )
@@ -47,14 +47,11 @@ ui <- shiny::fluidPage(
 
   ),
 
-  shiny::sidebarPanel(
-    shiny::fluidRow(
-      shiny::actionButton("get_rating",
-                          label = "Generate recommendations!")
-    ),
-    # Simple text output giving a sentence describing singular
-    # recommended method, for now.
-    shiny::textOutput("recommendations")
+  shiny::conditionalPanel(
+      condition = "!!output.showRecommendation",
+      fluidRow(
+        textOutput("recommendationText")
+      )
   )
 )
 

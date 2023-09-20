@@ -1,3 +1,6 @@
+source('app/modules/questionnaire/generate_questions_UI.R')
+source('app/modules/questionnaire/generate_recommendation.R')
+
 questions_df <- read.csv("app/data/questionnaire_inputs/q_database.csv")
 
 parse_params <- function(params_str) {
@@ -33,32 +36,6 @@ check_validation <- function(current_index, input) {
   }
 }
 
-generate_UI <- function(current_question) {
-  params <- parse_params(current_question$params)
-
-  switch(current_question$q_type,
-    radioButtons = shiny::radioButtons(inputId = current_question$q_variable,
-                                       label = current_question$q_text,
-                                       choices = strsplit(params[["choices"]], ",")[[1]],
-                                       width = 500),
-    numeric = shiny::numericInput(inputId = current_question$q_variable,
-                                  label = current_question$q_text,
-                                  min = as.numeric(params[["min"]]),
-                                  value = 0,
-                                  width = 500),
-    slider = shiny::sliderInput(inputId = current_question$q_variable,
-                                label = current_question$q_text,
-                                min = as.numeric(params[["min"]]),
-                                max = as.numeric(params[["max"]]),
-                                value = as.numeric(params[["min"]]),
-                                width = 500),
-    text = shiny::textInput(inputId = current_question$q_variable,
-                            label = current_question$q_text,
-                            placeholder = "i.e. 0.05, 0.15, 0.3, 0.7",
-                            value = "", width = 500)
-  )
-}
-
 server <- function(input, output, session) {
 
   # Load button
@@ -88,7 +65,7 @@ server <- function(input, output, session) {
   # Render the UI for the current question
   output$questionsUI <- shiny::renderUI({
     current_question <- questions_df[current_index(), ]
-    generate_UI(current_question)
+    generate_questions_UI(current_question)
   })
 
   # Update the progress bar
@@ -112,13 +89,14 @@ server <- function(input, output, session) {
 
 
   # Update the current question when the next button is clicked
-  shiny::observeEvent(
-    input$next_button, {
+  shiny::observeEvent(input$next_button, {
+    if (current_index() < nrow(questions_df)) {
       new_index <- current_index() + 1
-      #new_index <- check_validation(new_index, input)
       current_index(new_index)
     }
+    }
   )
+
 
   shiny::observeEvent(
     input$previous_button, {
@@ -133,30 +111,45 @@ server <- function(input, output, session) {
       current_index(1)
     }
   )
+  
+  # Reactive value to control visibility of recommendation
+  showRecommendation <- reactiveVal(FALSE)
+
+  output$next_or_recommend_button <- renderUI({
+    if (current_index() < nrow(questions_df)) {
+      actionButton("next_button", "Next")
+    } else {
+      actionButton("generate_recommendation", "Generate!")
+    }
+  })
+
+
+  # Observe the "Generate!" button click
+  observeEvent(input$generate_recommendation, {
+    showRecommendation(TRUE)  # Set to TRUE to show the recommendation
+  })
 
   # Random number generation creating recommendation
-  rand <- shiny::eventReactive(input$get_rating, {
+  rand <- shiny::eventReactive(input$generate_recommendation, {
     runif(1)
   })
 
-  output$recommendations <- shiny::renderText({
-    if (rand() > 0 & rand() < 1 / 3) {
-
-      rating <- c("crm", "tpt", "boin")
-      "First choice is CRM, second choice is 3+3, third choice is BOIN."
-
-    } else if (rand() > 1 / 3 & rand() < 2 / 3) {
-
-      rating <- c("tpt", "crm", "boin")
-      "First choice is 3+3, second choice is CRM, third choice is BOIN."
-
-    } else {
-
-      rating <- c("boin", "tpt", "crm")
-      "First choice is BOIN, second choice is 3+3, third choice is CRM."
-
+  output$recommendationText <- shiny::renderText({
+    if (showRecommendation()) {
+         # Compute and return your recommendation text here
+         return(generate_recommendation(0.3))
     }
+    return(NULL)
+
   })
+
+   # This output will provide the condition for the conditionalPanel in the UI
+  output$showRecommendation <- reactive({
+      showRecommendation()
+  })
+
+  outputOptions(output, "showRecommendation", suspendWhenHidden = FALSE)
+  
 
   # Save button
   output$save_button <- shiny::downloadHandler(
