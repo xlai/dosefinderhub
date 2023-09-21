@@ -106,7 +106,14 @@ questionnaireServer <- function(id, ns, design_name, data, currentUI) {
 
 ui <- fluidPage(
   h2("Design Selection"),
-  
+
+  div(style = "display: inline-block; width: 48%; vertical-align: top;", 
+    shiny::fileInput("file_upload", "Upload Previous Responses:",
+                    accept = c(".csv", ".rds"))
+  ),
+  div(style = "display: inline-block; width: 40%; vertical-align: top;", 
+    shiny::downloadButton("save_button", "Save Responses"),
+  ),  
   # Generate design UI components dynamically from the dataframe
   tagList(
     lapply(1:nrow(titles), function(i) {
@@ -138,10 +145,28 @@ server <- function(input, output, session){
     })
     })
 
-    lapply(titles$designs, function(design) {
-    questionnaireServer(
-        paste0("questionnaire",toupper(design)), 
-        ns, design_name = design, data = data, currentUI
-    )
-    })
+  lapply(titles$designs, function(design) {
+  questionnaireServer(
+      paste0("questionnaire",toupper(design)), 
+      ns, design_name = design, data = data, currentUI
+  )
+  })
+  # Save button
+  output$save_button <- shiny::downloadHandler(
+    filename = function() {
+      paste("user_responses-", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      inputs_to_save <- data$q_variable
+      # Declare inputs
+      inputs <- NULL
+      # Append all inputs before saving to folder
+      for (input.i in inputs_to_save){
+        inputs <- append(inputs, input[[input.i]])
+      }
+      # Inputs data.frame
+      inputs_data_frame <- data.frame(inputId = inputs_to_save, value = inputs)
+      write.csv(inputs_data_frame, file)
+    }
+  )    
 }
