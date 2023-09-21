@@ -23,3 +23,11 @@ generate_questions_UI <- function(current_question) {
                             value = "", width = 500)
   )
 }
+
+
+parse_params <- function(params_str) {
+  params <- strsplit(params_str, ";")[[1]]
+  param_list <- lapply(params, function(p) strsplit(p, "=")[[1]])
+  names(param_list) <- sapply(param_list, `[`, 1)
+  sapply(param_list, `[`, 2)
+}

@@ -3,13 +3,6 @@ source('app/modules/questionnaire/generate_recommendation.R')
 
 questions_df <- read.csv("app/data/questionnaire_inputs/q_database.csv")
 
-parse_params <- function(params_str) {
-  params <- strsplit(params_str, ";")[[1]]
-  param_list <- lapply(params, function(p) strsplit(p, "=")[[1]])
-  names(param_list) <- sapply(param_list, `[`, 1)
-  sapply(param_list, `[`, 2)
-}
-
 check_validation <- function(current_index, input) {
   if (current_index <= nrow(questions_df)) {
     current_question <- questions_df[questions_df$q_number == current_index, ]
@@ -86,8 +79,6 @@ server <- function(input, output, session) {
     
   })
 
-
-
   # Update the current question when the next button is clicked
   shiny::observeEvent(input$next_button, {
     if (current_index() < nrow(questions_df)) {
@@ -96,8 +87,6 @@ server <- function(input, output, session) {
     }
     }
   )
-
-
   shiny::observeEvent(
     input$previous_button, {
       if (current_index() > 1) {
@@ -105,7 +94,6 @@ server <- function(input, output, session) {
       }
     }
   )
-
   shiny::observeEvent(
     input$reset_button, {
       current_index(1)
