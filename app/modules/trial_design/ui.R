@@ -6,7 +6,8 @@ library(ggplot2)
 
 #DUMMY DATA MANIPULATION
 
-dummy_data <- readRDS("app/modules/trial_design/dummy_data1.RData")
+dummy_data <- dummy_data <- readRDS("app/data/dummy/dummy_data1.RData") # CHANGE THIS 
+# I have used dummay_data1 for now - this needs to be changed.
 #View(dummy_data)
 
 dummy_data_trial <- dummy_data$trial
