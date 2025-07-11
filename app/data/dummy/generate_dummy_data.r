@@ -123,5 +123,5 @@ dummy_data <- generate_dummy_data(
 )
 print(dummy_data)
 head(dummy_data)
-save(dummy_data, file = "app/modules/trial_design/dummy_data5.RData", version = 2) # Saving to a file. Using version=2 for compatibility with R 4.0.0 and later
+save(dummy_data, file = "app/data/dummy/dummy_data6.RData", version = 2) # Saving to a file. Using version=2 for compatibility with R 4.0.0 and later
 
