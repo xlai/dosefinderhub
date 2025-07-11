@@ -1,13 +1,16 @@
 library(shiny)
 library(DT)
 library(ggplot2)
-
-
+library(here)
 
 #DUMMY DATA MANIPULATION
 
-dummy_data <- dummy_data <- readRDS("app/data/dummy/dummy_data1.RData") # CHANGE THIS 
-# I have used dummay_data1 for now - this needs to be changed.
+here::i_am('app/modules/trial_design/ui.R') #setting the path to this file
+data_env <- new.env()
+load(here('app', 'modules', 'trial_design', 'dummy_data5.RData'),
+     envir = data_env) #loading dummy_data5.RData
+dummy_data <- data_env$dummy_data 
+# I have used dummy_data5 for now (generatied using generate_dummy_data) - this needs to be changed.
 #View(dummy_data)
 
 dummy_data_trial <- dummy_data$trial
