@@ -6,7 +6,14 @@ parse_conditions <- function(condition_str) {
   cbind(cond_var, cond_val)
 }
 
- output$questionsUI <- shiny::renderUI({
+current_question <- reactiveVal(1)
+
+output$questionsUI <- renderUI({
+  current questoin <- questions_df[current_index(), ]
+  generate_questions_UI(current_question)
+})  
+
+output$questionsUI <- shiny::renderUI({
     current_q <- current_question()
     if (current_q <= nrow(questions)) {
       question <- questions[questions$q_number == current_q, ]

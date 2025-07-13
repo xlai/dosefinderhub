@@ -1,3 +1,4 @@
+library(shiny)
 ui <- shiny::fluidPage(
   tags$head(
     tags$style(HTML("
@@ -55,4 +56,4 @@ ui <- shiny::fluidPage(
   )
 )
 
-#shiny::shinyApp(ui, server)
+shiny::shinyApp(ui, server)
