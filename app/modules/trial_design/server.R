@@ -1,6 +1,3 @@
-questions <- dummy_data
-
-column_names <- sprintf("d(%d)", 1:n_doses)
 
 server_all <- function(input, output, session) {
 
@@ -49,8 +46,6 @@ server_all <- function(input, output, session) {
         write.csv(inputs_data_frame, file)
     }
   )
-
-
 
   ######################################## Configuration tab's simulation scenarios table code ########################################
 
