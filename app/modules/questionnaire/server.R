@@ -1,9 +1,6 @@
-source('app.R/modules/questionnaire/generate_questions_UI.R')
-source('app.R/modules/questionnaire/generate_recommendation.R')
-
-file.exists("app.R/data/questionnaire_inputs/q_database.csv")
-
-questions_df <- read.csv("app.R/data/questionnaire_inputs/q_database.csv")
+here::i_am("app/modules/questionnaire/server.R")
+data_directory <- here('app','data','questionnaire_inputs') #define relative path to your questionnaire app directory
+questions_df <- read.csv(here(data_directory,"q_database.csv"))
 
 check_validation <- function(current_index, input) {
   if (current_index <= nrow(questions_df)) {
