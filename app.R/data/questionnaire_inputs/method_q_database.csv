@@ -1,0 +1,17 @@
+design,q_number,q_type,q_variable,q_text,answer_type,params
+crm,1,radioButtons,skip_esc,Would you like to be able to skip doses when escalating?,categorical,"choices=Yes,No"
+crm,2,radioButtons,skip_deesc,Would you like to be able to skip doses when de-escalating?,categorical,"choices=Yes,No"
+crm,3,radioButtons,no_esc_if_observed_gt_target,Do you want to prevent escalation of doses if the overall observed DLT rate at the current dose level is above the target DLT rate?,categorical,"choices=Yes,No"
+crm,4,numeric,prior_var,What is the estimate of the prior variance?,numeric,min=0;dummy_max=0.8;step=0.01
+crm,5,numeric,stop_n_mtd,What is the minimum number of patients required at recommended dose before early stopping?,numeric,min=6;dummy_max=50;step=1
+crm,6,text,prior_ttp,What are the prior estimates of the DLT rates at each dose? Please make this an increasing list and separate each value with a comma.,comma-separated list,
+crm,7,numeric,prior_mtd,What is your prior guess of the MTD,numeric_bounded,min=1;max=10;step=1
+crm,8,numeric,stop_tox_x,"When using the this Bayesian safety early criterion: p(true DLT rate at lowest dose > target DLT rate + x | data) > y, what would you like x to be? This is the excess toxicity above the target DLT.",numeric_bounded,min=0;max=0.5;step=0.01
+crm,9,numeric,stop_tox_y,What would you like y to be? This is the confidence level for safety stopping.,numeric_bounded,min=0;max=0.8;step=0.01
+tpt,1,radioButtons,tpt_allow_deesc,Would you like to be able to skip doses when deescalating?,categorical,"choices=Yes,No"
+boin,1,numeric,p_tox,What is the lowest toxicity probability that is deemed overly toxic such that deescalation is required?,numeric_bounded,min=0;max=1;step=0.01
+boin,2,numeric,p_saf,"What is the highest toxicity probability that is deemed subtherapeutic (i.e., below the MTD) such that dose escalation should be made?",numeric_bounded,min=0;max=1;step=0.01
+boin,3,numeric,n_earlystop,How many patients should be treated at the current dose for early stopping? (n=100 essentially switches off this stopping rule),numeric,min=1;dummy_max=100;step=1
+boin,4,numeric,cutoff_eli,"What is the cutoff to eliminate an overly toxic dose for safety? For general use, 0.95 is recommended.",numeric_bounded,min=0;max=1;step=0.01
+boin,5,radioButtons,extrasafe,Do you want to impose a more strict stopping rule for extra safety?,categorical,"choices=Yes,No"
+boin,6,numeric,offset,"How strict should the stopping rule be when it is extra safe? 0.5 gives the strictest rule, and 0.05 works well for general use.",numeric_bounded,min=0;max=0.5;step=0.01

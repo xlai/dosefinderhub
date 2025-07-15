@@ -1,6 +1,8 @@
 source('app/modules/questionnaire/generate_questions_UI.R')
 source('app/modules/questionnaire/generate_recommendation.R')
 
+file.exists("app/data/questionnaire_inputs/q_database.csv")
+
 questions_df <- read.csv("app/data/questionnaire_inputs/q_database.csv")
 
 check_validation <- function(current_index, input) {

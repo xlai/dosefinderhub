@@ -1,4 +1,3 @@
-
 parse_conditions <- function(condition_str) {
   conditions <- strsplit(condition_str, ";")[[1]]
   cond_var <- conditions[1]
