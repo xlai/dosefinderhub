@@ -57,4 +57,7 @@ ui <- shiny::fluidPage(
 
 file.exists("app.R")
 
+readLines("app.R", warn = FALSE)
+
+
 shinyApp(ui, server)
