@@ -1,9 +1,9 @@
-source('app/modules/questionnaire/generate_questions_UI.R')
-source('app/modules/questionnaire/generate_recommendation.R')
+source('app.R/modules/questionnaire/generate_questions_UI.R')
+source('app.R/modules/questionnaire/generate_recommendation.R')
 
-file.exists("app/data/questionnaire_inputs/q_database.csv")
+file.exists("app.R/data/questionnaire_inputs/q_database.csv")
 
-questions_df <- read.csv("app/data/questionnaire_inputs/q_database.csv")
+questions_df <- read.csv("app.R/data/questionnaire_inputs/q_database.csv")
 
 check_validation <- function(current_index, input) {
   if (current_index <= nrow(questions_df)) {
