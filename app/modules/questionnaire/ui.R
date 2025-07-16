@@ -1,3 +1,4 @@
+library(shiny)
 ui <- shiny::fluidPage(
   tags$head(
     tags$style(HTML("
@@ -12,7 +13,6 @@ ui <- shiny::fluidPage(
   theme = bslib::bs_theme(bootswatch = "darkly"),
 
   shiny::titlePanel("Welcome to the Dose Finder Hub!"),
-
   shiny::mainPanel(
 
     shiny::h4("Please answer the questions below to get 
@@ -54,5 +54,3 @@ ui <- shiny::fluidPage(
       )
   )
 )
-
-#shiny::shinyApp(ui, server)

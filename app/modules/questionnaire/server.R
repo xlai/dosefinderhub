@@ -1,7 +1,6 @@
-source('app/modules/questionnaire/generate_questions_UI.R')
-source('app/modules/questionnaire/generate_recommendation.R')
-
-questions_df <- read.csv("app/data/questionnaire_inputs/q_database.csv")
+here::i_am("app/modules/questionnaire/server.R")
+data_directory <- here::here('app','data','questionnaire_inputs') #define relative path to your questionnaire app directory
+questions_df <- read.csv(here::here(data_directory,"q_database.csv"))
 
 check_validation <- function(current_index, input) {
   if (current_index <= nrow(questions_df)) {
@@ -103,13 +102,16 @@ server <- function(input, output, session) {
   # Reactive value to control visibility of recommendation
   showRecommendation <- reactiveVal(FALSE)
 
-  output$next_or_recommend_button <- renderUI({
-    if (current_index() < nrow(questions_df)) {
-      actionButton("next_button", "Next")
-    } else {
-      actionButton("generate_recommendation", "Generate!")
-    }
-  })
+ output$next_or_recommend_button <- renderUI({
+  if (current_index() < nrow(questions_df)) {
+    actionButton("next_button", "Next")
+  } else if (!showRecommendation()) {
+    actionButton("generate_recommendation", "Generate!")
+  } else {
+    actionButton("continue_to_methods", "Continue to Methods Questionnaire")
+  }
+ })
+
 
 
   # Observe the "Generate!" button click
@@ -130,6 +132,7 @@ server <- function(input, output, session) {
     return(NULL)
 
   })
+  
 
    # This output will provide the condition for the conditionalPanel in the UI
   output$showRecommendation <- reactive({
@@ -138,6 +141,13 @@ server <- function(input, output, session) {
 
   outputOptions(output, "showRecommendation", suspendWhenHidden = FALSE)
   
+   #button to move onto the methods questionnaire
+  observeEvent(input$continue_to_methods, {
+    output$dynamicUI <- renderUI({
+      questionnaireUI("methods")
+    })
+    session$userData$currentUI <- "methods"
+  })
 
   # Save button
   output$save_button <- shiny::downloadHandler(

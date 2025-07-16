@@ -1,5 +1,3 @@
-source('app/modules/questionnaire/generate_questions_UI.R')
-
 data <- read.csv("app/data/questionnaire_inputs/method_q_database.csv")
 titles <- data.frame(titles = c("3+3", "CRM", "BOIN"), designs = c("tpt", "crm", "boin"))
 
