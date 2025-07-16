@@ -1,7 +1,4 @@
-library(shiny)
-library(DT)
-library(ggplot2)
-library(here)
+
 
 # Helper function to generate UI element
 generate_ui_element <- function(question) {

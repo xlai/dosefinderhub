@@ -1,26 +1,28 @@
-################ Xiaoran's Code ################
-
 library(shiny)
 library(DT)
 library(ggplot2)
 library(here)
 
-here::i_am("app/modules/trial_design/global.R")
 
-# Data loading
-data_env <- new.env()
-load(here('app', 'data', 'dummy', 'dummy_data6.RData'), envir = data_env)
-dummy_data <- data_env$dummy_data 
+#DUMMY DATA MANIPULATION
+here::i_am("app/modules/trial_design/ui.R")
+data_directory_dummy <- here('app','data','dummy') #define relative path to your questionnaire app directory
+dummy_data <- readRDS(here(data_directory_dummy,"dummy_data1.RData"))
+#View(dummy_data)
 
-# Data processing
 dummy_data_trial <- dummy_data$trial
+#View(dummy_data_trial)
 n_doses <- dummy_data_trial[dummy_data_trial$q_variable == "n_doses", "value"]
-dummy_data_method <- dummy_data$method
-dummy_data_ranking <- dummy_data$ranking
-ranking <- c(dummy_data_ranking$method)
-ranking <- c("crm", "tpt", "other") # Your test ranking
+#n_doses
 
-# Functions
+dummy_data_method <- dummy_data$method
+#View(dummy_data_method)
+
+dummy_data_ranking <- dummy_data$ranking
+#View(dummy_data_ranking)
+ranking <- c(dummy_data_ranking$method)
+#ranking
+ranking <- c("crm", "tpt", "other") #REMOVE/COMMENT OUT; JUST TO TEST TAB DYNAMICS
 prettify_ranking <- function(ranking_argument) {
   pretty_ranking <- ranking_argument
   pretty_ranking[pretty_ranking == "crm"] <- "CRM"
@@ -28,7 +30,10 @@ prettify_ranking <- function(ranking_argument) {
   pretty_ranking[pretty_ranking == "other"] <- "Other design (TEST)"
   return(pretty_ranking)
 }
+pretty_ranking <- prettify_ranking(ranking)
+#THIS FUNCTION IS NOT FUTURE-PROOF!!!!! I HAVE SPOKEN WITH SIAN ABOUT ADDING "PRETTY" DESIGN NAMES TO DATABASE
 
+##Function to change parameter strings in preparation for extracting UI specs
 parse_params <- function(params_str) {
   params <- strsplit(params_str, ";")[[1]]
   param_list <- lapply(params, function(p) strsplit(p, "=")[[1]])
@@ -36,7 +41,6 @@ parse_params <- function(params_str) {
   sapply(param_list, '[', 2)
 }
 
-# Global variables
-pretty_ranking <- prettify_ranking(ranking)
 questions <- dummy_data
+
 column_names <- sprintf("d(%d)", 1:n_doses)

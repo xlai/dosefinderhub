@@ -1,4 +1,5 @@
 
+
 server_all <- function(input, output, session) {
 
 
@@ -46,6 +47,8 @@ server_all <- function(input, output, session) {
         write.csv(inputs_data_frame, file)
     }
   )
+
+
 
   ######################################## Configuration tab's simulation scenarios table code ########################################
 
@@ -169,4 +172,4 @@ server_all <- function(input, output, session) {
 
 
 
-shinyApp(ui, server_all)
+#shinyApp(ui, server_all)
