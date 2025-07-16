@@ -1,6 +1,4 @@
-questions <- dummy_data
 
-column_names <- sprintf("d(%d)", 1:n_doses)
 
 server_all <- function(input, output, session) {
 
@@ -174,4 +172,4 @@ server_all <- function(input, output, session) {
 
 
 
-shinyApp(ui, server_all)
+#shinyApp(ui, server_all)
