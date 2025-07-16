@@ -1,6 +1,6 @@
 here::i_am("app/modules/questionnaire/server.R")
-data_directory <- here('app','data','questionnaire_inputs') #define relative path to your questionnaire app directory
-questions_df <- read.csv(here(data_directory,"q_database.csv"))
+data_directory <- here::here('app','data','questionnaire_inputs') #define relative path to your questionnaire app directory
+questions_df <- read.csv(here::here(data_directory,"q_database.csv"))
 
 check_validation <- function(current_index, input) {
   if (current_index <= nrow(questions_df)) {
