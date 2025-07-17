@@ -99,45 +99,40 @@ server_all <- function(input, output, session) {
     #Update reactive data frame
     reactive_table_data(updated_data)
   })
-  
-  output$editable_table <- renderDT({
-    datatable(reactive_table_data(), editable = TRUE, options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"), list(targets = 0, className = "not-editable"))), rownames = FALSE)
-      #scrollX = TRUE, scrollX="250px", paging = FALSE
-    #options = list(scrollX = TRUE, scrollX="250px", paging = FALSE) #Did not work
-  }, server = FALSE)
-  
+
+
   output$table_output <- renderDT({
     datatable(reactive_table_data(), editable = TRUE, options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"))), rownames = FALSE)
       #scrollX = TRUE, scrollX="250px", paging = FALSE
     #options = list(scrollX = TRUE, scrollX="250px", paging = FALSE) #Did not work
   })
   
-  observeEvent(input$table_output_cell_edit, {
-    info <- input$table_output_cell_edit
-    modified_data <- reactive_table_data()
-    modified_data[info$row, (info$col + 1)] <- as.numeric(info$value)
-    reactive_table_data(modified_data)
-  })
+  #observeEvent(input$table_output_cell_edit, {
+    #info <- input$table_output_cell_edit
+   # modified_data <- reactive_table_data()
+   # modified_data[info$row, (info$col + 1)] <- as.numeric(info$value)
+   # reactive_table_data(modified_data)
+ # })
   
-  observeEvent(input$plot_button, {
+ # observeEvent(input$plot_button, {
     #Capture current data and transform for plotting
-    current_data <- reactive_table_data()
-    plot_data <- tidyr::gather(current_data[, -1, drop = FALSE], key = "Dose Level", value = "Value")
-    plot_data$Scenario <- rep(current_data$Scenario, each = ncol(current_data) - 1)
+  #  current_data <- reactive_table_data()
+  #  plot_data <- tidyr::gather(current_data[, -1, drop = FALSE], key = "Dose Level", value = "Value")
+   # plot_data$Scenario <- rep(current_data$Scenario, each = ncol(current_data) - 1)
     
     #Create the plot
-    p <- ggplot(plot_data, aes(x = `Dose Level`, y = Value)) +
-      geom_line() +
-      geom_point() +
-      labs(x = "Dose Levels",
-           y = "'True' DLT Rates") +
-      theme_minimal()
+   # p <- ggplot(plot_data, aes(x = `Dose Level`, y = Value)) +
+    #  geom_line() +
+   #   geom_point() +
+    #  labs(x = "Dose Levels",
+    #       y = "'True' DLT Rates") +
+    #  theme_minimal()
     
     # Render the plot
-    output$plot <- renderPlot({
-      p
-    })
-  })
+    #output$plot <- renderPlot({
+   #   p
+   # })
+ # })
   
 
   ######################################## Simulation tab server code ########################################
