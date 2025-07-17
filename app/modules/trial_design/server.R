@@ -48,7 +48,15 @@ server_all <- function(input, output, session) {
     }
   )
 
-
+  ################################ Configuration tab's sidebar code ################################
+   
+  n_dosess <- reactive({as.numeric(input$n_doses_inputt)}) # Using double ending letters to avoid mixing up with other input (for now)
+  ttl <- reactive({as.numeric(input$ttl_inputt)})
+  max_size <- reactive({as.numeric(input$max_size_inputt)})
+  start_dose <- reactive({as.numeric(input$start_dose_inputt)}) 
+  cohort_size <- reactive({as.numeric(input$cohort_inputt)})
+  n_sims <- reactive({as.numeric(input$n_sims_input)})
+  n_scenarios <- reactive({as.numeric(input$n_scenarios_input)})
 
   ######################################## Configuration tab's simulation scenarios table code ########################################
 

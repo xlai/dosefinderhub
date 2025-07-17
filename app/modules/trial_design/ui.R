@@ -46,12 +46,26 @@ specific_ui_inputs <- lapply(ranking, function(method_current) {
   )
 })
 
-
+# Trying a different method
 
 #CONFIGURATIONS TAB
 
 ##Defining non-design-specific + simulation parameters column inputs function
 non_specific_column_func <- function() {
+  n_doses_output <- numericInput("n_doses_inputt", "How many dose levels are being tested?", min = 1, value = "3")
+  ttl_output <- numericInput("ttl_inputt", "What is the target toxicity level for this trial, as a decimal?", min = 0, max = 1, value = "0.3")
+  max_size_output <- numericInput("max_size_inputt", "What is the maximum sample size for this trial?", min = 1, value = "30")
+  start_dose_output <- numericInput("start_dose_inputt", "What is the starting dose level?", min = 1, value = "1")
+  cohort_output <- numericInput("cohort_inputt", "What size will the cohorts be?", min = 1, value = "5")
+  non_specific_ui_inputts <- tagList(
+    n_doses_output,
+    ttl_output,
+    max_size_output,
+    start_dose_output,
+    cohort_output
+  )
+
+
   #label <- "Input file with all configurations"
   upload_button <- fileInput("config_file_upload", "Input file with all configurations", accept = c(".csv", ".rds"))
   #label_2 <- "Download file with all configurations"
@@ -59,7 +73,7 @@ non_specific_column_func <- function() {
   separator <- "___________________________________________"
   title <- "GENERAL TRIAL PARAMETERS"
   display_button <- checkboxInput("display_input_all", "Display parameters", value = F)
-  conditional_non_specific_ui_inputs <- conditionalPanel(condition = "input.display_input_all==1", non_specific_ui_inputs)
+  conditional_non_specific_ui_inputs <- conditionalPanel(condition = "input.display_input_all==1", non_specific_ui_inputts)
   separator <- "___________________________________________"
   text <- "SIMULATION PARAMETERS"
   n_sims_input <- numericInput("n_sims_input", "How many simulations would you like to run per design per scenario?", value = 10)
@@ -68,7 +82,9 @@ non_specific_column_func <- function() {
   table_output <- DT::DTOutput("table_output")
   #plot_button <- actionButton("plot_button", label = "Test plot")
   #plot <- plotOutput("plot")
-  return <- list(upload_button, download_button, separator, title, display_button, conditional_non_specific_ui_inputs, separator, text, n_sims_input, n_scenarios_input, text2, table_output)
+  return <- list(upload_button, download_button, separator, title, display_button, conditional_non_specific_ui_inputs,
+  #n_doses_output, ttl_output, max_size_output, start_dose_output, cohort_output, 
+  separator, text, n_sims_input, n_scenarios_input, text2, table_output)
 }
 
 ##Defining Configurations tab columns
@@ -132,9 +148,9 @@ sim_tab_input_func <- function() {
 
      ),
 
-     mainPanel("INSERT DYNAMIC SIMULATION OUTPUTS HERE")
+     mainPanel("INSERT DYNAMIC SIMULATION OUTPUTS HERE"
 
-    )
+    ) )
  }
 
 
@@ -180,6 +196,7 @@ ui_tabs[[3]] <- tabPanel("Conduct",
 ui <- fluidPage(
   do.call(tabsetPanel, c(ui_tabs))
 )
+
 
 
 
