@@ -17,6 +17,10 @@ ui <- page_navbar(
     nav_panel(title = "Simulation", p("fourth tab content")),
     nav_panel(title = "Conduct", p("fifth tab content")),
     nav_spacer(),
+    sidebar = sidebar(
+        tags$h2("Sidebar Title"),
+        tags$p("This is a sidebar content area where you can add additional information or controls.")
+    ),
 )
 
 # Define server logic
