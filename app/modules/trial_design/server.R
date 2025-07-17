@@ -58,6 +58,19 @@ server_all <- function(input, output, session) {
   n_sims <- reactive({as.numeric(input$n_sims_input)})
   n_scenarios <- reactive({as.numeric(input$n_scenarios_input)})
 
+  ## Writing code such that the start dose cannot be greater than the number of doses and the number of doses cannot be less than the start dose
+
+  # start_dose cannot be greater than the n_doses
+   observe({
+    updateNumericInput(session, "start_dose_inputt", max = input$n_doses_inputt)
+  })
+  
+  # n_doses cannot be less than the start_dose
+  observe({
+    # Update the min value of the maxValue input based on minValue
+    updateNumericInput(session, "n_doses_inputt", min = input$start_dose_inputt)
+  })
+
   ######################################## Configuration tab's simulation scenarios table code ########################################
 
   #Initialize empty data frame with specified columns
