@@ -43,3 +43,126 @@ parse_params <- function(params_str) {
 questions <- dummy_data
 
 #column_names <- reactive({sprintf("d(%d)", 1:input$n_doses_inputt)})
+
+############################################ Simulation Code ############################################
+
+### This is a rewrite of the basesim.r file as a set of functions that can be used reactively to simulate data.
+
+sim_tpt <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss, current_seed) {
+
+ ## Example inputs taken from the original basesim.r file
+ # n_doses <- 5
+ # ttl <- 0.55
+ # max_n <- 86
+ # start_dose <- 3
+ # current_seed <- 12345
+ # true_dlt_ss <- c(0.05,0.15,1/3,0.5,0.8) 
+
+ best_dose <- max(true_dlt_ss[true_dlt_ss<=ttl])
+ best_dose_level <- match(best_dose,true_dlt_ss)
+  
+ ## lists
+
+model <- list()
+sims <- list()
+
+selection <- list()
+selection_df <- list()
+selection_tab <- list()
+
+treated <- list()
+treatedpct <- list()
+treatedpct_df <- list()
+treatment_tab <- list()
+
+dist_accuracy <- list()
+mean_accuracy <- list()
+
+dist_overdose <- list()
+mean_overdose <- list()
+
+dist_length <- list()
+mean_length <- list()
+
+# Initialize list
+  model <- list()
+  
+  # Set parameters
+  tpt_allow_deesc <- TRUE
+  
+  # Create the model
+  model$tpt <- escalation::get_three_plus_three(num_doses = n_doses, 
+    allow_deescalate = tpt_allow_deesc, 
+    set.seed(current_seed)) %>% 
+    stop_at_n(n=max_n)
+
+  # run sims  
+
+sims$tpt <- model$tpt %>% 
+  escalation::simulate_trials(next_dose = start_dose, n_sims, true_dlt_ss, NULL)
+
+# find selection probs  
+
+selection$tpt <- sims$tpt %>% 
+  escalation::prob_recommend()
+
+# find no. treated at dose
+
+treated$tpt <- colSums(sims$tpt %>% 
+  escalation::n_at_dose())
+
+treatedpct$tpt <- treated$tpt / sum(treated$tpt)
+
+# coerce into selection table
+
+selection_df$tpt <- data.frame(selection$tpt)
+
+selection_tab$tpt <- rbind(t(selection_df$tpt), c(NA,true_dlt_ss))
+
+rownames(selection_tab$tpt) <- c("Proportion of Simulations Dose Selected by Model", "True Toxicity Probabilities")
+
+# coerce into treatment table
+
+treatedpct_df$tpt <- data.frame(treatedpct$tpt)
+
+treatment_tab$tpt <- rbind(t(treatedpct_df$tpt),true_dlt_ss)
+
+rownames(treatment_tab$tpt) <- c("Proportion of Patients Treated by Model", "True Toxicity Probabilities")
+
+# i) accuracy
+
+dist_accuracy$tpt <- recommended_dose(sims$tpt)
+mean_accuracy$tpt <- length(subset(dist_accuracy$tpt,dist_accuracy$tpt == best_dose_level)) / n_sims
+#hist(dist_accuracy$tpt,breaks=10)
+
+# ii) risk of overdosing
+
+dist_overdose$tpt <- num_tox(sims$tpt)
+mean_overdose$tpt <- mean(dist_overdose$tpt)
+#hist(dist_overdose$tpt,breaks=10)
+
+# iii) trial length
+
+dist_length$tpt <- sims$tpt %>% escalation::trial_duration()
+mean_length$tpt <- mean(dist_length$tpt)
+#hist(dist_length$tpt,breaks=10)
+
+output <- list(
+    sims = sims,
+    selection_df = selection_df$tpt,
+    selection_tab = selection_tab$tpt,
+    treatedpct = treatedpct$tpt,
+    treatedpct_df = treatedpct_df$tpt,
+    treatment_tab = treatment_tab$tpt,
+    dist_accuracy = dist_accuracy$tpt,
+    mean_accuracy = mean_accuracy$tpt,
+    dist_overdose = dist_overdose$tpt,
+    mean_overdose = mean_overdose$tpt,
+    dist_length = dist_length$tpt,
+    mean_length = mean_length$tpt
+  )
+  
+  return(output)
+}
+
+
