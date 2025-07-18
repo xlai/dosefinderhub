@@ -133,13 +133,16 @@ server_all <- function(input, output, session) {
   # Using the hardcoded values for now to make sure the table displays correctly. In the next commit, these values will be replaced with the desired ones.
   tpt_sim_table <- tpt_sim$treatment_tab
 
-  output$scen_sim_output <-renderDT(tpt_sim_table, 
+observeEvent(input$submit, {
+    output$scen_sim_output <- renderDT(tpt_sim_table, 
     options = list(
       pageLength = 5,
       autoWidth = TRUE,
       columnDefs = list(list(className = 'dt-center', targets = "_all"))
     )
   )
+  })
+
 
   ######################################## Conduct tab table code ########################################
 
