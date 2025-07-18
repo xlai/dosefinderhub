@@ -147,9 +147,9 @@ sim_tab_input_func <- function() {
 
      ),
 
-     mainPanel("INSERT DYNAMIC SIMULATION OUTPUTS HERE"
-
-    ) )
+     mainPanel( width = 7,
+      DT::DTOutput("scen_sim_output") # Ouputting the simulation results - for now, this is just the tpt table.
+     )) 
  }
 
 #CONDUCT TAB

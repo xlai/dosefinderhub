@@ -148,18 +148,16 @@ mean_length$tpt <- mean(dist_length$tpt)
 #hist(dist_length$tpt,breaks=10)
 
 output <- list(
-    sims = sims,
-    selection_df = selection_df$tpt,
-    selection_tab = selection_tab$tpt,
-    treatedpct = treatedpct$tpt,
-    treatedpct_df = treatedpct_df$tpt,
-    treatment_tab = treatment_tab$tpt,
-    dist_accuracy = dist_accuracy$tpt,
-    mean_accuracy = mean_accuracy$tpt,
-    dist_overdose = dist_overdose$tpt,
-    mean_overdose = mean_overdose$tpt,
-    dist_length = dist_length$tpt,
-    mean_length = mean_length$tpt
+    selection_df = selection_df$tpt, # % Times dose was selected as MTD
+    selection_tab = selection_tab$tpt, # % Times dose was selected as MTD
+    treatedpct_df = treatedpct_df$tpt, # % Treated at each dose 
+    treatment_tab = treatment_tab$tpt, # % Treated at each dose
+    dist_accuracy = dist_accuracy$tpt, # Distribution of accuracy
+    mean_accuracy = mean_accuracy$tpt, # Mean accuracy
+    dist_overdose = dist_overdose$tpt, # Distribution of overdose
+    mean_overdose = mean_overdose$tpt, # Mean overdose
+    dist_length = dist_length$tpt, # Distribution of trial length
+    mean_length = mean_length$tpt # Mean trial length
   )
   
   return(output)

@@ -127,6 +127,19 @@ server_all <- function(input, output, session) {
     )
   })
 
+ # Simulation outputs
+
+  tpt_sim <- sim_tpt(n_doses = 5, ttl = 1/3, max_n = 30, start_dose = 1, n_sims = 100, true_dlt_ss = c(0.05,0.15,1/3,0.5,0.8), current_seed = 12345)
+  # Using the hardcoded values for now to make sure the table displays correctly. In the next commit, these values will be replaced with the desired ones.
+  tpt_sim_table <- tpt_sim$treatment_tab
+
+  output$scen_sim_output <-renderDT(tpt_sim_table, 
+    options = list(
+      pageLength = 5,
+      autoWidth = TRUE,
+      columnDefs = list(list(className = 'dt-center', targets = "_all"))
+    )
+  )
 
   ######################################## Conduct tab table code ########################################
 
