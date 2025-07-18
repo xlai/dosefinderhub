@@ -73,46 +73,27 @@ server_all <- function(input, output, session) {
 
   ######################################## Configuration tab's simulation scenarios table code ########################################
 
-  #Initialize empty data frame with specified columns
-  reactive_table_data <- reactiveVal(data.frame(matrix(ncol = n_doses, nrow = 0, dimnames = list(NULL, column_names))))
   
-  observe({
-    #Capture current data
-    current_data <- reactive_table_data()
+  # Create a data frame with the specified number of rows and columns
+
+  doses_table <- reactive({
+    dimensions <- matrix(0, nrow = input$n_scenarios_input, ncol = input$n_doses_inputt)
+    dataframe <- data.frame(dimensions)
     
-    #Calculate rows to add or remove
-    target_rows <- as.numeric(input$n_scenarios_input)
-    current_rows <- nrow(current_data)
-    rows_to_add <- target_rows - current_rows
-    
-    #Update data based on the difference
-    if (rows_to_add > 0) {
-      new_rows <- data.frame(
-        Scenario = seq_len(rows_to_add) + current_rows,
-        matrix(0, ncol = n_doses, nrow = rows_to_add, dimnames = list(NULL, column_names))
-        )
-      updated_data <- rbind(current_data, new_rows)
-    } else {
-      updated_data <- head(current_data, target_rows)
-    }
-    
-    #Update reactive data frame
-    reactive_table_data(updated_data)
   })
 
-
-  output$table_output <- renderDT({
-    datatable(reactive_table_data(), editable = TRUE, options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"))), rownames = FALSE)
-      #scrollX = TRUE, scrollX="250px", paging = FALSE
-    #options = list(scrollX = TRUE, scrollX="250px", paging = FALSE) #Did not work
+  scenario_table <- reactive({
+    Scenario <- matrix(1:input$n_scenarios_input, nrow = input$n_scenarios_input, ncol = 1)
+    dataframe_row_1 <- data.frame(Scenario)
   })
-  
-  #observeEvent(input$table_output_cell_edit, {
-    #info <- input$table_output_cell_edit
-   # modified_data <- reactive_table_data()
-   # modified_data[info$row, (info$col + 1)] <- as.numeric(info$value)
-   # reactive_table_data(modified_data)
- # })
+
+  reactive_df <- reactive({cbind(scenario_table(), doses_table())})
+
+
+  output$test_df <- renderDT({
+    datatable(reactive_df(), editable = list(target = "cell", columns = c(2:(input$n_doses_inputt + 1))), options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"))), rownames = FALSE, colnames = c("Scenario", paste(rep("d", input$n_doses_inputt), as.list(as.character(1:input$n_doses_inputt)), sep = ""))) #, scrollX = TRUE, scrollX="250px", paging = FALSE
+  })
+
   
  # observeEvent(input$plot_button, {
     #Capture current data and transform for plotting
@@ -134,7 +115,6 @@ server_all <- function(input, output, session) {
    # })
  # })
   
-
   ######################################## Simulation tab server code ########################################
 
   new_n_scen <- reactive(as.numeric(input$n_scenarios_input))

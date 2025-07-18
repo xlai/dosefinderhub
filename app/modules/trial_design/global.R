@@ -3,7 +3,6 @@ library(DT)
 library(ggplot2)
 library(here)
 
-
 #DUMMY DATA MANIPULATION
 here::i_am("app/modules/trial_design/ui.R")
 data_directory_dummy <- here('app','data','dummy') #define relative path to your questionnaire app directory
@@ -43,4 +42,4 @@ parse_params <- function(params_str) {
 
 questions <- dummy_data
 
-column_names <- sprintf("d(%d)", 1:n_doses)
+#column_names <- reactive({sprintf("d(%d)", 1:input$n_doses_inputt)})
