@@ -6,7 +6,7 @@ library(htmltools)
 
 source("app_skeleton/pages/intro_ui.R")
 source("app_skeleton/pages/question_ui.R")
-source("app_skeleton/pages/results_ui.R")
+source("app_skeleton/pages/trial_design_ui.R")
 source("app_skeleton/pages/sim_ui.R")
 source("app_skeleton/pages/con_ui.R")
 
@@ -23,7 +23,7 @@ ui <- navbarPage(
     tabPanel("Questionnaire", question_ui("questionnaire")),
     
     # Results tab
-    tabPanel("Results", results_ui("results")),
+    tabPanel("Trial Design", trial_design_ui("trial_design")),
     
     # Simulation tab
     tabPanel("Simulation", sim_ui("simulation")),
@@ -36,10 +36,9 @@ ui <- navbarPage(
 server <- function(input, output, session){
     intro_server("intro"),
     question_server("questionnaire"),
-    results_server("results"),
+    trial_design_server("trial_design"),
     sim_server("simulation"),
     con_server("conduct")
-
 }
 
 shinyApp(ui, server)
