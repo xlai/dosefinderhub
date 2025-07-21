@@ -19,8 +19,6 @@ intro_ui <- function(id) {
 
 intro_server <- function(id) {
   moduleServer(id, function(input, output, session) {
-    observeEvent(input$start_button, {
-      updateTabsetPanel(session, "nav", selected = "Questionnaire")
-    })
+    # Placeholder logic
   })
 }
