@@ -205,3 +205,48 @@ o_sims
 # add error for number of doses in true_dlt_ss being different to num_doses!
 # or programmatically make it impossible? reactibve table input?
 
+############### Testing Simulation Ouputs ###################
+
+## Testing conditions approach:
+
+observeEvent(input$submit, {
+## List of possible selections - these will be TRUE or FALSE depending on the user's input
+# Model
+selected_tpt <- {"3+3" %in% input$simulation_design_selection_input}
+selected_crm <- {"crm" %in% input$simulation_design_selection_input}
+
+#Scenario (to do later)
+
+# Metric
+selected_participant <- {"% participants treated at dose" %in% input$metric_selection_input}
+selected_mtd <- {"% times dose was selected as MTD" %in% input$metric_selection_input}
+selected_accuracy <- {"Accuracy" %in% input$metric_selection_input}
+selected_duration <- {"Duration" %in% input$metric_selection_input}
+selected_overdose <- {"Overdosing" %in% input$metric_selection_input}
+
+tpt_sim <- sim_tpt(5, 0.55, 86, 3, 1000, c(0.05, 0.15, 1/3, 0.5, 0.8), 12345)
+# crm_sim <- sim_crm()
+
+datasets <- list(tpt_participant = tpt_sim$treated_tab,
+                 tpt_mtd = tpt_sim$selection_tab,
+                 tpt_accuracy = tpt_sim$mean_accuracy,
+                 tpt_duration = tpt_sim$mean_length,
+                 tpt_overdose = tpt_sim$mean_overdose#,
+                 # crm_participant = crm_sim$treated_tab,
+                 # crm_mtd = crm_sim$selection_tab,
+                 # crm_accuracy = crm_sim$mean_accuracy,
+                 # crm_duration = crm_sim$mean_length,
+                 # crm_overdose = crm_sim$mean_overdose
+                 )
+
+  model_options <- cbind(rep(selected_tpt, 5)#,
+                         #rep(selected_crm, 5)
+                         )
+  # scenario_options <- c() # To be implemented later
+  metric_options <- rep(c(selected_participant, selected_mtd, selected_accuracy, selected_duration, selected_overdose), 1) # replace with 2) when crm is added
+
+  condition_map <- as.data.frame(cbind(model_options, metric_options, datasets))
+  filtered_datasets <- df[condition_map$model_options == TRUE & condition_map$metric_options == TRUE, "datasets"]
+
+  output$scen_sim_output <- lappy(list(filtered_datasets, renderDT()))
+  })

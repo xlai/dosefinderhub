@@ -147,11 +147,11 @@ sim_tab_input_func <- function() {
 
      ),
 
-     mainPanel( width = 7,
-      DT::DTOutput("scen_sim_output") # Ouputting the simulation results - for now, this is just the tpt table.
-     )) 
- }
-
+     mainPanel(width = 7, uiOutput("tables_ui") # Ouputting the simulation results - for now, this is just the tpt tables.
+     )
+  )}
+       # Ouputting the simulation results - for now, this is just the tpt table.
+ 
 #CONDUCT TAB
 
 ##Conduct tab UI function

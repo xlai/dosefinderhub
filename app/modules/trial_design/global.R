@@ -2,6 +2,8 @@ library(shiny)
 library(DT)
 library(ggplot2)
 library(here)
+library(magrittr)
+library(escalation)
 
 #DUMMY DATA MANIPULATION
 here::i_am("app/modules/trial_design/ui.R")
@@ -148,9 +150,7 @@ mean_length$tpt <- mean(dist_length$tpt)
 #hist(dist_length$tpt,breaks=10)
 
 output <- list(
-    selection_df = selection_df$tpt, # % Times dose was selected as MTD
     selection_tab = selection_tab$tpt, # % Times dose was selected as MTD
-    treatedpct_df = treatedpct_df$tpt, # % Treated at each dose 
     treatment_tab = treatment_tab$tpt, # % Treated at each dose
     dist_accuracy = dist_accuracy$tpt, # Distribution of accuracy
     mean_accuracy = mean_accuracy$tpt, # Mean accuracy

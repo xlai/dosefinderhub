@@ -129,21 +129,47 @@ server_all <- function(input, output, session) {
 
  # Simulation outputs
 
-  tpt_sim <- sim_tpt(n_doses = 5, ttl = 1/3, max_n = 30, start_dose = 1, n_sims = 100, true_dlt_ss = c(0.05,0.15,1/3,0.5,0.8), current_seed = 12345)
+  observeEvent(input$submit, {
   # Using the hardcoded values for now to make sure the table displays correctly. In the next commit, these values will be replaced with the desired ones.
-  tpt_sim_table <- tpt_sim$treatment_tab
 
-observeEvent(input$submit, {
-    output$scen_sim_output <- renderDT(tpt_sim_table, 
-    options = list(
-      pageLength = 5,
-      autoWidth = TRUE,
-      columnDefs = list(list(className = 'dt-center', targets = "_all"))
-    )
-  )
+  tpt_sim <- sim_tpt(5, 0.55, 86, 3, 10, c(0.05, 0.15, 1/3, 0.5, 0.8), 12345)
+  tpt_modified_tab <- tpt_sim[-c(3,5,7)]
+
+  # Metric
+  selected_metric <- cbind(
+  selected_participant <- {"% participants treated at dose" %in% input$metric_selection_input},
+  selected_mtd <- {"% times dose was selected as MTD" %in% input$metric_selection_input},
+  selected_accuracy <- {"Accuracy" %in% input$metric_selection_input},
+  selected_duration <- {"Duration" %in% input$metric_selection_input},
+  selected_overdose <- {"Overdosing" %in% input$metric_selection_input})
+
+  tpt_to_display <- tpt_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
+  tpt_data_frames <- lapply(tpt_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
+  
+  n_data_frames <- length(tpt_data_frames)
+  if (n_data_frames == 0 ) {output$tables_ui <- NULL} # The case where nothing is entered
+  else {
+  table_names <- c(paste(rep("Table", n_data_frames), as.list(as.character(1:n_data_frames)), sep = " "))
+  names(tpt_data_frames) <- table_names
+
+  ## Using the names of the tables to render a UI with all the tables in it.
+   output$tables_ui <- renderUI({
+    lapply(names(tpt_data_frames), function(table_name) {
+      tagList(
+        h3(table_name), # Table title
+        tableOutput(outputId = paste0("table_", table_name)) # Table output
+      )
+    })
   })
-
-
+  
+  # Rendering each table
+  lapply(names(tpt_data_frames), function(table_name) {
+    output[[paste0("table_", table_name)]] <- renderTable({
+      tpt_data_frames[[table_name]]
+    })
+  })
+  }
+  })
   ######################################## Conduct tab table code ########################################
 
   conduct_reactive_table_data <- reactiveVal(data.frame(matrix(ncol = 3, nrow = 0, dimnames = list(NULL, c("Cohort number", "Dose level", "DLT?")))))
