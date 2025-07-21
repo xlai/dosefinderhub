@@ -138,11 +138,10 @@ server_all <- function(input, output, session) {
        tpt_modified_tab <- tpt_sim[-c(3,5,7)]
       }
     else {tpt_modified_tab <- NULL}
-  if ("crm" %in% input$simulation_design_selection_input)
-    #  {crm_sim <- sim_crm(5, 0.55, 86, 3, 10, c(0.05, 0.15, 1/3, 0.5, 0.8), 12345)
-    #   crm_modified_tab <- tpt_sim[-c(3,5,7)]
-    #  } 
-    {crm_sim <- NULL} # FOR NOW. This will be deleted in future commits.
+  if ("CRM" %in% input$simulation_design_selection_input)
+      {crm_sim <- sim_crm(3, 0.3, 10, 1, 10, c(0.1, 0.3, 0.6), c(0.11, 0.22, 0.56), 0.1, FALSE, FALSE, 0.11, 0.06, 45)
+       crm_modified_tab <- crm_sim[-c(3,5,7)]
+      } 
   else {crm_modified_tab <- NULL}
 
   # Metric
