@@ -20,12 +20,6 @@ trial_design_ui <- function(id) {
 
 trial_design_server <- function(id) {
   moduleServer(id, function(input, output, session) {
-    observeEvent(input$view_simulation, {
-      showModal(modalDialog(
-        title = "Simulation Viewer",
-        "This is where the simulation results will be displayed.",
-        easyClose = TRUE
-      ))
-    })
+    # Placeholder logic
   })
 }

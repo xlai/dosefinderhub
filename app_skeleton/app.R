@@ -34,10 +34,10 @@ ui <- navbarPage(
 
 # Define server logic
 server <- function(input, output, session){
-    intro_server("intro"),
-    question_server("questionnaire"),
-    trial_design_server("trial_design"),
-    sim_server("simulation"),
+    intro_server("intro")
+    question_server("questionnaire")
+    trial_design_server("trial_design")
+    sim_server("simulation")
     con_server("conduct")
 }
 
