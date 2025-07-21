@@ -132,8 +132,18 @@ server_all <- function(input, output, session) {
   observeEvent(input$submit, {
   # Using the hardcoded values for now to make sure the table displays correctly. In the next commit, these values will be replaced with the desired ones.
 
-  tpt_sim <- sim_tpt(5, 0.55, 86, 3, 10, c(0.05, 0.15, 1/3, 0.5, 0.8), 12345)
-  tpt_modified_tab <- tpt_sim[-c(3,5,7)]
+  # Design - only running simulations that are necessary to save time.
+  if ("3+3" %in% input$simulation_design_selection_input)
+      {tpt_sim <- sim_tpt(5, 0.55, 86, 3, 10, c(0.05, 0.15, 1/3, 0.5, 0.8), 12345)
+       tpt_modified_tab <- tpt_sim[-c(3,5,7)]
+      }
+    else {tpt_modified_tab <- NULL}
+  if ("crm" %in% input$simulation_design_selection_input)
+    #  {crm_sim <- sim_crm(5, 0.55, 86, 3, 10, c(0.05, 0.15, 1/3, 0.5, 0.8), 12345)
+    #   crm_modified_tab <- tpt_sim[-c(3,5,7)]
+    #  } 
+    {crm_sim <- NULL} # FOR NOW. This will be deleted in future commits.
+  else {crm_modified_tab <- NULL}
 
   # Metric
   selected_metric <- cbind(
@@ -146,15 +156,20 @@ server_all <- function(input, output, session) {
   tpt_to_display <- tpt_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
   tpt_data_frames <- lapply(tpt_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
   
-  n_data_frames <- length(tpt_data_frames)
+  crm_to_display <- crm_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
+  crm_data_frames <- lapply(crm_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
+
+  combined_data_frames <- cbind(tpt_data_frames, crm_data_frames)
+  n_data_frames <- length(combined_data_frames)
+
   if (n_data_frames == 0 ) {output$tables_ui <- NULL} # The case where nothing is entered
   else {
   table_names <- c(paste(rep("Table", n_data_frames), as.list(as.character(1:n_data_frames)), sep = " "))
-  names(tpt_data_frames) <- table_names
+  names(combined_data_frames) <- table_names
 
   ## Using the names of the tables to render a UI with all the tables in it.
    output$tables_ui <- renderUI({
-    lapply(names(tpt_data_frames), function(table_name) {
+    lapply(names(combined_data_frames), function(table_name) {
       tagList(
         h3(table_name), # Table title
         tableOutput(outputId = paste0("table_", table_name)) # Table output
@@ -163,9 +178,9 @@ server_all <- function(input, output, session) {
   })
   
   # Rendering each table
-  lapply(names(tpt_data_frames), function(table_name) {
+  lapply(names(combined_data_frames), function(table_name) {
     output[[paste0("table_", table_name)]] <- renderTable({
-      tpt_data_frames[[table_name]]
+      combined_data_frames[[table_name]]
     })
   })
   }
