@@ -1,171 +1,141 @@
 library(shiny)
 library(shiny.semantic)
-questions_df <- read.csv("q_database.csv")
+library(bslib)
+library(shinyjs)
+
+############HELPER FUNCTIONS########################################################
+parse_params <- function(params_str) {
+    if(is.null(params_str) || is.na(params_str) || params_str =="") return(list())
+    params <- strsplit(params_str, ";")[[1]]
+    param_list <- lapply(params, function(p) strsplit(p, "=")[[1]])
+    names(param_list) <- sapply(param_list, `[`, 1)
+    sapply(param_list, function(x) if (length(x) > 1) x[2] else NA)
+}
+
+generate_questions_UI <- function(current_question) {
+  params <- parse_params(current_question$params)
+
+  switch(current_question$q_type,
+    radioButtons = shiny::radioButtons(inputId = current_question$q_variable,
+                                       label = current_question$q_text,
+                                       choices = strsplit(params[["choices"]], ",")[[1]],
+                                       width = "500"),
+    numeric = shiny::numericInput(inputId = current_question$q_variable,
+                                  label = current_question$q_text,
+                                  min = as.numeric(params[["min"]]),
+                                  value = 0,
+                                  width = "500"),
+    slider = shiny::sliderInput(inputId = current_question$q_variable,
+                                label = current_question$q_text,
+                                min = as.numeric(params[["min"]]),
+                                max = as.numeric(params[["max"]]),
+                                value = as.numeric(params[["min"]]),
+                                width = "500"),
+    text = shiny::textInput(inputId = current_question$q_variable,
+                            label = current_question$q_text,
+                            placeholder = "i.e. 0.05, 0.15, 0.3, 0.7",
+                            value = "", width = "500"))
+}
+
+generate_recommendation <- function(x){
+    if (x > 0 & x < 1 / 3) {
+        "First choice is CRM, second choice is 3+3, third choice is BOIN."
+    } else if (x > 1 / 3 & x < 2 / 3) {
+        "First choice is 3+3, second choice is CRM, third choice is BOIN."
+    } else {
+        "First choice is BOIN, second choice is 3+3, third choice is CRM."
+    }
+}
+
+questions <- read.csv("app_skeleton/Inputs/questions.csv", stringsAsFactors = FALSE)
 
 #######UI######################################################
 question_ui <- function(id) {
   ns <- NS(id)
-
-  page_sidebar(
-    sidebar = sidebar(
-      h4("Navigation"),
-      div(style = "display: flex; flex-direction: column; gap: 10px;",
-        actionButton(ns("prev_button"), "Previous"),
-        uiOutput(ns("next_or_recommend_button")),
-        actionButton(ns("reset_button"), "Reset")
-      )
+  sidebarLayout(
+    sidebarPanel(
+        fileInput(ns("file_upload"), "Upload Previous Responses:", accept = c(".csv", ".rds")),
+        downloadButton(ns("save_button"), "Save Responses"),
+        actionButton(ns("reset"), "Reset"),
+        uiOutput(ns("progress_bar"))
     ),
-    
  # Main content
     mainPanel(
-      h4("Please answer the questions below to get 
-         recommended trial designs tailored to your
-         needs, or upload previously saved responses."),
-
-      fluidRow(
-        column(6,
-          fileInput(ns("file_upload"), "Upload Previous Responses:",
-                    accept = c(".csv", ".rds"))
-        ),
-        column(6,
-          downloadButton(ns("save_button"), "Save Responses")
-        )
-      ),
-
-      div(class = "center-contents text-center",
-          uiOutput(ns("questionsUI"), style = "font-size: 18px;")
-      ),
-
-      tags$hr(),
-
-      fluidRow(
-        column(8, uiOutput(ns("progress_bar")))
-      ),
-
-      conditionalPanel(
-        condition = "output.showRecommendation === true",
-        fluidRow(
-          textOutput(ns("recommendationText"))
-        )
-      )
+        h4("Please answer the following questions:"),
+        uiOutput(ns("questions_ui")),
+        actionButton(ns("next_or_recommendation_button"), "Next/Generate Recommendation")
     )
   )
 }
 
 
 ######SERVER########################################################################
-question_server <- function(id, questions_df) {
+question_server <- function(id) {
   moduleServer(id, function(input, output, session) {
-    ns <- session$ns
+    current_question <- reactiveVal(1)
 
-    current_index <- reactiveVal(1)
-    showRecommendation <- reactiveVal(FALSE)
-
-    # Load uploaded responses
-    observe({
-      in_file <- input$file_upload
-      if (is.null(in_file)) return(NULL)
-
-      ext <- tools::file_ext(in_file$datapath)
-      user_responses <- switch(ext,
-        csv = read.csv(in_file$datapath),
-        rds = readRDS(in_file$datapath),
-        NULL
-      )
-
-      if (!is.null(user_responses)) {
-        for (i in seq_len(nrow(user_responses))) {
-          updateNumericInput(session,
-            inputId = user_responses$inputId[i],
-            value = user_responses$value[i]
-          )
-        }
+    observeEvent(input$file_upload, {
+      req(input$file_upload)
+      ext <- tools::file_ext(input$file_upload$datapath)
+      user_responses <- if (ext == "csv") read.csv(input$file_upload$datapath) else readRDS(input$file_upload$datapath)
+      for (i in seq_len(nrow(user_responses))) {
+        updateTextInput(session, user_responses$inputId[i], value = user_responses$value[i])
       }
     })
 
-    # Render current question
     output$questionsUI <- renderUI({
-      current_question <- questions_df[current_index(), ]
-      generate_UI(current_question)
+      req(current_question() <= nrow(questions))
+      generate_questions_UI(questions[current_question(), ])
     })
 
-    # Progress bar
     output$progress_bar <- renderUI({
-      progress_value <- (current_index() / nrow(questions_df)) * 100
-      div(style = "width: 100%; display: flex; align-items: center;",
-        div(id = "progressBar", class = "progress", style = "height: 20px; width: 300px;",
-          div(class = "progress-bar", role = "progressbar",
-              `aria-valuenow` = progress_value, `aria-valuemin` = "0",
-              `aria-valuemax` = "100", style = sprintf("width: %.0f%%;", progress_value))
-        ),
-        tags$span(style = "margin-left: 10px;",
-                  sprintf("%s/%s questions answered", current_index(), nrow(questions_df)))
+      progress_value <- (current_question() / nrow(questions)) * 100
+      tagList(
+        p(sprintf("Progress: %.0f%%", progress_value)),
+        div(style = "background-color:rgb(255, 255, 255); height: 20px; width: 100%;",
+            div(style = sprintf("background-color:rgb(40, 206, 140); width: %s%%; height: 100%%;", progress_value)))
       )
     })
 
-    # Navigation
-    observeEvent(input$prev_button, {
-      if (current_index() > 1) current_index(current_index() - 1)
-    })
-
+    observeEvent(input$reset_button, { current_question(1) })
     observeEvent(input$next_button, {
-      if (current_index() < nrow(questions_df)) current_index(current_index() + 1)
+      if (current_question() < nrow(questions)) current_question(current_question() + 1)
     })
 
-    observeEvent(input$reset_button, {
-      current_index(1)
-      showRecommendation(FALSE)
-    })
-
-    # Conditional button rendering
     output$next_or_recommend_button <- renderUI({
-      if (current_index() < nrow(questions_df)) {
-        actionButton(ns("next_button"), "Next")
-      } else if (!showRecommendation()) {
-        actionButton(ns("generate_recommendation"), "Generate!")
+      if (current_question() < nrow(questions)) {
+        actionButton(session$ns("next_button"), "Next")
       } else {
-        NULL
+        actionButton(session$ns("generate_recommendation"), "Generate Recommendation")
       }
     })
 
-    # Recommendation logic
-    observeEvent(input$generate_recommendation, {
-      showRecommendation(TRUE)
-    })
-
-    output$recommendationText <- renderText({
-      if (showRecommendation()) {
-        # Collect numeric inputs
-        numeric_vars <- questions_df$q_variable[questions_df$q_type %in% c("numeric", "slider")]
-        numeric_values <- sapply(numeric_vars, function(x) as.numeric(input[[x]]))
-        numeric_values <- numeric_values[!is.na(numeric_values)]
-
-        # Compute score (mean of numeric inputs)
-        score <- if (length(numeric_values) > 0) mean(numeric_values) else 0.5
-
-        # Generate recommendation
-        generate_recommendation(score)
-      } else {
-        NULL
-      }
-    })
-
-    output$showRecommendation <- reactive({
-      showRecommendation()
-    })
-    outputOptions(output, "showRecommendation", suspendWhenHidden = FALSE)
-
-    # Save responses
     output$save_button <- downloadHandler(
-      filename = function() {
-        paste0("user_responses-", Sys.Date(), ".csv")
-      },
+      filename = function() paste("responses-", Sys.Date(), ".csv", sep=""),
       content = function(file) {
-        inputs_to_save <- questions_df$q_variable
-        inputs <- sapply(inputs_to_save, function(x) input[[x]])
-        inputs_data_frame <- data.frame(inputId = inputs_to_save, value = inputs)
-        write.csv(inputs_data_frame, file, row.names = FALSE)
+        input_ids <- questions$q_variable
+        values <- sapply(input_ids, function(x) input[[x]])
+        df <- data.frame(inputId = input_ids, value = values)
+        write.csv(df, file, row.names = FALSE)
       }
     )
+
+    observeEvent(input$generate_recommendation, {
+      showModal(modalDialog(
+        title = "Your Recommendation",
+        tabsetPanel(
+          tabPanel("Summary", p({
+            numeric_ids <- questions$q_variable[questions$q_type == "numeric"]
+            values <- sapply(numeric_ids, function(var) as.numeric(input[[var]]))
+            x <- mean(values, na.rm = TRUE) / 10
+            generate_recommendation(x)
+          })),
+          tabPanel("CRM", p("CRM Pros: Adaptive, efficient\nCRM Cons: Complex, prior-dependent")),
+          tabPanel("3+3", p("3+3 Pros: Simple, standard\n3+3 Cons: Statistically inefficient, rigid")),
+          tabPanel("BOIN", p("BOIN Pros: Balanced, less prior-dependent\nBOIN Cons: Less intuitive to clinicians"))
+        ),
+        easyClose = TRUE, size = "l"
+      ))
+    })
   })
 }
