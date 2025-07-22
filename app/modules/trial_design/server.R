@@ -76,25 +76,35 @@ server_all <- function(input, output, session) {
   
   # Create a data frame with the specified number of rows and columns
 
-  doses_table <- reactive({
-    dimensions <- matrix(0, nrow = input$n_scenarios_input, ncol = input$n_doses_inputt)
-    dataframe <- data.frame(dimensions)
-    
-  })
+ reactive_df <- reactiveVal() # initalising a reactive value to store the data frame
 
-  scenario_table <- reactive({
-    Scenario <- matrix(1:input$n_scenarios_input, nrow = input$n_scenarios_input, ncol = 1)
-    dataframe_row_1 <- data.frame(Scenario)
-  })
+  observeEvent({input$n_scenarios_input; input$n_doses_inputt}, {
+   
+  dimensions <- matrix(0, nrow = input$n_scenarios_input, ncol = input$n_doses_inputt)
+  colnames(dimensions) <- paste("d", 1:input$n_doses_inputt, sep = "")
+  dataframe <- data.frame(dimensions) # What was previously doses_table
 
-  reactive_df <- reactive({cbind(scenario_table(), doses_table())})
-
-
-  output$test_df <- renderDT({
-    datatable(reactive_df(), editable = list(target = "cell", columns = c(2:(input$n_doses_inputt + 1))), options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"))), rownames = FALSE, colnames = c("Scenario", paste(rep("d", input$n_doses_inputt), as.list(as.character(1:input$n_doses_inputt)), sep = ""))) #, scrollX = TRUE, scrollX="250px", paging = FALSE
-  })
-
+  Scenario <- matrix(1:input$n_scenarios_input, nrow = input$n_scenarios_input, ncol = 1)
   
+  dataframe_row_1 <- data.frame(Scenario) # What was previously scenarios_table
+
+  cbind <- cbind(dataframe_row_1, dataframe)
+  reactive_df(cbind) # Updating the reactive value with the new data frame
+  })
+  
+  output$test_df <- renderDT({
+    datatable(reactive_df(), editable = TRUE, rownames = FALSE) #, scrollX = TRUE, scrollX="250px", paging = FALSE
+  })
+  
+  # Observe the cell edits in the datatable
+  observeEvent(input$test_df_cell_edit, {
+    info <- input$test_df_cell_edit
+
+    modified_data <- reactive_df()
+    modified_data[info$row, info$col + 1] <- DT::coerceValue(info$value, modified_data[info$row, info$col]) # +1 is here to counterract the movement of edited data.
+    reactive_df(modified_data)
+  })
+
  # observeEvent(input$plot_button, {
     #Capture current data and transform for plotting
   #  current_data <- reactive_table_data()
