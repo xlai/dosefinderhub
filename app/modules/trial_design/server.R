@@ -76,7 +76,7 @@ server_all <- function(input, output, session) {
   
   # Create a data frame with the specified number of rows and columns
 
- reactive_df <- reactiveVal() # initalising a reactive value to store the data frame
+  reactive_df <- reactiveVal() # initalising a reactive value to store the data frame
 
   observeEvent({input$n_scenarios_input; input$n_doses_inputt}, {
    
@@ -105,6 +105,15 @@ server_all <- function(input, output, session) {
     reactive_df(modified_data)
   })
 
+  true_dlts <- reactive({
+    reactive_df()[, -1] # Exclude the first column (Scenario)
+  })
+  
+
+  output$table_output <- DT::renderDT({
+    datatable(true_dlts(), editable = TRUE, rownames = FALSE, options = list(scrollX = TRUE, scrollY = "250px", paging = FALSE))
+  })
+  
  # observeEvent(input$plot_button, {
     #Capture current data and transform for plotting
   #  current_data <- reactive_table_data()
@@ -140,22 +149,19 @@ server_all <- function(input, output, session) {
  # Simulation outputs
 
   observeEvent(input$submit, {
-  # Using the hardcoded values for now to make sure the table displays correctly. In the next commit, these values will be replaced with the desired ones.
-  ## FOR THIS TO WORK, THE NUMBER OF DOSES MUST BE 5 (due to hardcoded values)
-  
+
     # Adding in Scenarios. I am going to cap the possible number of Scenarios to 3 (this can be changed later).
-  true_dlts <- cbind(c(0.05, 0.15, 1/3, 0.5, 0.8),
-                     c(0.1, 0.2, 0.3, 0.4, 0.5),
-                     c(0.23, 0.45, 2/3, 0.87, 0.93)) # Using hardcoded values for now.
-  
+
   selected_scenarios <- cbind(
     scen1 <- {"Scenario 1" %in% input$scen_output_input},
     scen2 <- {"Scenario 2" %in% input$scen_output_input},
     scen3 <- {"Scenario 3" %in% input$scen_output_input}
   )
-
-  used_true_dlts <- true_dlts[, selected_scenarios]
-  n_scen <- length(used_true_dlts)/n_dosess()
+  #print(true_dlts())
+  used_true_dlts <- true_dlts()[selected_scenarios, ] # Scenarios are rows!
+  #print(used_true_dlts)
+  n_scen <- nrow(used_true_dlts)
+  #print(n_scen)
   combined_list <- vector("list", n_scen) # initialising for use later
 
    # Metric - putting it outside of the for loop so only one list is created.
@@ -170,7 +176,8 @@ server_all <- function(input, output, session) {
 
   # Design - only running simulations that are necessary to save time.
   if ("3+3" %in% input$simulation_design_selection_input)
-      {tpt_sim <- sim_tpt(5, 0.55, 86, 3, 10, data.frame(used_true_dlts)[, j], 12345)
+      { print(unlist(used_true_dlts[j, ]))
+        tpt_sim <- sim_tpt(n_dosess(), ttl(), max_size(), start_dose(), n_sims(), unlist(used_true_dlts[j, ]), 12345)
        tpt_modified_tab <- tpt_sim[-c(3,5,7)]
       } else {tpt_modified_tab <- NULL}
   if ("CRM" %in% input$simulation_design_selection_input)
