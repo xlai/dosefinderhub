@@ -5,15 +5,15 @@ library(shiny.semantic)
 trial_design_ui <- function(id) {
   ns <- NS(id)
   page_sidebar(
-    main = div(
-      h3("Trial Design Results"),
-      p("This section displays the results of your questionnaire and the recommended trial design."),
-      p("Click 'View Simulation' to see how the design performs under different scenarios.")
-    ),
+    tabPanel(
+        h3("Trial Design"),
+        p("This section allows you to design your trial based on the inputs provided in the questionnaire."),
+        p("You can specify the trial parameters, including dose levels, sample size, and other relevant details."),
+      ),
     sidebar = sidebar(
-      h4("Results"),
-      p("Here are the results based on your inputs."),
-      actionButton(ns("view_simulation"), "View Simulation")
+        h4("Trial Design Parameters"),
+        p("Adjust the parameters for your trial design below:")
+
     )
   )
 }
