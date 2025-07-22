@@ -76,7 +76,7 @@ non_specific_column_func <- function() {
   separator <- "___________________________________________"
   text <- "SIMULATION PARAMETERS"
   n_sims_input <- numericInput("n_sims_input", "How many simulations would you like to run per design per scenario?", value = 10)
-  n_scenarios_input <- numericInput("n_scenarios_input", "How many scenarios would you like to simulate?", min = 1, value = 3)
+  n_scenarios_input <- numericInput("n_scenarios_input", "How many scenarios would you like to simulate?", min = 1, max = 3, value = 3) # Capping the number of scenarios at 3 (for now)
   text2 <- "Please fill out each scenario's and each dose's 'True' Dose Limiting Toxicity probabilities in the table below:"
   table_output <- DT::DTOutput("table_output")
   test_df_table <- DT::DTOutput("test_df")

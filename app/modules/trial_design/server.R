@@ -131,20 +131,24 @@ server_all <- function(input, output, session) {
 
   observeEvent(input$submit, {
   # Using the hardcoded values for now to make sure the table displays correctly. In the next commit, these values will be replaced with the desired ones.
+  ## FOR THIS TO WORK, THE NUMBER OF DOSES MUST BE 5 (due to hardcoded values)
+  
+    # Adding in Scenarios. I am going to cap the possible number of Scenarios to 3 (this can be changed later).
+  true_dlts <- cbind(c(0.05, 0.15, 1/3, 0.5, 0.8),
+                     c(0.1, 0.2, 0.3, 0.4, 0.5),
+                     c(0.23, 0.45, 2/3, 0.87, 0.93)) # Using hardcoded values for now.
+  
+  selected_scenarios <- cbind(
+    scen1 <- {"Scenario 1" %in% input$scen_output_input},
+    scen2 <- {"Scenario 2" %in% input$scen_output_input},
+    scen3 <- {"Scenario 3" %in% input$scen_output_input}
+  )
 
-  # Design - only running simulations that are necessary to save time.
-  if ("3+3" %in% input$simulation_design_selection_input)
-      {tpt_sim <- sim_tpt(5, 0.55, 86, 3, 10, c(0.05, 0.15, 1/3, 0.5, 0.8), 12345)
-       tpt_modified_tab <- tpt_sim[-c(3,5,7)]
-      }
-    else {tpt_modified_tab <- NULL}
-  if ("CRM" %in% input$simulation_design_selection_input)
-      {crm_sim <- sim_crm(3, 0.3, 10, 1, 10, c(0.1, 0.3, 0.6), c(0.11, 0.22, 0.56), 0.1, FALSE, FALSE, 0.11, 0.06, 45)
-       crm_modified_tab <- crm_sim[-c(3,5,7)]
-      } 
-  else {crm_modified_tab <- NULL}
+  used_true_dlts <- true_dlts[, selected_scenarios]
+  n_scen <- length(used_true_dlts)/n_dosess()
+  combined_list <- vector("list", n_scen) # initialising for use later
 
-  # Metric
+   # Metric - putting it outside of the for loop so only one list is created.
   selected_metric <- cbind(
   selected_participant <- {"% participants treated at dose" %in% input$metric_selection_input},
   selected_mtd <- {"% times dose was selected as MTD" %in% input$metric_selection_input},
@@ -152,17 +156,33 @@ server_all <- function(input, output, session) {
   selected_duration <- {"Duration" %in% input$metric_selection_input},
   selected_overdose <- {"Overdosing" %in% input$metric_selection_input})
 
+  if (n_scen == 0) {tables_ui <- NULL} else { for (j in 1:n_scen) {
+
+  # Design - only running simulations that are necessary to save time.
+  if ("3+3" %in% input$simulation_design_selection_input)
+      {tpt_sim <- sim_tpt(5, 0.55, 86, 3, 10, data.frame(used_true_dlts)[, j], 12345)
+       tpt_modified_tab <- tpt_sim[-c(3,5,7)]
+      } else {tpt_modified_tab <- NULL}
+  if ("CRM" %in% input$simulation_design_selection_input)
+      {crm_sim <- sim_crm(3, 0.3, 10, 1, 10, c(0,1,0.2,0.3), c(0.11, 0.22, 0.56), 0.1, FALSE, FALSE, 0.11, 0.06, 45)
+       crm_modified_tab <- crm_sim[-c(3,5,7)]
+      } else {crm_modified_tab <- NULL}
+
   tpt_to_display <- tpt_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
   tpt_data_frames <- lapply(tpt_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
   
   crm_to_display <- crm_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
   crm_data_frames <- lapply(crm_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
 
-  combined_data_frames <- cbind(tpt_data_frames, crm_data_frames)
+  combined_list[[j]]  <- cbind(tpt_data_frames, crm_data_frames)
+  
+  } # for loop end
+
+  combined_data_frames <- do.call(c, combined_list) 
   n_data_frames <- length(combined_data_frames)
 
-  if (n_data_frames == 0 ) {output$tables_ui <- NULL} # The case where nothing is entered
-  else {
+  if (n_data_frames == 0) {output$tables_ui <- NULL  # The case where nothing is entered
+  } else {
   table_names <- c(paste(rep("Table", n_data_frames), as.list(as.character(1:n_data_frames)), sep = " "))
   names(combined_data_frames) <- table_names
 
@@ -180,10 +200,11 @@ server_all <- function(input, output, session) {
   lapply(names(combined_data_frames), function(table_name) {
     output[[paste0("table_", table_name)]] <- renderTable({
       combined_data_frames[[table_name]]
-    })
-  })
-  }
-  })
+    }) 
+  }) # lapply
+  } # else (after for loop)
+  } # else (before for loop)
+  }) # observe function
   ######################################## Conduct tab table code ########################################
 
   conduct_reactive_table_data <- reactiveVal(data.frame(matrix(ncol = 3, nrow = 0, dimnames = list(NULL, c("Cohort number", "Dose level", "DLT?")))))
