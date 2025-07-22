@@ -9,9 +9,8 @@ intro_ui <- function(id) {
         p("This hub provides a user-friendly interface to guide you through the process of determining the appropriate trial design based on your inputs."),
       ),
       sidebar = sidebar(
-        h4("Welcome"),
+        h4("Table of Contents"),
         accordion_filters <- accordion(
-        title = "Table of Contents",
         id = "nav_id",
         accordion_panel(
             "Section 1", icon = icon("menu-app"),
