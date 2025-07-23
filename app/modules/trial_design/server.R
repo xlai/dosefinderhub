@@ -74,7 +74,7 @@ server_all <- function(input, output, session) {
   stop_tox_y_crm <- reactive({as.numeric(input$stop_tox_y_input)})  
 
   # 3+3
-  skip_tpt <- reactive({input$skip_tpt_input}) # This isn't used in the sim_tpt function
+  skip_tpt <- reactive({as.logical(input$skip_tpt_input)}) 
 
   ## Writing code such that the start dose cannot be greater than the number of doses and the number of doses cannot be less than the start dose
 
@@ -195,8 +195,8 @@ server_all <- function(input, output, session) {
 
   # Design - only running simulations that are necessary to save time.
   if ("3+3" %in% input$simulation_design_selection_input)
-      { print(unlist(used_true_dlts[j, ]))
-        tpt_sim <- sim_tpt(n_dosess(), ttl(), max_size(), start_dose(), n_sims(), unlist(used_true_dlts[j, ]), 12345)
+      { #print(unlist(used_true_dlts[j, ]))
+        tpt_sim <- sim_tpt(n_dosess(), ttl(), max_size(), start_dose(), n_sims(), unlist(used_true_dlts[j, ]), skip_tpt(), 12345)
        tpt_modified_tab <- tpt_sim[-c(3,5,7)]
       } else {tpt_modified_tab <- NULL}
   if ("CRM" %in% input$simulation_design_selection_input)

@@ -78,12 +78,13 @@ non_specific_column_func <- function() {
   n_sims_input <- numericInput("n_sims_input", "How many simulations would you like to run per design per scenario?", value = 10)
   n_scenarios_input <- numericInput("n_scenarios_input", "How many scenarios would you like to simulate?", min = 1, max = 3, value = 3) # Capping the number of scenarios at 3 (for now)
   text2 <- "Please fill out each scenario's and each dose's 'True' Dose Limiting Toxicity probabilities in the table below:"
-  table_output <- DT::DTOutput("table_output")
+  table_output <- DT::DTOutput("table_output") # This is to test the table output used for the simulations tab.
   test_df_table <- DT::DTOutput("test_df")
   #plot_button <- actionButton("plot_button", label = "Test plot")
   #plot <- plotOutput("plot")
   return <- list(upload_button, download_button, separator, title, display_button, conditional_non_specific_ui_inputs,
-  separator, text, n_sims_input, n_scenarios_input, text2, table_output, test_df_table)
+  separator, text, n_sims_input, n_scenarios_input, text2, #table_output, 
+  test_df_table)
 }
 
 ##Defining Configurations tab columns

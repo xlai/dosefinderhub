@@ -51,7 +51,7 @@ questions <- dummy_data
 
 ### This is a rewrite of the basesim.r file as a set of functions that can be used reactively to simulate data.
 
-sim_tpt <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss, current_seed) {
+sim_tpt <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss, skip_deesc, current_seed) {
 
  ## Example inputs taken from the original basesim.r file
  # n_doses <- 5
@@ -91,7 +91,7 @@ mean_length <- list()
   model <- list()
   
   # Set parameters
-  tpt_allow_deesc <- TRUE
+  tpt_allow_deesc <- skip_deesc
   
   # Create the model
   model$tpt <- escalation::get_three_plus_three(num_doses = n_doses, 
