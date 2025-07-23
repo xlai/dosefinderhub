@@ -182,6 +182,7 @@ server_all <- function(input, output, session) {
   n_scen <- nrow(used_true_dlts)
   #print(n_scen)
   combined_list <- vector("list", n_scen) # initialising for use later
+  title_list <- vector("list", n_scen) # initialising for use later
 
    # Metric - putting it outside of the for loop so only one list is created.
   selected_metric <- cbind(
@@ -206,18 +207,44 @@ server_all <- function(input, output, session) {
       } else {crm_modified_tab <- NULL}
 
   tpt_to_display <- tpt_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
-  tpt_data_frames <- lapply(tpt_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
-  
   crm_to_display <- crm_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
+  
+  tpt_title <- as.character(rep("3+3 Simulation for Scenario ", 5))
+  crm_title <- as.character(rep("CRM Simulation for Scenario ", 5))
+  scenario_number <- as.character(rep(j, 5))
+  metric_names <- as.character(c("- % Treated at each dose", " - % Times dose was selected as MTD",  " - Mean accuracy", " - Mean trial length", " - Mean overdose"))
+
+  if ("3+3" %in% input$simulation_design_selection_input) {
+  full_tpt_titles <- paste(as.character(tpt_title), as.character(scenario_number), as.character(metric_names))
+  } else {full_tpt_titles <- NULL}
+
+  if("CRM" %in% input$simulation_design_selection_input) {
+  full_crm_titles <- paste(as.character(crm_title), as.character(scenario_number), as.character(metric_names))
+  } else {full_crm_titles <- NULL}
+
+  #print(full_tpt_titles)
+  used_tpt_titles <- full_tpt_titles[c(which(selected_metric == TRUE))] # A list of titles we want to display
+  
+  #print(used_tpt_titles)
+
+  used_crm_titles <- full_crm_titles[c(which(selected_metric == TRUE))] # A list of titles we want to display
+  #print(used_crm_titles)
+
+  tpt_data_frames <- lapply(tpt_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
   crm_data_frames <- lapply(crm_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
 
   combined_list[[j]]  <- cbind(tpt_data_frames, crm_data_frames)
-  
+  cbind_titles <- cbind(used_tpt_titles, used_crm_titles)
+  title_list[[j]] <- unname(unlist(cbind_titles))
+
   } # for loop end
 
   combined_data_frames <- do.call(c, combined_list) 
+  combined_titles <- do.call(c, title_list) 
+ print(combined_titles)
   n_data_frames <- length(combined_data_frames)
 
+  # Using generic table names to render the UI with all the tables in it.
   if (n_data_frames == 0) {output$tables_ui <- NULL  # The case where nothing is entered
   } else {
   table_names <- c(paste(rep("Table", n_data_frames), as.list(as.character(1:n_data_frames)), sep = " "))
@@ -227,7 +254,8 @@ server_all <- function(input, output, session) {
    output$tables_ui <- renderUI({
     lapply(names(combined_data_frames), function(table_name) {
       tagList(
-        h3(table_name), # Table title
+        table_number <- as.numeric(gsub("Table ", "", table_name)), # Extracting the number from the table name
+        h3(combined_titles[table_number]), # Title for each table
         tableOutput(outputId = paste0("table_", table_name)) # Table output
       )
     })
@@ -238,7 +266,9 @@ server_all <- function(input, output, session) {
     output[[paste0("table_", table_name)]] <- renderTable({
       combined_data_frames[[table_name]]
     }) 
-  }) # lapply
+  }) 
+
+  
   } # else (after for loop)
   } # else (before for loop)
   }) # observe function
