@@ -61,9 +61,9 @@ server_all <- function(input, output, session) {
 
   # Model-specific variables from configuration tab
   # CRM
-  skip_esc_crm <- reactive({input$skip_esc_crm_input})
-  skip_deesc_crm <- reactive({input$skip_deesc_crm_input})
-  above_target_crm <- reactive({input$above_target_input}) # This isn't used in the sim_crm function
+  skip_esc_crm <- reactive({as.logical(input$skip_esc_crm_input)})
+  skip_deesc_crm <- reactive({as.logical(input$skip_deesc_crm_input)})
+  above_target_crm <- reactive({as.logical(input$above_target_input)}) # This isn't used in the sim_crm function
   prior_var_crm <- reactive({as.numeric(input$prior_var_input)})
   stop_n_mtd_crm <- reactive({as.numeric(input$stop_n_mtd_input)})
   skeleton_crm <- reactive({
@@ -200,7 +200,8 @@ server_all <- function(input, output, session) {
        tpt_modified_tab <- tpt_sim[-c(3,5,7)]
       } else {tpt_modified_tab <- NULL}
   if ("CRM" %in% input$simulation_design_selection_input)
-      {crm_sim <- sim_crm(3, 0.3, 10, 1, 10, c(0,1,0.2,0.3), c(0.11, 0.22, 0.56), 0.1, FALSE, FALSE, 0.11, 0.06, 45)
+      {
+        crm_sim <- sim_crm(n_dosess(), ttl(), max_size(), start_dose(), n_sims(), unlist(used_true_dlts[j, ]), skeleton_crm(), prior_var_crm(), skip_esc_crm(), skip_deesc_crm(), stop_tox_x_crm(), stop_tox_y_crm(), stop_n_mtd_crm())
        crm_modified_tab <- crm_sim[-c(3,5,7)]
       } else {crm_modified_tab <- NULL}
 

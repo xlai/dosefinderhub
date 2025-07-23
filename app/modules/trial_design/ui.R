@@ -52,7 +52,7 @@ specific_ui_inputs <- lapply(ranking, function(method_current) {
 
 ##Defining non-design-specific + simulation parameters column inputs function
 non_specific_column_func <- function() {
-  n_doses_output <- numericInput("n_doses_inputt", "How many dose levels are being tested?", min = 1, value = "3")
+  n_doses_output <- numericInput("n_doses_inputt", "How many dose levels are being tested?", min = 1, value = "5")
   ttl_output <- numericInput("ttl_inputt", "What is the target toxicity level for this trial, as a decimal?", min = 0, max = 1, value = "0.3")
   max_size_output <- numericInput("max_size_inputt", "What is the maximum sample size for this trial?", min = 1, value = "30")
   start_dose_output <- numericInput("start_dose_inputt", "What is the starting dose level?", min = 1, value = "1")
@@ -106,12 +106,12 @@ select_specific_columns <- function() {
   # return(specific_columns)
 
 skip_esc_crm_input <- radioButtons("skip_esc_crm_input","Would you like to be able to skip doses when escalating?",
-choices = c("Yes", "No"), selected = "No", inline = TRUE)
+choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE)
 skip_deesc_crm_input <- radioButtons("skip_deesc_crm_input","Would you like to be able to skip doses when de-escalating?",
-choices = c("Yes", "No"), selected = "Yes", inline = TRUE)
+choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 above_target_input <- radioButtons("above_target_input",
 "Do you want to prevent escalation of doses if the overall observed DLT rate at the current dose level is above the target DLT rate?",
-choices = c("Yes", "No"), selected = "Yes", inline = TRUE)
+choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 prior_var_input <- numericInput("prior_var_input", "What is the estimate of the prior variance?", min = 0, value = 0.1)
 stop_n_mtd_input <- numericInput("stop_n_mtd_input", "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = 24)
 skeleton_input <- textInput("skeleton_input", "What are the prior estimates of the DLT rates at each dose? Please make this an increasing list and separate each value with a comma.", value = "0.108321683015674,0.255548628279939,0.425089891767129,0.576775912195444,0.817103320499882")
@@ -131,10 +131,10 @@ specific_ui_inputs_crm <- tagList(
 )
 
 skip_tpt_input <- radioButtons("skip_tpt_input","Would you like to be able to skip doses when de-escalating?",
-choices = c("Yes", "No"), selected = "Yes", inline = TRUE)
+choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 
 specific_ui_inputs_other <- radioButtons("specific_ui_inputs_other","This is a placeholder. Clicking this button will do nothing.",
-choices = c("Yes", "No"), selected = "Yes", inline = TRUE) 
+choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 
 
 title1 <- "1: CRM"

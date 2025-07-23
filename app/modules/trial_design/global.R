@@ -167,7 +167,11 @@ output <- list(
 sim_crm <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss, skeleton, prior_var,
                     skip_esc, skip_deesc, stop_tox_x, stop_tox_y, stop_n_mtd) {
 
-  
+  # Failsafe for when n_doses does not match the length of skeleton
+  if (length(skeleton) != n_doses) {
+    stop("The length of the skeleton must match the number of doses specified.")
+  }
+
   # lists
 
 model <- list()
