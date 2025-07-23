@@ -5,8 +5,6 @@ intro_ui <- function(id) {
   ns <- NS(id)
   page_sidebar(
     tabPanel(
-        h3("Intro"),
-        p("This hub provides a user-friendly interface to guide you through the process of determining the appropriate trial design based on your inputs."),
        tags$head(
         tags$style(HTML("
         html {
@@ -18,15 +16,19 @@ intro_ui <- function(id) {
         "))
        ),
       #intro ui section
-      tags$div(id = "Introsection1", h2("Why the app was created"), p("Content of section 1......")),
-      tags$div(id = "Introsection2", h2("Background to Trial Designs and Statistics"), p("Content of section 2.....")),
-      tags$div(id = "Introsection3", h3("How DoseFinderHub can help you"), p("Content of section 3.....")),
+      h2("Introduction"),
+      tags$div(id = "Introsection1", h4("Why the app was created"), p("Content of section 1......")),
+      tags$div(id = "Introsection2", h4("Background to Trial Designs and Statistics"), p("Content of section 2.....")),
+      tags$div(id = "Introsection3", h4("How DoseFinderHub can help you"), p("Content of section 3.....")),
      #workflow questionnaire ui section
-      tags$div(id = "WFquestionnaire1", h2("The Meaning Behind the Questionnaire"), p("Content of section 1......")),
-      tags$div(id = "WFquestionnaire2", h2("The Trial Design Recommendation"), p("Content of section 2.....")),
-      tags$div(id = "WFquestionnaire3", h3("The Optional Methods Questionnaire to Tailor even Further"), p("Content of section 3.....")),
+      h1("Work Flow"),
+      h3("Questionnaire"),
+      tags$div(id = "WFquestionnaire1", h4("The Meaning Behind the Questionnaire"), p("Content of section 1......")),
+      tags$div(id = "WFquestionnaire2", h4("The Trial Design Recommendation"), p("Content of section 2.....")),
+      tags$div(id = "WFquestionnaire3", h4("The Optional Methods Questionnaire to Tailor even Further"), p("Content of section 3.....")),
      #workflow trial design ui section
-      tags$div(id = "WFtrial", h2("For the Statiscian"), p("Content of section 1......"))
+      h3("Trial Design"),
+      tags$div(id = "WFtrial", h4("For the Statiscian"), p("Content of section 1......"))
      ),
     
     sidebar = sidebar(
