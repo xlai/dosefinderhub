@@ -48,77 +48,111 @@ server_all <- function(input, output, session) {
     }
   )
 
+  ################################ Configuration tab's sidebar code ################################
 
+  # General variables from configuration tab 
+  n_dosess <- reactive({as.numeric(input$n_doses_inputt)}) # Using double ending letters to avoid mixing up with other input (for now)
+  ttl <- reactive({as.numeric(input$ttl_inputt)})
+  max_size <- reactive({as.numeric(input$max_size_inputt)})
+  start_dose <- reactive({as.numeric(input$start_dose_inputt)}) 
+  cohort_size <- reactive({as.numeric(input$cohort_inputt)})
+  n_sims <- reactive({as.numeric(input$n_sims_input)})
+  n_scenarios <- reactive({as.numeric(input$n_scenarios_input)})
+
+  # Model-specific variables from configuration tab
+  # CRM
+  skip_esc_crm <- reactive({as.logical(input$skip_esc_crm_input)})
+  skip_deesc_crm <- reactive({as.logical(input$skip_deesc_crm_input)})
+  above_target_crm <- reactive({as.logical(input$above_target_input)}) # This isn't used in the sim_crm function
+  prior_var_crm <- reactive({as.numeric(input$prior_var_input)})
+  stop_n_mtd_crm <- reactive({as.numeric(input$stop_n_mtd_input)})
+  skeleton_crm <- reactive({
+    as.numeric(unlist(strsplit(input$skeleton_input, ",")))
+  })
+  prior_mtd_crm <- reactive({as.numeric(input$prior_mtd_input)})  # This isn't used in the sim_crm function
+  stop_tox_x_crm <- reactive({as.numeric(input$stop_tox_x_input)})
+  stop_tox_y_crm <- reactive({as.numeric(input$stop_tox_y_input)})  
+
+  # 3+3
+  skip_tpt <- reactive({as.logical(input$skip_tpt_input)}) 
+
+  ## Writing code such that the start dose cannot be greater than the number of doses and the number of doses cannot be less than the start dose
+
+  # start_dose cannot be greater than the n_doses
+   observe({
+    updateNumericInput(session, "start_dose_inputt", max = input$n_doses_inputt)
+  })
+  
+  # n_doses cannot be less than the start_dose
+  observe({
+    # Update the min value of the maxValue input based on minValue
+    updateNumericInput(session, "n_doses_inputt", min = input$start_dose_inputt)
+  })
 
   ######################################## Configuration tab's simulation scenarios table code ########################################
 
-  #Initialize empty data frame with specified columns
-  reactive_table_data <- reactiveVal(data.frame(matrix(ncol = n_doses, nrow = 0, dimnames = list(NULL, column_names))))
   
-  observe({
-    #Capture current data
-    current_data <- reactive_table_data()
-    
-    #Calculate rows to add or remove
-    target_rows <- as.numeric(input$n_scenarios_input)
-    current_rows <- nrow(current_data)
-    rows_to_add <- target_rows - current_rows
-    
-    #Update data based on the difference
-    if (rows_to_add > 0) {
-      new_rows <- data.frame(
-        Scenario = seq_len(rows_to_add) + current_rows,
-        matrix(0, ncol = n_doses, nrow = rows_to_add, dimnames = list(NULL, column_names))
-        )
-      updated_data <- rbind(current_data, new_rows)
-    } else {
-      updated_data <- head(current_data, target_rows)
-    }
-    
-    #Update reactive data frame
-    reactive_table_data(updated_data)
+  # Creating a data frame with the specified number of rows and columns
+
+  reactive_df <- reactiveVal() # initalising a reactive value to store the data frame
+
+  observeEvent({input$n_scenarios_input; input$n_doses_inputt}, {
+   
+  dimensions <- matrix(0, nrow = input$n_scenarios_input, ncol = input$n_doses_inputt)
+  colnames(dimensions) <- paste("d", 1:input$n_doses_inputt, sep = "")
+  dataframe <- data.frame(dimensions) # What was previously doses_table
+
+  Scenario <- matrix(as.numeric(1:input$n_scenarios_input), nrow = input$n_scenarios_input, ncol = 1)
+  
+  dataframe_row_1 <- data.frame(Scenario) # What was previously scenarios_table
+
+  cbind <- cbind(dataframe_row_1, dataframe)
+  reactive_df(cbind) # Updating the reactive value with the new data frame
   })
   
-  output$editable_table <- renderDT({
-    datatable(reactive_table_data(), editable = TRUE, options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"), list(targets = 0, className = "not-editable"))), rownames = FALSE)
-      #scrollX = TRUE, scrollX="250px", paging = FALSE
-    #options = list(scrollX = TRUE, scrollX="250px", paging = FALSE) #Did not work
-  }, server = FALSE)
-  
-  output$table_output <- renderDT({
-    datatable(reactive_table_data(), editable = TRUE, options = list(columnDefs = list(list(className = 'dt-center', targets = "_all"))), rownames = FALSE)
-      #scrollX = TRUE, scrollX="250px", paging = FALSE
-    #options = list(scrollX = TRUE, scrollX="250px", paging = FALSE) #Did not work
+  output$test_df <- renderDT({
+    datatable(reactive_df(), editable = TRUE, rownames = FALSE) #, scrollX = TRUE, scrollX="250px", paging = FALSE
   })
   
-  observeEvent(input$table_output_cell_edit, {
-    info <- input$table_output_cell_edit
-    modified_data <- reactive_table_data()
-    modified_data[info$row, (info$col + 1)] <- as.numeric(info$value)
-    reactive_table_data(modified_data)
+  # Observe the cell edits in the datatable
+  observeEvent(input$test_df_cell_edit, {
+    info <- input$test_df_cell_edit
+
+    modified_data <- reactive_df()
+    modified_data[info$row, info$col + 1] <- DT::coerceValue(info$value, modified_data[info$row, info$col]) # +1 is here to counterract the movement of edited data.
+    reactive_df(modified_data)
+    #print(str(reactive_df()))
   })
-  
-  observeEvent(input$plot_button, {
-    #Capture current data and transform for plotting
-    current_data <- reactive_table_data()
-    plot_data <- tidyr::gather(current_data[, -1, drop = FALSE], key = "Dose Level", value = "Value")
-    plot_data$Scenario <- rep(current_data$Scenario, each = ncol(current_data) - 1)
-    
-    #Create the plot
-    p <- ggplot(plot_data, aes(x = `Dose Level`, y = Value)) +
-      geom_line() +
-      geom_point() +
-      labs(x = "Dose Levels",
-           y = "'True' DLT Rates") +
-      theme_minimal()
-    
-    # Render the plot
-    output$plot <- renderPlot({
-      p
-    })
+
+  true_dlts <- reactive({
+    reactive_df()[, -1] # Exclude the first column (Scenario)
   })
   
 
+  #output$table_output <- DT::renderDT({
+  #  datatable(true_dlts(), editable = TRUE, rownames = FALSE, options = list(scrollX = TRUE, scrollY = "250px", paging = FALSE))
+  #})
+  
+ # observeEvent(input$plot_button, {
+    #Capture current data and transform for plotting
+  #  current_data <- reactive_table_data()
+  #  plot_data <- tidyr::gather(current_data[, -1, drop = FALSE], key = "Dose Level", value = "Value")
+   # plot_data$Scenario <- rep(current_data$Scenario, each = ncol(current_data) - 1)
+    
+    #Create the plot
+   # p <- ggplot(plot_data, aes(x = `Dose Level`, y = Value)) +
+    #  geom_line() +
+   #   geom_point() +
+    #  labs(x = "Dose Levels",
+    #       y = "'True' DLT Rates") +
+    #  theme_minimal()
+    
+    # Render the plot
+    #output$plot <- renderPlot({
+   #   p
+   # })
+ # })
+  
   ######################################## Simulation tab server code ########################################
 
   new_n_scen <- reactive(as.numeric(input$n_scenarios_input))
@@ -131,7 +165,113 @@ server_all <- function(input, output, session) {
     )
   })
 
+ # Simulation outputs
 
+  observeEvent(input$submit, {
+
+    # Adding in Scenarios. I am going to cap the possible number of Scenarios to 3 (this can be changed later).
+
+  selected_scenarios <- cbind(
+    scen1 <- {"Scenario 1" %in% input$scen_output_input},
+    scen2 <- {"Scenario 2" %in% input$scen_output_input},
+    scen3 <- {"Scenario 3" %in% input$scen_output_input}
+  )
+  #print(true_dlts())
+  used_true_dlts <- true_dlts()[selected_scenarios, ] # Scenarios are rows!
+  #print(used_true_dlts)
+  n_scen <- nrow(used_true_dlts)
+  #print(n_scen)
+  combined_list <- vector("list", n_scen) # initialising for use later
+  title_list <- vector("list", n_scen) # initialising for use later
+
+   # Metric - putting it outside of the for loop so only one list is created.
+  selected_metric <- cbind(
+  selected_mtd <- {"% times dose was selected as MTD" %in% input$metric_selection_input},
+  selected_participant <- {"% participants treated at dose" %in% input$metric_selection_input},
+  selected_accuracy <- {"Accuracy" %in% input$metric_selection_input},
+  selected_duration <- {"Duration" %in% input$metric_selection_input},
+  selected_overdose <- {"Overdosing" %in% input$metric_selection_input})
+
+  if (n_scen == 0) {tables_ui <- NULL} else { for (j in 1:n_scen) {
+
+  # Design - only running simulations that are necessary to save time.
+  if ("3+3" %in% input$simulation_design_selection_input)
+      { #print(unlist(used_true_dlts[j, ]))
+        tpt_sim <- sim_tpt(n_dosess(), ttl(), max_size(), start_dose(), n_sims(), unlist(used_true_dlts[j, ]), skip_tpt(), 12345)
+       tpt_modified_tab <- tpt_sim[-c(3,5,7)]
+      } else {tpt_modified_tab <- NULL}
+  if ("CRM" %in% input$simulation_design_selection_input)
+      {
+        crm_sim <- sim_crm(n_dosess(), ttl(), max_size(), start_dose(), n_sims(), unlist(used_true_dlts[j, ]), skeleton_crm(), prior_var_crm(), skip_esc_crm(), skip_deesc_crm(), stop_tox_x_crm(), stop_tox_y_crm(), stop_n_mtd_crm())
+       crm_modified_tab <- crm_sim[-c(3,5,7)]
+      } else {crm_modified_tab <- NULL}
+
+  tpt_to_display <- tpt_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
+  crm_to_display <- crm_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
+  
+  tpt_title <- as.character(rep("3+3 Simulation for Scenario ", 5))
+  crm_title <- as.character(rep("CRM Simulation for Scenario ", 5))
+  scenario_number <- as.character(rep(j, 5))
+  metric_names <- as.character(c(" - % Times dose was selected as MTD", "- % Treated at each dose",  " - Mean accuracy", " - Mean trial length", " - Mean overdose"))
+
+  if ("3+3" %in% input$simulation_design_selection_input) {
+  full_tpt_titles <- paste(as.character(tpt_title), as.character(scenario_number), as.character(metric_names))
+  } else {full_tpt_titles <- NULL}
+
+  if("CRM" %in% input$simulation_design_selection_input) {
+  full_crm_titles <- paste(as.character(crm_title), as.character(scenario_number), as.character(metric_names))
+  } else {full_crm_titles <- NULL}
+
+  #print(full_tpt_titles)
+  used_tpt_titles <- full_tpt_titles[c(which(selected_metric == TRUE))] # A list of titles we want to display
+  
+  #print(used_tpt_titles)
+
+  used_crm_titles <- full_crm_titles[c(which(selected_metric == TRUE))] # A list of titles we want to display
+  #print(used_crm_titles)
+
+  tpt_data_frames <- lapply(tpt_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
+  crm_data_frames <- lapply(crm_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
+ 
+  combined_list[[j]]  <- cbind(tpt_data_frames, crm_data_frames)
+  cbind_titles <- cbind(used_tpt_titles, used_crm_titles)
+  title_list[[j]] <- unname(unlist(cbind_titles))
+
+  } # for loop end
+
+  combined_data_frames <- do.call(c, combined_list) 
+  combined_titles <- do.call(c, title_list) 
+  
+  n_data_frames <- length(combined_data_frames)
+
+  # Using generic table names to render the UI with all the tables in it.
+  if (n_data_frames == 0) {output$tables_ui <- NULL  # The case where nothing is entered
+  } else {
+  table_names <- c(paste(rep("Table", n_data_frames), as.list(as.character(1:n_data_frames)), sep = " "))
+  names(combined_data_frames) <- table_names
+
+  ## Using the names of the tables to render a UI with all the tables in it.
+   output$tables_ui <- renderUI({
+    lapply(names(combined_data_frames), function(table_name) {
+      tagList(
+        table_number <- as.numeric(gsub("Table ", "", table_name)), # Extracting the number from the table name
+        h3(combined_titles[table_number]), # Title for each table
+        tableOutput(outputId = paste0("table_", table_name)) # Table output
+      )
+    })
+  })
+  
+  # Rendering each table
+  lapply(names(combined_data_frames), function(table_name) {
+    output[[paste0("table_", table_name)]] <- renderTable({
+      combined_data_frames[[table_name]]
+    }, rownames = TRUE, colnames = TRUE) 
+  }) 
+
+  
+  } # else (after for loop)
+  } # else (before for loop)
+  }) # observe function
   ######################################## Conduct tab table code ########################################
 
   conduct_reactive_table_data <- reactiveVal(data.frame(matrix(ncol = 3, nrow = 0, dimnames = list(NULL, c("Cohort number", "Dose level", "DLT?")))))
