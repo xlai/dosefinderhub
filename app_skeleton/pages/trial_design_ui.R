@@ -19,10 +19,7 @@ non_specific_column_func <- function() {
     cohort_output
   )
 
-  #label <- "Input file with all configurations"
-  upload_button <- fileInput("config_file_upload", "Input file with all configurations", accept = c(".csv", ".rds"))
-  #label_2 <- "Download file with all configurations"
-  download_button <- downloadButton("config_save_button", "Download file with all configurations")
+  
   separator <- "___________________________________________"
   title <- "GENERAL TRIAL PARAMETERS"
   display_button <- checkboxInput("display_input_all", "Display parameters", value = F)
@@ -101,15 +98,21 @@ fluidRow(column(4,title1, display_button_crm, conditional_crm),
 
 trial_design_ui <- function(id) {
   ns <- NS(id)
-  page_sidebar(
-    main = div(
-      h3("Trial Design Results"),
-      p("This section displays the results of your questionnaire and the recommended trial design."),
-      p("Click 'View Simulation' to see how the design performs under different scenarios.")
+  page_sidebar( 
+    card(
+
     ),
     sidebar = sidebar(
-      h4("Results"),
-      p("Here are the results based on your inputs."),
+      h3("Trial Design"),
+      
+      fileInput("config_file_upload", 
+      "Saved a Trial Design file? Input it here to retrieve your configurations.", 
+      accept = c(".csv", ".rds")),
+
+      p("Want to save your configurations for later? Download a them as a file by clicking the button below."),
+      downloadButton("config_save_button", "Download file with all configurations"),
+
+      p("Done filling out the configurations? Click the button below to run simulations."),
       actionButton(ns("view_simulation"), "View Simulation")
     )
   )
