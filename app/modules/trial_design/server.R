@@ -49,7 +49,8 @@ server_all <- function(input, output, session) {
   )
 
   ################################ Configuration tab's sidebar code ################################
-   
+
+  # General variables from configuration tab 
   n_dosess <- reactive({as.numeric(input$n_doses_inputt)}) # Using double ending letters to avoid mixing up with other input (for now)
   ttl <- reactive({as.numeric(input$ttl_inputt)})
   max_size <- reactive({as.numeric(input$max_size_inputt)})
@@ -57,6 +58,23 @@ server_all <- function(input, output, session) {
   cohort_size <- reactive({as.numeric(input$cohort_inputt)})
   n_sims <- reactive({as.numeric(input$n_sims_input)})
   n_scenarios <- reactive({as.numeric(input$n_scenarios_input)})
+
+  # Model-specific variables from configuration tab
+  # CRM
+  skip_esc_crm <- reactive({input$skip_esc_crm_input})
+  skip_deesc_crm <- reactive({input$skip_deesc_crm_input})
+  above_target_crm <- reactive({input$above_target_input}) # This isn't used in the sim_crm function
+  prior_var_crm <- reactive({as.numeric(input$prior_var_input)})
+  stop_n_mtd_crm <- reactive({as.numeric(input$stop_n_mtd_input)})
+  skeleton_crm <- reactive({
+    as.numeric(unlist(strsplit(input$skeleton_input, ",")))
+  })
+  prior_mtd_crm <- reactive({as.numeric(input$prior_mtd_input)})  # This isn't used in the sim_crm function
+  stop_tox_x_crm <- reactive({as.numeric(input$stop_tox_x_input)})
+  stop_tox_y_crm <- reactive({as.numeric(input$stop_tox_y_input)})  
+
+  # 3+3
+  skip_tpt <- reactive({input$skip_tpt_input}) # This isn't used in the sim_tpt function
 
   ## Writing code such that the start dose cannot be greater than the number of doses and the number of doses cannot be less than the start dose
 
@@ -75,6 +93,7 @@ server_all <- function(input, output, session) {
 
   
   # Create a data frame with the specified number of rows and columns
+  ## NOTE: The first column rounds all entries to the nearest integer - this will be fixed in a future commit.
 
   reactive_df <- reactiveVal() # initalising a reactive value to store the data frame
 
