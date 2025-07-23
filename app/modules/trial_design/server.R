@@ -92,8 +92,7 @@ server_all <- function(input, output, session) {
   ######################################## Configuration tab's simulation scenarios table code ########################################
 
   
-  # Create a data frame with the specified number of rows and columns
-  ## NOTE: The first column rounds all entries to the nearest integer - this will be fixed in a future commit.
+  # Creating a data frame with the specified number of rows and columns
 
   reactive_df <- reactiveVal() # initalising a reactive value to store the data frame
 
@@ -103,7 +102,7 @@ server_all <- function(input, output, session) {
   colnames(dimensions) <- paste("d", 1:input$n_doses_inputt, sep = "")
   dataframe <- data.frame(dimensions) # What was previously doses_table
 
-  Scenario <- matrix(1:input$n_scenarios_input, nrow = input$n_scenarios_input, ncol = 1)
+  Scenario <- matrix(as.numeric(1:input$n_scenarios_input), nrow = input$n_scenarios_input, ncol = 1)
   
   dataframe_row_1 <- data.frame(Scenario) # What was previously scenarios_table
 
@@ -122,6 +121,7 @@ server_all <- function(input, output, session) {
     modified_data <- reactive_df()
     modified_data[info$row, info$col + 1] <- DT::coerceValue(info$value, modified_data[info$row, info$col]) # +1 is here to counterract the movement of edited data.
     reactive_df(modified_data)
+    #print(str(reactive_df()))
   })
 
   true_dlts <- reactive({
@@ -129,9 +129,9 @@ server_all <- function(input, output, session) {
   })
   
 
-  output$table_output <- DT::renderDT({
-    datatable(true_dlts(), editable = TRUE, rownames = FALSE, options = list(scrollX = TRUE, scrollY = "250px", paging = FALSE))
-  })
+  #output$table_output <- DT::renderDT({
+  #  datatable(true_dlts(), editable = TRUE, rownames = FALSE, options = list(scrollX = TRUE, scrollY = "250px", paging = FALSE))
+  #})
   
  # observeEvent(input$plot_button, {
     #Capture current data and transform for plotting
