@@ -118,19 +118,19 @@ treatedpct$tpt <- treated$tpt / sum(treated$tpt)
 
 # coerce into selection table
 
-selection_df$tpt <- data.frame(selection$tpt)
+selection_df$tpt <- data.frame(selection$tpt*100) # Converting to %
 
 selection_tab$tpt <- rbind(t(selection_df$tpt), c(NA,true_dlt_ss))
 
-rownames(selection_tab$tpt) <- c("Proportion of Simulations Dose Selected by Model", "True Toxicity Probabilities")
+rownames(selection_tab$tpt) <- c("% of Simulations that Chose Dose as MTD", "True Toxicity Probabilities")
 
 # coerce into treatment table
 
-treatedpct_df$tpt <- data.frame(treatedpct$tpt)
+treatedpct_df$tpt <- data.frame(treatedpct$tpt*100) # Converting to %
 
 treatment_tab$tpt <- rbind(t(treatedpct_df$tpt),true_dlt_ss)
 
-rownames(treatment_tab$tpt) <- c("Proportion of Patients Treated by Model", "True Toxicity Probabilities")
+rownames(treatment_tab$tpt) <- c("% of Patients Treated at Dose", "True Toxicity Probabilities")
 
 # i) accuracy
 
@@ -250,19 +250,19 @@ treatedpct$crm <- treated$crm / sum(treated$crm)
 
 # coerce into table
 
-selection_df$crm <- data.frame(selection$crm)
-treatedpct_df$crm <- data.frame(treatedpct$crm)
+selection_df$crm <- data.frame(selection$crm*100) # Converting to %
+treatedpct_df$crm <- data.frame(treatedpct$crm*100) # Converting to %
 selection_tab$crm <- rbind(t(selection_df$crm), c(NA,true_dlt_ss))
 
-rownames(selection_tab$crm) <- c("Dose Selected by Model", "True Toxicity Probabilities")
+rownames(selection_tab$crm) <- c("% of Simulations that Chose Dose as MTD", "True Toxicity Probabilities")
 
 # coerce into treatment table
 
-treatedpct_df$crm <- data.frame(treatedpct$crm)
+treatedpct_df$crm <- data.frame(treatedpct$crm*100) # Converting to %
 
 treatment_tab$crm <- rbind(t(treatedpct_df$crm),true_dlt_ss)
 
-rownames(treatment_tab$crm) <- c("Patients Treated by Model", "True Toxicity Probabilities")
+rownames(treatment_tab$crm) <- c("% of Patients Treated at Dose", "True Toxicity Probabilities")
 
 # i) accuracy
 

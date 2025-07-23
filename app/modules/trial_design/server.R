@@ -186,8 +186,8 @@ server_all <- function(input, output, session) {
 
    # Metric - putting it outside of the for loop so only one list is created.
   selected_metric <- cbind(
-  selected_participant <- {"% participants treated at dose" %in% input$metric_selection_input},
   selected_mtd <- {"% times dose was selected as MTD" %in% input$metric_selection_input},
+  selected_participant <- {"% participants treated at dose" %in% input$metric_selection_input},
   selected_accuracy <- {"Accuracy" %in% input$metric_selection_input},
   selected_duration <- {"Duration" %in% input$metric_selection_input},
   selected_overdose <- {"Overdosing" %in% input$metric_selection_input})
@@ -212,7 +212,7 @@ server_all <- function(input, output, session) {
   tpt_title <- as.character(rep("3+3 Simulation for Scenario ", 5))
   crm_title <- as.character(rep("CRM Simulation for Scenario ", 5))
   scenario_number <- as.character(rep(j, 5))
-  metric_names <- as.character(c("- % Treated at each dose", " - % Times dose was selected as MTD",  " - Mean accuracy", " - Mean trial length", " - Mean overdose"))
+  metric_names <- as.character(c(" - % Times dose was selected as MTD", "- % Treated at each dose",  " - Mean accuracy", " - Mean trial length", " - Mean overdose"))
 
   if ("3+3" %in% input$simulation_design_selection_input) {
   full_tpt_titles <- paste(as.character(tpt_title), as.character(scenario_number), as.character(metric_names))
@@ -232,7 +232,7 @@ server_all <- function(input, output, session) {
 
   tpt_data_frames <- lapply(tpt_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
   crm_data_frames <- lapply(crm_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
-
+ 
   combined_list[[j]]  <- cbind(tpt_data_frames, crm_data_frames)
   cbind_titles <- cbind(used_tpt_titles, used_crm_titles)
   title_list[[j]] <- unname(unlist(cbind_titles))
@@ -241,7 +241,7 @@ server_all <- function(input, output, session) {
 
   combined_data_frames <- do.call(c, combined_list) 
   combined_titles <- do.call(c, title_list) 
- print(combined_titles)
+  
   n_data_frames <- length(combined_data_frames)
 
   # Using generic table names to render the UI with all the tables in it.
@@ -265,7 +265,7 @@ server_all <- function(input, output, session) {
   lapply(names(combined_data_frames), function(table_name) {
     output[[paste0("table_", table_name)]] <- renderTable({
       combined_data_frames[[table_name]]
-    }) 
+    }, rownames = TRUE, colnames = TRUE) 
   }) 
 
   
