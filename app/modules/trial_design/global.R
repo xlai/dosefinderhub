@@ -4,7 +4,6 @@ library(ggplot2)
 library(here)
 library(magrittr)
 library(escalation)
-library(rhandsontable)
 
 #DUMMY DATA MANIPULATION
 here::i_am("app/modules/trial_design/ui.R")
