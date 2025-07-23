@@ -4,13 +4,14 @@ library(shiny)
 library(bslib)
 library(htmltools)
 
+here::i_am("app_skeleton/app.R")
 
 #source("app_skeleton/pages/intro_ui.R")
 #source("app_skeleton/pages/question_ui.R")
 #source("app_skeleton/pages/trial_design_ui.R")
 #source("app_skeleton/pages/sim_ui.R")
 #source("app_skeleton/pages/con_ui.R")
-#works without sourcing yipeee
+#works without sourcing yippeee (liar)
 
 # Define UI for the application
 ui <- navbarPage(
@@ -37,5 +38,3 @@ server <- function(input, output, session){
     sim_server("simulation")
     con_server("conduct")
 }
-
-shinyApp(ui, server)
