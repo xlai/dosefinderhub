@@ -60,19 +60,20 @@ choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 
 
   page_sidebar( 
-      layout_column_wrap( 
+      
    
    # General Trial Design Parameters
+     layout_column_wrap(  
      card(full_screen = TRUE,
       card_header("General Trial Parameters"),
       card_body(
        checkboxInput("display_input_all", "Display parameters", value = F),
        conditionalPanel(condition = "input.display_input_all==1", non_specific_ui_inputts)
      )
-      ),
+      )),
 
       #Specific Trial Design Parameters
-        
+       layout_column_wrap(  
         card( full_screen = TRUE,
           card_header("CRM Parameters"),
           card_body(
