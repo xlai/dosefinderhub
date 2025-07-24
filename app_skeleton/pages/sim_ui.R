@@ -34,6 +34,10 @@ sim_ui <- function(id) {
       h3("Run Simulation"),
       p("Please fill out the Simulation Inputs and click 'Run Simulation' to see the results."),
       actionButton(ns("run_simulation"), "Run Simulation"),
+      tags$hr(), # Separator line
+      h3("Download Results"),
+      p("Want to save your simulation results? Click a button below to download them as a CSV file."),
+      downloadButton(ns("download_simulation_results"), "Download Simulation Results")
     )
   )
 }
