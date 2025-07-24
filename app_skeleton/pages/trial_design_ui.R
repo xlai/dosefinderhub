@@ -112,7 +112,7 @@ choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
     )
 }
 
-trial_design_server <- function(id) {
+trial_design_server <- function(id, shared) {
   moduleServer(id, function(input, output, session) {
 
     #################################### From Configurations Tab Server #####################################
@@ -165,7 +165,7 @@ trial_design_server <- function(id) {
   ################################ Configuration tab's sidebar code ################################
 
   # General variables from configuration tab 
-  n_dosess <- reactive({as.numeric(input$n_doses_inputt)}) # Using double ending letters to avoid mixing up with other input (for now)
+  shared$n_dosess <- reactive({as.numeric(input$n_doses_inputt)}) # Using double ending letters to avoid mixing up with other input (for now)
   ttl <- reactive({as.numeric(input$ttl_inputt)})
   max_size <- reactive({as.numeric(input$max_size_inputt)})
   start_dose <- reactive({as.numeric(input$start_dose_inputt)}) 

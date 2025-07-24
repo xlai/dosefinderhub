@@ -31,10 +31,14 @@ ui <- navbarPage(
 
 # Define server logic
 server <- function(input, output, session){
+    # Defining a shared reactive variable for n_doses
+    shared <- reactiveValues()
+
+    # The UIs
     intro_server("intro")
     question_server("questionnaire")
-    trial_design_server("trial_design")
-    sim_server("simulation")
+    trial_design_server("trial_design", shared)
+    sim_server("simulation", shared)
     con_server("conduct")
 }
 

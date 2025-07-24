@@ -23,7 +23,8 @@ sim_ui <- function(id) {
   page_sidebar(
     card(
       h3("Testing the movement of n_doses from Trial Design to Simulation"),
-      p("Next to this text should be n_doses:"),
+      p("Next to this text should be n_doses: (2)"),
+      textOutput(ns("check"))
     ),
     sidebar = sidebar(
       h3("Simulation Inputs"),
@@ -35,7 +36,7 @@ sim_ui <- function(id) {
   )
 }
 
-sim_server <- function(id) {
+sim_server <- function(id, shared) {
   moduleServer(id, function(input, output, session) {
 
      ######################################## Configuration tab's simulation scenarios table code ########################################
@@ -45,6 +46,9 @@ sim_server <- function(id) {
   n_scenarios <- reactive({as.numeric(input$n_scenarios_input)})
 
   ## Writing code such that the start dose cannot be greater than the number of doses and the number of doses cannot be less than the start dose
+  output$check <- renderText({
+    paste("This is the reactive variable in question: (n_doses the real deal)", shared$n_dosess())
+  })
 
   # start_dose cannot be greater than the n_doses
    observe({
