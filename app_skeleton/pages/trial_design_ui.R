@@ -1,5 +1,5 @@
-library(shiny)
-library(shiny.semantic)
+#library(shiny)
+#library(shiny.semantic)
 
 
 trial_design_ui <- function(id) {

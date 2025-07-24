@@ -1,5 +1,5 @@
-library(shiny)
-library(shiny.semantic)
+#library(shiny)
+#library(shiny.semantic)
 
 sim_ui <- function(id) {
   ns <- NS(id)

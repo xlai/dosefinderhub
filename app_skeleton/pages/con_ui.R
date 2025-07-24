@@ -1,5 +1,5 @@
-library(shiny)
-library(shiny.semantic)
+#library(shiny)
+#library(shiny.semantic)
 
 
 con_ui <- function(id) {
