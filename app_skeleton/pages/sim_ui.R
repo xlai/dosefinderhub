@@ -21,10 +21,9 @@ sim_ui <- function(id) {
 
   # Running the tab itself
   page_sidebar(
-    main = div(
-      h3("Trial Design Simulation"),
-      p("Here you can visualize how the recommended trial design performs under various scenarios."),
-      p("Click 'Run Simulation' to start the simulation process.")
+    card(
+      h3("Testing the movement of n_doses from Trial Design to Simulation"),
+      p("Next to this text should be n_doses:"),
     ),
     sidebar = sidebar(
       h3("Simulation Inputs"),
