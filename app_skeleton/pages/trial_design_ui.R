@@ -53,21 +53,6 @@ choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 specific_ui_inputs_other <- radioButtons("specific_ui_inputs_other","This is a placeholder. Clicking this button will do nothing.",
 choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 
-##Defining non-design-specific + simulation parameters column inputs function
-non_specific_column_func <- function() {
-  n_sims_input <- numericInput("n_sims_input", "How many simulations would you like to run per design per scenario?", value = 10)
-  n_scenarios_input <- numericInput("n_scenarios_input", "How many scenarios would you like to simulate?", min = 1, max = 3, value = 3) # Capping the number of scenarios at 3 (for now)
-  text2 <- "Please fill out each scenario's and each dose's 'True' Dose Limiting Toxicity probabilities in the table below:"
-  table_output <- DT::DTOutput("table_output") # This is to test the table output used for the simulations tab.
-  test_df_table <- DT::DTOutput("test_df")
-  #plot_button <- actionButton("plot_button", label = "Test plot")
-  #plot <- plotOutput("plot")
-  return <- list(upload_button, download_button, separator, title, display_button, conditional_non_specific_ui_inputs,
-  separator, text, n_sims_input, n_scenarios_input, text2, #table_output, 
-  test_df_table)
-  }
-
-
 ########################################### Running the UI ###########################################
 
 trial_design_ui <- function(id) {
@@ -117,7 +102,7 @@ trial_design_ui <- function(id) {
 
       p("Want to save your configurations for later? Download a them as a file by clicking the button below."),
       downloadButton("config_save_button", "Download file with all configurations"),
-
+      tags$hr(), # Separator line
       p("Done filling out the configurations? Click the button below to run simulations."),
       actionButton(ns("view_simulation"), "View Simulation")
     )
