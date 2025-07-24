@@ -117,6 +117,16 @@ trial_design_server <- function(id, shared) {
 
     #################################### From Configurations Tab Server #####################################
 
+  # start_dose cannot be greater than the n_doses
+    observe({
+      updateNumericInput(session, "start_dose_inputt", max = input$n_doses_inputt)
+    })
+  
+    # n_doses cannot be less than the start_dose
+    observe({
+      # Update the min value of the maxValue input based on minValue
+      updateNumericInput(session, "n_doses_inputt", min = input$start_dose_inputt)
+    })
  ######################################## Configuration tab's file upload/download ########################################
 
   #Upload

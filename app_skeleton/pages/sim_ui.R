@@ -43,18 +43,6 @@ sim_server <- function(id, shared) {
   n_sims <- reactive({as.numeric(input$n_sims_input)})
   n_scenarios <- reactive({as.numeric(input$n_scenarios_input)})
 
-  # start_dose cannot be greater than the n_doses
-   observe({
-    updateNumericInput(session, "start_dose_inputt", max = input$n_doses_inputt)
-  })
-  
-  # n_doses cannot be less than the start_dose
-  observe({
-    # Update the min value of the maxValue input based on minValue
-    updateNumericInput(session, "n_doses_inputt", min = input$start_dose_inputt)
-  })
-
-
   ############## Reactive True DLT Probabilities Table ##############
 
   reactive_df <- reactiveVal() # initalising a reactive value to store the data frame
