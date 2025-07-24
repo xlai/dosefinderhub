@@ -7,29 +7,33 @@ sim_ui <- function(id) {
   # Simulation-Specific Inputs
     n_sims_input <- numericInput(ns("n_sims_input"), "How many simulations would you like to run per design per scenario?", value = 10)
     n_scenarios_input <- numericInput(ns("n_scenarios_input"), "How many scenarios would you like to simulate?", min = 1, max = 3, value = 3) # Capping the number of scenarios at 3 (for now)
-    text2 <- "Please fill out each scenario's and each dose's 'True' Dose Limiting Toxicity probabilities in the table below:"
-    table_output <- DT::DTOutput(ns("table_output")) # This is to test the table output used for the simulations tab.
-    test_df_table <- DT::DTOutput(ns("test_df"))
+    #table_output <- DT::DTOutput(ns("table_output")) # This is to test the table output used for the simulations tab.
   simulation_inputs <- tagList(
     n_sims_input,
     n_scenarios_input,
-    text2,
-    table_output,
-    test_df_table
+    #table_output,
   )
 
+  test_df_table <- DT::DTOutput(ns("test_df")) # The reactive table for the true DLT probabilities
+  # The 'Refresh Dimensions' button doesn't work, so the table changes dimensions when the number of scenarios changes.
 
   # Running the tab itself
   page_sidebar(
-    card(
-      h3("Simulation Results To Go Here"))
-    ,
+    card(height = 100,
+      card_header("Simulation Inputs"),
+      card_body(
+      simulation_inputs,
+      p("Please fill out each scenario's and each dose's 'True' Dose Limiting Toxicity probabilities 
+      in the table below. If the dimensions do not match, change the number of scenarios and doses and press 
+      'Refresh Dimensions'."),
+      test_df_table,
+      actionButton("refresh_table_input", "Refresh Table Dimensions")
+      )
+      ),
     sidebar = sidebar(
-      h3("Simulation Inputs"),
-      p("Please fill out the following inputs and click 'Run Simulation' to see the results."),
+      h3("Run Simulation"),
+      p("Please fill out the Simulation Inputs and click 'Run Simulation' to see the results."),
       actionButton(ns("run_simulation"), "Run Simulation"),
-      tags$hr(), # Separator line
-      simulation_inputs
     )
   )
 }
@@ -47,14 +51,14 @@ sim_server <- function(id, shared) {
 
   reactive_df <- reactiveVal() # initalising a reactive value to store the data frame
 
-  observeEvent({input$n_scenarios_input; input$n_doses_inputt}, {
-   
-  dimensions <- matrix(0, nrow = input$n_scenarios_input, ncol = input$n_doses_inputt)
-  colnames(dimensions) <- paste("d", 1:input$n_doses_inputt, sep = "")
+  observeEvent({input$n_scenarios_input}, {
+
+  dimensions <- matrix(0, nrow = n_scenarios(), ncol = shared$n_dosess())
+  colnames(dimensions) <- paste("d", 1:shared$n_dosess(), sep = "")
   dataframe <- data.frame(dimensions) # What was previously doses_table
 
-  Scenario <- matrix(as.numeric(1:input$n_scenarios_input), nrow = input$n_scenarios_input, ncol = 1)
-  
+  Scenario <- matrix(as.numeric(1:n_scenarios()), nrow = n_scenarios(), ncol = 1)
+
   dataframe_row_1 <- data.frame(Scenario) # What was previously scenarios_table
 
   cbind <- cbind(dataframe_row_1, dataframe)
