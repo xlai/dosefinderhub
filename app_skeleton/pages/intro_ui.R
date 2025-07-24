@@ -1,48 +1,46 @@
 #library(shiny)
 #library(shiny.semantic)
 
+library(rmarkdown)
+library(shiny)
+library(bslib)
+
+
 intro_ui <- function(id) {
   ns <- NS(id)
+  # Tab names and associated Rmd files
+  tab_info <- list(
+    "Introduction"         = "app_skeleton/pages/rmd/intro_introduction.Rmd",
+    "Workflow"             = "app_skeleton/pages/rmd/intro_workflow.Rmd",
+    "The Three Models"     = "app_skeleton/pages/rmd/intro_three_models.Rmd",
+    "The Team"             = "app_skeleton/pages/rmd/intro_team.Rmd",
+    "Guidance on Importing"= "app_skeleton/pages/rmd/intro_import_guidance.Rmd"
+  )
   page_sidebar(
     mainPanel(
-          navset_card_tab(
-          full_screen = TRUE,
+          navset_tab(
           nav_panel(
             "Intro",
-            card_title("Introduction to dosefinder"),
-            p("la la la")
-
+            includeMarkdown("app_skeleton/pages/rmd/intro_introduction.Rmd")
           ),
           nav_panel(
             "Workflow",
-            card_title("In what order to use DoseFinderHub"),
-            p("serious stuff")
+            includeMarkdown("app_skeleton/pages/rmd/intro_workflow.Rmd")
           ),
           nav_panel(
             "The Three Models",
-            card_title("Breakdown of the three models DoseFinder focuses on"),
-            p("statsie stats")
+            includeMarkdown("app_skeleton/pages/rmd/intro_three_models.Rmd")
           ),
           nav_panel(
             "Team",
-            card_title("The Legends behind it all"),
-            p("People")
+            includeMarkdown("app_skeleton/pages/rmd/intro_team.Rmd")
           ),
           nav_panel(
             "Guide to Importing",
-            card_title("How to import/export with DoseFinderHub"),
-            p("Blah Blah again")
+            includeMarkdown("app_skeleton/pages/rmd/intro_import_guidance.Rmd")
+       
           )
-        ),
-        card(
-        card_header(
-          class = "bg-dark",
-          "graphics"),
-          card_body(
-            markdown("some text")
-          )
-        )
-      ),
+    )),
     sidebar = sidebar(
       h4("Contents"),
       p("Insert contents page here.")
@@ -51,7 +49,39 @@ intro_ui <- function(id) {
 }
 
 intro_server <- function(id) {
-  shiny::moduleServer(id, function(input, output, session) {
-    # Placeholder logic
+  moduleServer(id, function(input, output, session) {
+    
+    tab_info <- list(
+      "Introduction"         = "app_skeleton/pages/rmd/intro_introduction.Rmd",
+      "Workflow"             = "app_skeleton/pages/rmd/intro_workflow.Rmd",
+      "The Three Models"     = "app_skeleton/pages/rmd/intro_three_models.Rmd",
+      "The Team"             = "app_skeleton/pages/rmd/intro_team.Rmd",
+      "Guidance on Importing"= "app_skeleton/pages/rmd/intro_import_guidance.Rmd"
+    )
+    
+    # Helper to render Rmd to HTML
+    render_rmd_to_html <- function(file) {
+      html_file <- tempfile(fileext = ".html")
+      rmarkdown::render(file, output_file = html_file, quiet = TRUE)
+      html_file
+    }
+    
+    # For each tab, render Rmd file to HTML
+    lapply(names(tab_info), function(tabname) {
+      output[[paste0("tab_content_", gsub(" ", "_", tabname))]] <- renderUI({
+        html_file <- render_rmd_to_html(tab_info[[tabname]])
+        includeHTML(html_file)
+      })
+    })
+    
+    # Dynamic card content for each tab
+    output$dynamic_card <- renderUI({
+      req(input$main_tabs)
+      tab <- input$main_tabs
+      card(
+        card_header(paste(tab, "Card")),
+        card_body(paste("This card is for the", tab, "tab. Add dynamic content here as needed."))
+      )
+    })
   })
 }

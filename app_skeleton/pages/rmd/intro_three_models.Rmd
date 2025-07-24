@@ -1,0 +1,23 @@
+---
+title: "The Three Models"
+output: html_document
+---
+
+<h3 id="models_a">Model A: 3+3</h3>
+- 
+- 
+- 
+- The classic rule-based dose escalation method.
+
+<h3 id="models_b">Model B: CRM</h3>
+  
+
+
+
+- Model-based design using Bayesian statistics.
+
+<h3 id="models_c">Model C: Bayesian Optimal Interval (BOIN)</h3>
+  
+
+  
+- Interval-based design for flexible, adaptive trials.
