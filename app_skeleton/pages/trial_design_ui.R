@@ -166,27 +166,27 @@ trial_design_server <- function(id, shared) {
 
   # General variables from configuration tab 
   shared$n_dosess <- reactive({as.numeric(input$n_doses_inputt)}) # Using double ending letters to avoid mixing up with other input (for now)
-  ttl <- reactive({as.numeric(input$ttl_inputt)})
-  max_size <- reactive({as.numeric(input$max_size_inputt)})
-  start_dose <- reactive({as.numeric(input$start_dose_inputt)}) 
-  cohort_size <- reactive({as.numeric(input$cohort_inputt)})
+  shared$ttl <- reactive({as.numeric(input$ttl_inputt)})
+  shared$max_size <- reactive({as.numeric(input$max_size_inputt)})
+  shared$start_dose <- reactive({as.numeric(input$start_dose_inputt)}) 
+  shared$cohort_size <- reactive({as.numeric(input$cohort_inputt)})
 
   # Model-specific variables from configuration tab
   # CRM
-  skip_esc_crm <- reactive({as.logical(input$skip_esc_crm_input)})
-  skip_deesc_crm <- reactive({as.logical(input$skip_deesc_crm_input)})
-  above_target_crm <- reactive({as.logical(input$above_target_input)}) # This isn't used in the sim_crm function
-  prior_var_crm <- reactive({as.numeric(input$prior_var_input)})
-  stop_n_mtd_crm <- reactive({as.numeric(input$stop_n_mtd_input)})
-  skeleton_crm <- reactive({
+  shared$skip_esc_crm <- reactive({as.logical(input$skip_esc_crm_input)})
+  shared$skip_deesc_crm <- reactive({as.logical(input$skip_deesc_crm_input)})
+  shared$above_target_crm <- reactive({as.logical(input$above_target_input)}) # This isn't used in the sim_crm function
+  shared$prior_var_crm <- reactive({as.numeric(input$prior_var_input)})
+  shared$stop_n_mtd_crm <- reactive({as.numeric(input$stop_n_mtd_input)})
+  shared$skeleton_crm <- reactive({
     as.numeric(unlist(strsplit(input$skeleton_input, ",")))
   })
-  prior_mtd_crm <- reactive({as.numeric(input$prior_mtd_input)})  # This isn't used in the sim_crm function
-  stop_tox_x_crm <- reactive({as.numeric(input$stop_tox_x_input)})
-  stop_tox_y_crm <- reactive({as.numeric(input$stop_tox_y_input)})  
+  shared$prior_mtd_crm <- reactive({as.numeric(input$prior_mtd_input)})  # This isn't used in the sim_crm function
+  shared$stop_tox_x_crm <- reactive({as.numeric(input$stop_tox_x_input)})
+  shared$stop_tox_y_crm <- reactive({as.numeric(input$stop_tox_y_input)})  
 
   # 3+3
-  skip_tpt <- reactive({as.logical(input$skip_tpt_input)}) 
+  shared$skip_tpt <- reactive({as.logical(input$skip_tpt_input)})
 
 } # End of function within moduleServer
 ) # End of moduleServer
