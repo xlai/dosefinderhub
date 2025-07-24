@@ -4,13 +4,12 @@ library(shiny.semantic)
 
 #################################### From Configuarations Tab ####################################
 
-##Defining non-design-specific + simulation parameters column inputs function
-non_specific_column_func <- function() {
-  n_doses_output <- numericInput("n_doses_inputt", "How many dose levels are being tested?", min = 1, value = "5")
-  ttl_output <- numericInput("ttl_inputt", "What is the target toxicity level for this trial, as a decimal?", min = 0, max = 1, value = "0.3")
-  max_size_output <- numericInput("max_size_inputt", "What is the maximum sample size for this trial?", min = 1, value = "30")
-  start_dose_output <- numericInput("start_dose_inputt", "What is the starting dose level?", min = 1, value = "1")
-  cohort_output <- numericInput("cohort_inputt", "What size will the cohorts be?", min = 1, value = "5")
+# Non-specific UI inputs for trial design
+  n_doses_output <- numericInput("n_doses_inputt", "How many dose levels are being tested?", min = 1, value = "5", step = 1)
+  ttl_output <- numericInput("ttl_inputt", "What is the target toxicity level for this trial, as a decimal?", min = 0, max = 1, value = "0.3", step = 0.01)
+  max_size_output <- numericInput("max_size_inputt", "What is the maximum sample size for this trial?", min = 1, value = "30", step = 1)
+  start_dose_output <- numericInput("start_dose_inputt", "What is the starting dose level?", min = 1, value = "1", step = 1)
+  cohort_output <- numericInput("cohort_inputt", "What size will the cohorts be?", min = 1, value = "5", step = 1)
   non_specific_ui_inputts <- tagList(
     n_doses_output,
     ttl_output,
@@ -19,31 +18,8 @@ non_specific_column_func <- function() {
     cohort_output
   )
 
-  
-  separator <- "___________________________________________"
-  title <- "GENERAL TRIAL PARAMETERS"
-  display_button <- checkboxInput("display_input_all", "Display parameters", value = F)
-  conditional_non_specific_ui_inputs <- conditionalPanel(condition = "input.display_input_all==1", non_specific_ui_inputts)
-  separator <- "___________________________________________"
-  text <- "SIMULATION PARAMETERS"
-  n_sims_input <- numericInput("n_sims_input", "How many simulations would you like to run per design per scenario?", value = 10)
-  n_scenarios_input <- numericInput("n_scenarios_input", "How many scenarios would you like to simulate?", min = 1, max = 3, value = 3) # Capping the number of scenarios at 3 (for now)
-  text2 <- "Please fill out each scenario's and each dose's 'True' Dose Limiting Toxicity probabilities in the table below:"
-  table_output <- DT::DTOutput("table_output") # This is to test the table output used for the simulations tab.
-  test_df_table <- DT::DTOutput("test_df")
-  #plot_button <- actionButton("plot_button", label = "Test plot")
-  #plot <- plotOutput("plot")
-  return <- list(upload_button, download_button, separator, title, display_button, conditional_non_specific_ui_inputs,
-  separator, text, n_sims_input, n_scenarios_input, text2, #table_output, 
-  test_df_table)
-}
-
-##Defining Configurations tab columns
-display_input_id <- list()
-display_condition <- list()
-specific_columns <- list()
-
-select_specific_columns <- function() {
+# Specific UI inputs for trial design
+# CRM specific inputs
 skip_esc_crm_input <- radioButtons("skip_esc_crm_input","Would you like to be able to skip doses when escalating?",
 choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE)
 skip_deesc_crm_input <- radioButtons("skip_deesc_crm_input","Would you like to be able to skip doses when de-escalating?",
@@ -69,38 +45,68 @@ specific_ui_inputs_crm <- tagList(
   stop_tox_y_input
 )
 
+# 3+3 specific inputs
 skip_tpt_input <- radioButtons("skip_tpt_input","Would you like to be able to skip doses when de-escalating?",
 choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 
+# Other specific inputs (placeholder)
 specific_ui_inputs_other <- radioButtons("specific_ui_inputs_other","This is a placeholder. Clicking this button will do nothing.",
 choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 
+##Defining non-design-specific + simulation parameters column inputs function
+non_specific_column_func <- function() {
+  n_sims_input <- numericInput("n_sims_input", "How many simulations would you like to run per design per scenario?", value = 10)
+  n_scenarios_input <- numericInput("n_scenarios_input", "How many scenarios would you like to simulate?", min = 1, max = 3, value = 3) # Capping the number of scenarios at 3 (for now)
+  text2 <- "Please fill out each scenario's and each dose's 'True' Dose Limiting Toxicity probabilities in the table below:"
+  table_output <- DT::DTOutput("table_output") # This is to test the table output used for the simulations tab.
+  test_df_table <- DT::DTOutput("test_df")
+  #plot_button <- actionButton("plot_button", label = "Test plot")
+  #plot <- plotOutput("plot")
+  return <- list(upload_button, download_button, separator, title, display_button, conditional_non_specific_ui_inputs,
+  separator, text, n_sims_input, n_scenarios_input, text2, #table_output, 
+  test_df_table)
+  }
 
-title1 <- "1: CRM"
-display_button_crm <- checkboxInput("display_crm", "Display parameters", value = F)
-conditional_crm <- conditionalPanel(condition = "input.display_crm==1", specific_ui_inputs_crm, width = 4)
-
-title2 <- "2: 3+3"
-display_button_tpt <- checkboxInput("display_tpt", "Display parameters", value = F)
-conditional_tpt <- conditionalPanel(condition = "input.display_tpt==1", skip_tpt_input, width = 4)
-
-title3 <- "3: Other (TEST)"
-display_button_other <- checkboxInput("display_other", "Display parameters", value = F)
-conditional_other <- conditionalPanel(condition = "input.display_other==1", specific_ui_inputs_other, width = 4)
-
-fluidRow(column(4,title1, display_button_crm, conditional_crm),
-  column(4,title2, display_button_tpt, conditional_tpt),
-  column(4,title3, display_button_other, conditional_other)
-)
-}
 
 ########################################### Running the UI ###########################################
 
 trial_design_ui <- function(id) {
   ns <- NS(id)
   page_sidebar( 
-    card(
+      layout_column_wrap( 
+   
+   # General Trial Design Parameters
+     card(full_screen = TRUE,
+      card_header("General Trial Parameters"),
+      card_body(
+       checkboxInput("display_input_all", "Display parameters", value = F),
+       conditionalPanel(condition = "input.display_input_all==1", non_specific_ui_inputts)
+      )),
 
+      #Specific Trial Design Parameters
+        
+        card( full_screen = TRUE,
+          card_header("CRM Parameters"),
+          card_body(
+           checkboxInput("display_crm", "Display parameters", value = F),
+           conditionalPanel(condition = "input.display_crm==1", specific_ui_inputs_crm)
+          )
+        ),
+        card(full_screen = TRUE,
+          card_header("3+3 Parameters"),
+          card_body(
+          checkboxInput("display_tpt", "Display parameters", value = F),
+           conditionalPanel(condition = "input.display_tpt==1", skip_tpt_input)
+          )
+        ),
+        card(full_screen = TRUE,
+          card_header("Other (TEST) Parameters"),
+          card_body(
+            checkboxInput("display_other", "Display parameters", value = F),
+           conditionalPanel(condition = "input.display_other==1", specific_ui_inputs_other)
+          )
+        )
+      )
     ),
     sidebar = sidebar(
       h3("Trial Design"),
@@ -115,7 +121,6 @@ trial_design_ui <- function(id) {
       p("Done filling out the configurations? Click the button below to run simulations."),
       actionButton(ns("view_simulation"), "View Simulation")
     )
-  )
 }
 
 trial_design_server <- function(id) {
