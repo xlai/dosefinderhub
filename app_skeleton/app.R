@@ -7,7 +7,7 @@ library(htmltools)
 here::i_am("app_skeleton/app.R")
 
 source("app_skeleton/pages/intro_ui.R")
-source("app_skeleton/pages/questionnaire_ui.R")
+source("app_skeleton/R/mod_02_questionnaire.R")
 source("app_skeleton/pages/trial_design_ui.R")
 source("app_skeleton/pages/sim_ui.R")
 source("app_skeleton/pages/con_ui.R")

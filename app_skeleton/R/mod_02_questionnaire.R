@@ -1,6 +1,7 @@
 source('app_skeleton/R/utils_questionnaire.R')
-# File: R/mod_questionnaire.R
-# Questionnaire Module using Golem best practices with existing helper functions
+
+# File: app_skeleton/R/mod_questionnaire.R
+# Questionnaire Module
 
 #' Questionnaire UI Function
 #'
@@ -116,7 +117,7 @@ mod_questionnaire_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
-    # Load questions data (using your existing approach)
+    # Load questions data 
     questions <- tryCatch({
       input_directory <- here::here('app_skeleton', 'Inputs')
       read.csv(file.path(input_directory, "questions.csv"))
@@ -142,7 +143,7 @@ mod_questionnaire_server <- function(id) {
     user_responses <- reactiveValues()
     questions_shown <- reactiveVal(c())  # Track which questions have been displayed
     
-    # Render question UI using your existing function with conditional logic
+    # Render question UI using conditional logic
     output$questions_ui <- renderUI({
       current_q_num <- current_question()
       if (current_q_num <= nrow(questions)) {
@@ -196,7 +197,7 @@ mod_questionnaire_server <- function(id) {
       }
     })
     
-    # Progress bar using your existing approach but with Bootstrap styling
+    # Progress bar with Bootstrap styling
     output$progress_bar <- renderUI({
       progress_value <- round((current_question() / nrow(questions)) * 100)
       
@@ -331,7 +332,7 @@ mod_questionnaire_server <- function(id) {
         show_recommendation_modal()
       }
     })
-    
+
     # Helper function to show recommendation modal using your existing function
     show_recommendation_modal <- function() {
       # Calculate recommendation using your existing logic
@@ -435,7 +436,7 @@ mod_questionnaire_server <- function(id) {
       }
     })
     
-    # File upload handler (using your existing approach)
+    # File upload handler
     observeEvent(input$file_upload, {
       req(input$file_upload)
       
@@ -447,7 +448,7 @@ mod_questionnaire_server <- function(id) {
           readRDS(input$file_upload$datapath)
         }
         
-        # Load responses using your existing approach but with namespace handling
+        # Load responses using existing approach but with namespace handling
         for (i in seq_len(nrow(uploaded_responses))) {
           original_input_id <- uploaded_responses$inputId[i]
           namespaced_input_id <- ns(original_input_id)
@@ -456,7 +457,7 @@ mod_questionnaire_server <- function(id) {
           # Store in user_responses
           user_responses[[original_input_id]] <- value
           
-          # Update UI inputs using your existing approach
+          # Update UI inputs using existing approach
           shiny::updateTextInput(session, original_input_id, value = value)
           shiny::updateNumericInput(session, original_input_id, value = as.numeric(value))
           shiny::updateSliderInput(session, original_input_id, value = as.numeric(value))
@@ -526,7 +527,7 @@ mod_questionnaire_server <- function(id) {
     
     # Reset button handler
     observeEvent(input$reset_button, {
-      # Reset to first question (using your existing approach)
+      # Reset to first question
       current_question(1)
       
       # Clear user responses
@@ -548,25 +549,15 @@ mod_questionnaire_server <- function(id) {
   })
 }
 
-# Wrapper functions to use your existing helper functions
-# These would typically be in a separate utils.R file
+# Wrapper functions to use existing helper functions
 
-#' Modified wrapper for your existing generate_questions_UI function
-#' This handles the namespace issue while using your existing logic
+#' Modified wrapper for existing generate_questions_UI function
+#' This handles the namespace issue while using existing logic
 generate_questions_UI_wrapper <- function(current_question, ns) {
   # Create a modified version that handles namespacing
   current_question_ns <- current_question
   current_question_ns$q_variable <- ns(current_question$q_variable)
   
-  # Call your existing function
+  # Call existing function
   generate_questions_UI(current_question_ns)
 }
-
-# Note: Your existing helper functions should be sourced before this module
-# Make sure these are available:
-# - parse_params()
-# - generate_questions_UI() 
-# - generate_recommendation()
-
-# Example of how to source them in your main app:
-# source("path/to/your/helper_functions.R")
