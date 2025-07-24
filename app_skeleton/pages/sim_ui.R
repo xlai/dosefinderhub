@@ -36,6 +36,61 @@ sim_ui <- function(id) {
 
 sim_server <- function(id) {
   moduleServer(id, function(input, output, session) {
-    # Placeholder logic
+
+     ######################################## Configuration tab's simulation scenarios table code ########################################
+
+  #### Simulation Variables from Configurations Tab
+  n_sims <- reactive({as.numeric(input$n_sims_input)})
+  n_scenarios <- reactive({as.numeric(input$n_scenarios_input)})
+
+  ## Writing code such that the start dose cannot be greater than the number of doses and the number of doses cannot be less than the start dose
+
+  # start_dose cannot be greater than the n_doses
+   observe({
+    updateNumericInput(session, "start_dose_inputt", max = input$n_doses_inputt)
+  })
+  
+  # n_doses cannot be less than the start_dose
+  observe({
+    # Update the min value of the maxValue input based on minValue
+    updateNumericInput(session, "n_doses_inputt", min = input$start_dose_inputt)
+  })
+
+
+  ############## Reactive True DLT Probabilities Table ##############
+
+  reactive_df <- reactiveVal() # initalising a reactive value to store the data frame
+
+  observeEvent({input$n_scenarios_input; input$n_doses_inputt}, {
+   
+  dimensions <- matrix(0, nrow = input$n_scenarios_input, ncol = input$n_doses_inputt)
+  colnames(dimensions) <- paste("d", 1:input$n_doses_inputt, sep = "")
+  dataframe <- data.frame(dimensions) # What was previously doses_table
+
+  Scenario <- matrix(as.numeric(1:input$n_scenarios_input), nrow = input$n_scenarios_input, ncol = 1)
+  
+  dataframe_row_1 <- data.frame(Scenario) # What was previously scenarios_table
+
+  cbind <- cbind(dataframe_row_1, dataframe)
+  reactive_df(cbind) # Updating the reactive value with the new data frame
+  })
+  
+  output$test_df <- renderDT({
+    datatable(reactive_df(), editable = TRUE, rownames = FALSE) #, scrollX = TRUE, scrollX="250px", paging = FALSE
+  })
+  
+  # Observe the cell edits in the datatable
+  observeEvent(input$test_df_cell_edit, {
+    info <- input$test_df_cell_edit
+
+    modified_data <- reactive_df()
+    modified_data[info$row, info$col + 1] <- DT::coerceValue(info$value, modified_data[info$row, info$col]) # +1 is here to counterract the movement of edited data.
+    reactive_df(modified_data)
+    #print(str(reactive_df()))
+  })
+
+  true_dlts <- reactive({
+    reactive_df()[, -1] # Exclude the first column (Scenario)
+  })
   })
 }

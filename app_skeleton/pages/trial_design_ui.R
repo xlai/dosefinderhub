@@ -1,8 +1,7 @@
 library(shiny)
 library(shiny.semantic)
 
-
-#################################### From Configuarations Tab ####################################
+#################################### From Configurations Tab UI ####################################
 
 # Non-specific UI inputs for trial design
   n_doses_output <- numericInput("n_doses_inputt", "How many dose levels are being tested?", min = 1, value = "5", step = 1)
@@ -63,10 +62,9 @@ trial_design_ui <- function(id) {
    # General Trial Design Parameters
      card(full_screen = TRUE,
       card_header("General Trial Parameters"),
-      card_body(
        checkboxInput("display_input_all", "Display parameters", value = F),
        conditionalPanel(condition = "input.display_input_all==1", non_specific_ui_inputts)
-      )),
+      ),
 
       #Specific Trial Design Parameters
         
@@ -110,6 +108,81 @@ trial_design_ui <- function(id) {
 
 trial_design_server <- function(id) {
   moduleServer(id, function(input, output, session) {
-    # Placeholder logic
+
+    #################################### From Configurations Tab Server #####################################
+
+ ######################################## Configuration tab's file upload/download ########################################
+
+  #Upload
+  observe({
+    
+    in_file <- input$config_file_upload
+
+    if (is.null(in_file)) {
+      return(NULL)
+    }
+
+    ext <- tools::file_ext(in_file$datapath)
+
+    if (ext == "csv") {
+      user_responses <- read.csv(in_file$datapath)
+    } else if (ext == "rds") {
+      user_responses <- readRDS(in_file$datapath)
+    }
+
+    for (i in seq_len(nrow(user_responses))) {
+      updateNumericInput(session, inputId = user_responses$inputId[i], value = user_responses$value[i])
+    }
+
   })
+
+  #Download - This doesn't work. Should be changed to allow for new variable names.
+
+  output$config_save_button <- shiny::downloadHandler(
+    filename = function() {
+      paste("user_responses-", Sys.Date(), ".csv", sep = "")
+    },
+
+    content = function(file) {
+        input_ids_for_df <- c((questions$trial)$q_variable, (questions$method)$q_variable, (questions$ranking)$q_variable)
+
+        inputs_for_df <- c()
+        for (input.i in 1:length(input_ids_for_df)){
+          inputs_for_df <- append(inputs_for_df, input[[input_ids_for_df[input.i]]])
+        }
+  
+        inputs_data_frame <- data.frame(inputId=c(input_ids_for_df), value=c(inputs_for_df))
+        write.csv(inputs_data_frame, file)
+    }
+  )
+
+  ################################ Configuration tab's sidebar code ################################
+
+  # General variables from configuration tab 
+  n_dosess <- reactive({as.numeric(input$n_doses_inputt)}) # Using double ending letters to avoid mixing up with other input (for now)
+  ttl <- reactive({as.numeric(input$ttl_inputt)})
+  max_size <- reactive({as.numeric(input$max_size_inputt)})
+  start_dose <- reactive({as.numeric(input$start_dose_inputt)}) 
+  cohort_size <- reactive({as.numeric(input$cohort_inputt)})
+
+  # Model-specific variables from configuration tab
+  # CRM
+  skip_esc_crm <- reactive({as.logical(input$skip_esc_crm_input)})
+  skip_deesc_crm <- reactive({as.logical(input$skip_deesc_crm_input)})
+  above_target_crm <- reactive({as.logical(input$above_target_input)}) # This isn't used in the sim_crm function
+  prior_var_crm <- reactive({as.numeric(input$prior_var_input)})
+  stop_n_mtd_crm <- reactive({as.numeric(input$stop_n_mtd_input)})
+  skeleton_crm <- reactive({
+    as.numeric(unlist(strsplit(input$skeleton_input, ",")))
+  })
+  prior_mtd_crm <- reactive({as.numeric(input$prior_mtd_input)})  # This isn't used in the sim_crm function
+  stop_tox_x_crm <- reactive({as.numeric(input$stop_tox_x_input)})
+  stop_tox_y_crm <- reactive({as.numeric(input$stop_tox_y_input)})  
+
+  # 3+3
+  skip_tpt <- reactive({as.logical(input$skip_tpt_input)}) 
+
+  
+}
+)
 }
