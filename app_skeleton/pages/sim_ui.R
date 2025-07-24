@@ -28,9 +28,35 @@ sim_ui <- function(id) {
       'Refresh Dimensions'."),
       test_df_table,
       actionButton("refresh_table_input", "Refresh Table Dimensions")
-      )
-      ),
+      )),
+
     sidebar = sidebar(
+      h3("What Do You Want to Simulate?"),
+            ################################ Simulation tab UI ################################
+      # This code is copied from the Simulation tab UI in trial_design/ui.R
+      selectizeInput("simulation_design_selection_input", "Select which designs' simulation outputs to see",
+        choices = pretty_ranking,
+        multiple = TRUE,
+        options = list(plugins = list('remove_button'))),
+      
+      uiOutput(ns("scen_output_question")),
+      
+      selectizeInput("metric_selection_input", "Select outputs/metrics",
+        choices = c("% participants treated at dose",
+          "% times dose was selected as MTD",
+          "Accuracy",
+          "Duration",
+          "Overdosing"),
+        multiple = TRUE,
+        list(plugins = list('remove_button'))),
+      
+      #selectizeInput("visual_selection_input", "Select type of output",
+        #choices = c("Table", "Plot"),
+        #multiple = TRUE,
+        #list(plugins = list('remove_button')))
+
+      ##### Run Simulation Button and Dowload Results Button #####
+      tags$hr(), # Separator line
       h3("Run Simulation"),
       p("Please fill out the Simulation Inputs and click 'Run Simulation' to see the results."),
       actionButton(ns("run_simulation"), "Run Simulation"),
@@ -39,7 +65,7 @@ sim_ui <- function(id) {
       p("Want to save your simulation results? Click a button below to download them as a CSV file."),
       downloadButton(ns("download_simulation_results"), "Download Simulation Results")
     )
-  )
+  ) 
 }
 
 sim_server <- function(id, shared) {
@@ -86,5 +112,20 @@ sim_server <- function(id, shared) {
   true_dlts <- reactive({
     reactive_df()[, -1] # Exclude the first column (Scenario)
   })
+
+  ######################################## Simulation Tab's Server Code ######################################
+
+  ##### Scenarios Question ######
+   new_n_scen <- reactive(as.numeric(input$n_scenarios_input))
+  updated_scen_choices <- reactive(paste0("Scenario ", 1:new_n_scen()))
+
+  output$scen_output_question <- renderUI({
+    tagList(
+      selectizeInput("scen_output_input", "Select scenarios", choices = updated_scen_choices(),
+        multiple = TRUE, list(plugins = list('remove_button')))
+    )
   })
-}
+
+
+  }) # End of moduleServer
+} # End of sever function
