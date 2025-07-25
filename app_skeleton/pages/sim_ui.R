@@ -27,7 +27,7 @@ sim_ui <- function(id) {
       in the table below. If the dimensions do not match, change the number of scenarios and doses and press 
       'Refresh Dimensions'."),
       test_df_table,
-      actionButton("refresh_table_input", "Refresh Table Dimensions")
+      input_task_button(ns("refresh_table_input"), "Refresh Table Dimensions")
       )),
 
     sidebar = sidebar(
@@ -81,7 +81,7 @@ sim_server <- function(id, shared) {
 
   reactive_df <- reactiveVal() # initalising a reactive value to store the data frame
 
-  observeEvent({input$n_scenarios_input}, {
+  observeEvent({input$refresh_table_input}, {
 
   dimensions <- matrix(0, nrow = n_scenarios(), ncol = shared$n_dosess())
   colnames(dimensions) <- paste("d", 1:shared$n_dosess(), sep = "")
