@@ -19,7 +19,7 @@ sim_ui <- function(id) {
 
   # Running the tab itself
   page_sidebar(
-    card(height = 100,
+     card(height = 250,
       card_header("Simulation Inputs"),
       card_body(
       simulation_inputs,
@@ -28,6 +28,11 @@ sim_ui <- function(id) {
       'Refresh Dimensions'."),
       test_df_table,
       input_task_button(ns("refresh_table_input"), "Refresh Table Dimensions")
+      )),
+      card(
+        card_header("Simulation Outputs"),
+        card_body(
+          uiOutput("tables_ui") # Simulation tables
       )),
 
     sidebar = sidebar(
