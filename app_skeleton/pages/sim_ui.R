@@ -131,6 +131,115 @@ sim_server <- function(id, shared) {
     )
   })
 
+ ######################################### Simulation Outputs #########################################
+ # Code copied directly from the trial_design tab's server code
+ # Simulation outputs
+
+  observeEvent(input$submit, {
+
+    # Adding in Scenarios. I am going to cap the possible number of Scenarios to 3 (this can be changed later).
+
+  selected_scenarios <- cbind(
+    scen1 <- {"Scenario 1" %in% input$scen_output_input},
+    scen2 <- {"Scenario 2" %in% input$scen_output_input},
+    scen3 <- {"Scenario 3" %in% input$scen_output_input}
+  )
+  #print(true_dlts())
+  used_true_dlts <- true_dlts()[selected_scenarios, ] # Scenarios are rows!
+  #print(used_true_dlts)
+  n_scen <- nrow(used_true_dlts)
+  #print(n_scen)
+  combined_list <- vector("list", n_scen) # initialising for use later
+  title_list <- vector("list", n_scen) # initialising for use later
+
+   # Metric - putting it outside of the for loop so only one list is created.
+  selected_metric <- cbind(
+  selected_mtd <- {"% times dose was selected as MTD" %in% input$metric_selection_input},
+  selected_participant <- {"% participants treated at dose" %in% input$metric_selection_input},
+  selected_accuracy <- {"Accuracy" %in% input$metric_selection_input},
+  selected_duration <- {"Duration" %in% input$metric_selection_input},
+  selected_overdose <- {"Overdosing" %in% input$metric_selection_input})
+
+  if (n_scen == 0) {tables_ui <- NULL} else { for (j in 1:n_scen) {
+
+  # Design - only running simulations that are necessary to save time.
+  if ("3+3" %in% input$simulation_design_selection_input)
+      { #print(unlist(used_true_dlts[j, ]))
+        tpt_sim <- sim_tpt(n_dosess(), ttl(), max_size(), start_dose(), n_sims(), unlist(used_true_dlts[j, ]), skip_tpt(), 12345)
+       tpt_modified_tab <- tpt_sim[-c(3,5,7)]
+      } else {tpt_modified_tab <- NULL}
+  if ("CRM" %in% input$simulation_design_selection_input)
+      {
+        crm_sim <- sim_crm(n_dosess(), ttl(), max_size(), start_dose(), n_sims(), unlist(used_true_dlts[j, ]), skeleton_crm(), prior_var_crm(), skip_esc_crm(), skip_deesc_crm(), stop_tox_x_crm(), stop_tox_y_crm(), stop_n_mtd_crm())
+       crm_modified_tab <- crm_sim[-c(3,5,7)]
+      } else {crm_modified_tab <- NULL}
+
+  tpt_to_display <- tpt_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
+  crm_to_display <- crm_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
+  
+  tpt_title <- as.character(rep("3+3 Simulation for Scenario ", 5))
+  crm_title <- as.character(rep("CRM Simulation for Scenario ", 5))
+  scenario_number <- as.character(rep(j, 5))
+  metric_names <- as.character(c(" - % Times dose was selected as MTD", "- % Treated at each dose",  " - Mean accuracy", " - Mean trial length", " - Mean overdose"))
+
+  if ("3+3" %in% input$simulation_design_selection_input) {
+  full_tpt_titles <- paste(as.character(tpt_title), as.character(scenario_number), as.character(metric_names))
+  } else {full_tpt_titles <- NULL}
+
+  if("CRM" %in% input$simulation_design_selection_input) {
+  full_crm_titles <- paste(as.character(crm_title), as.character(scenario_number), as.character(metric_names))
+  } else {full_crm_titles <- NULL}
+
+  #print(full_tpt_titles)
+  used_tpt_titles <- full_tpt_titles[c(which(selected_metric == TRUE))] # A list of titles we want to display
+  
+  #print(used_tpt_titles)
+
+  used_crm_titles <- full_crm_titles[c(which(selected_metric == TRUE))] # A list of titles we want to display
+  #print(used_crm_titles)
+
+  tpt_data_frames <- lapply(tpt_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
+  crm_data_frames <- lapply(crm_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
+ 
+  combined_list[[j]]  <- cbind(tpt_data_frames, crm_data_frames)
+  cbind_titles <- cbind(used_tpt_titles, used_crm_titles)
+  title_list[[j]] <- unname(unlist(cbind_titles))
+
+  } # for loop end
+
+  combined_data_frames <- do.call(c, combined_list) 
+  combined_titles <- do.call(c, title_list) 
+  
+  n_data_frames <- length(combined_data_frames)
+
+  # Using generic table names to render the UI with all the tables in it.
+  if (n_data_frames == 0) {output$tables_ui <- NULL  # The case where nothing is entered
+  } else {
+  table_names <- c(paste(rep("Table", n_data_frames), as.list(as.character(1:n_data_frames)), sep = " "))
+  names(combined_data_frames) <- table_names
+
+  ## Using the names of the tables to render a UI with all the tables in it.
+   output$tables_ui <- renderUI({
+    lapply(names(combined_data_frames), function(table_name) {
+      tagList(
+        table_number <- as.numeric(gsub("Table ", "", table_name)), # Extracting the number from the table name
+        h3(combined_titles[table_number]), # Title for each table
+        tableOutput(outputId = paste0("table_", table_name)) # Table output
+      )
+    })
+  })
+  
+  # Rendering each table
+  lapply(names(combined_data_frames), function(table_name) {
+    output[[paste0("table_", table_name)]] <- renderTable({
+      combined_data_frames[[table_name]]
+    }, rownames = TRUE, colnames = TRUE) 
+  }) 
+
+  
+  } # else (after for loop)
+  } # else (before for loop)
+  }) # observe function
 
   }) # End of moduleServer
 } # End of sever function
