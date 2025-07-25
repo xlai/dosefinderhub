@@ -165,12 +165,12 @@ sim_server <- function(id, shared) {
   # Design - only running simulations that are necessary to save time.
   if ("3+3" %in% input$simulation_design_selection_input)
       { #print(unlist(used_true_dlts[j, ]))
-        tpt_sim <- sim_tpt(n_dosess(), ttl(), max_size(), start_dose(), n_sims(), unlist(used_true_dlts[j, ]), skip_tpt(), 12345)
+        tpt_sim <- sim_tpt(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skip_tpt(), 12345)
        tpt_modified_tab <- tpt_sim[-c(3,5,7)]
       } else {tpt_modified_tab <- NULL}
   if ("CRM" %in% input$simulation_design_selection_input)
       {
-        crm_sim <- sim_crm(n_dosess(), ttl(), max_size(), start_dose(), n_sims(), unlist(used_true_dlts[j, ]), skeleton_crm(), prior_var_crm(), skip_esc_crm(), skip_deesc_crm(), stop_tox_x_crm(), stop_tox_y_crm(), stop_n_mtd_crm())
+        crm_sim <- sim_crm(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skeleton_crm(), shared$prior_var_crm(), shared$skip_esc_crm(), shared$skip_deesc_crm(), shared$stop_tox_x_crm(), shared$stop_tox_y_crm(), shared$stop_n_mtd_crm())
        crm_modified_tab <- crm_sim[-c(3,5,7)]
       } else {crm_modified_tab <- NULL}
 
