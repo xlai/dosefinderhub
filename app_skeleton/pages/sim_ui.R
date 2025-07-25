@@ -32,7 +32,7 @@ sim_ui <- function(id) {
       card(
         card_header("Simulation Outputs"),
         card_body(
-          uiOutput("tables_ui") # Simulation tables
+          uiOutput(ns("tables_ui")) # Simulation tables
       )),
 
     sidebar = sidebar(
@@ -64,7 +64,7 @@ sim_ui <- function(id) {
       tags$hr(), # Separator line
       h3("Run Simulation"),
       p("Please fill out the Simulation Inputs and click 'Run Simulation' to see the results."),
-      actionButton(ns("run_simulation"), "Run Simulation"),
+      input_task_button(ns("run_simulation"), "Run Simulation"),
       tags$hr(), # Separator line
       h3("Download Results"),
       p("Want to save your simulation results? Click a button below to download them as a CSV file."),
@@ -135,7 +135,7 @@ sim_server <- function(id, shared) {
  # Code copied directly from the trial_design tab's server code
  # Simulation outputs
 
-  observeEvent(input$submit, {
+  observeEvent(input$run_simulation, {
 
     # Adding in Scenarios. I am going to cap the possible number of Scenarios to 3 (this can be changed later).
 
@@ -144,6 +144,7 @@ sim_server <- function(id, shared) {
     scen2 <- {"Scenario 2" %in% input$scen_output_input},
     scen3 <- {"Scenario 3" %in% input$scen_output_input}
   )
+
   #print(true_dlts())
   used_true_dlts <- true_dlts()[selected_scenarios, ] # Scenarios are rows!
   #print(used_true_dlts)

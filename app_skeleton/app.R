@@ -7,6 +7,7 @@ library(htmltools)
 
 #source("app_skeleton/pages/intro_ui.R")
 #source("app_skeleton/pages/question_ui.R")
+#source("app_skeleton/pages/global.R")
 #source("app_skeleton/pages/trial_design_ui.R")
 #source("app_skeleton/pages/sim_ui.R")
 #source("app_skeleton/pages/con_ui.R")
