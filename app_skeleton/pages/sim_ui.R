@@ -39,14 +39,14 @@ sim_ui <- function(id) {
       h3("What Do You Want to Simulate?"),
             ################################ Simulation tab UI ################################
       # This code is copied from the Simulation tab UI in trial_design/ui.R
-      selectizeInput("simulation_design_selection_input", "Select which designs' simulation outputs to see",
+      selectizeInput(ns("simulation_design_selection_input"), "Select which designs' simulation outputs to see",
         choices = pretty_ranking,
         multiple = TRUE,
         options = list(plugins = list('remove_button'))),
       
       uiOutput(ns("scen_output_question")),
       
-      selectizeInput("metric_selection_input", "Select outputs/metrics",
+      selectizeInput(ns("metric_selection_input"), "Select outputs/metrics",
         choices = c("% participants treated at dose",
           "% times dose was selected as MTD",
           "Accuracy",
@@ -75,7 +75,7 @@ sim_ui <- function(id) {
 
 sim_server <- function(id, shared) {
   moduleServer(id, function(input, output, session) {
-
+ns <- session$ns
      ######################################## Configuration tab's simulation scenarios table code ########################################
 
   #### Simulation Variables from Configurations Tab
@@ -126,7 +126,7 @@ sim_server <- function(id, shared) {
 
   output$scen_output_question <- renderUI({
     tagList(
-      selectizeInput("scen_output_input", "Select scenarios", choices = updated_scen_choices(),
+      selectizeInput(ns("scen_output_input"), "Select scenarios", choices = updated_scen_choices(),
         multiple = TRUE, list(plugins = list('remove_button')))
     )
   })
@@ -144,12 +144,12 @@ sim_server <- function(id, shared) {
     scen2 <- {"Scenario 2" %in% input$scen_output_input},
     scen3 <- {"Scenario 3" %in% input$scen_output_input}
   )
-
+  print(selected_scenarios)
   #print(true_dlts())
   used_true_dlts <- true_dlts()[selected_scenarios, ] # Scenarios are rows!
-  #print(used_true_dlts)
+  print(used_true_dlts)
   n_scen <- nrow(used_true_dlts)
-  #print(n_scen)
+  print(n_scen)
   combined_list <- vector("list", n_scen) # initialising for use later
   title_list <- vector("list", n_scen) # initialising for use later
 
@@ -160,7 +160,7 @@ sim_server <- function(id, shared) {
   selected_accuracy <- {"Accuracy" %in% input$metric_selection_input},
   selected_duration <- {"Duration" %in% input$metric_selection_input},
   selected_overdose <- {"Overdosing" %in% input$metric_selection_input})
-
+  print(selected_metric)
   if (n_scen == 0) {tables_ui <- NULL} else { for (j in 1:n_scen) {
 
   # Design - only running simulations that are necessary to save time.
@@ -201,7 +201,7 @@ sim_server <- function(id, shared) {
 
   tpt_data_frames <- lapply(tpt_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
   crm_data_frames <- lapply(crm_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
- 
+  
   combined_list[[j]]  <- cbind(tpt_data_frames, crm_data_frames)
   cbind_titles <- cbind(used_tpt_titles, used_crm_titles)
   title_list[[j]] <- unname(unlist(cbind_titles))
@@ -209,23 +209,24 @@ sim_server <- function(id, shared) {
   } # for loop end
 
   combined_data_frames <- do.call(c, combined_list) 
+  print(combined_data_frames)
   combined_titles <- do.call(c, title_list) 
   
   n_data_frames <- length(combined_data_frames)
-
+  print(n_data_frames)
   # Using generic table names to render the UI with all the tables in it.
   if (n_data_frames == 0) {output$tables_ui <- NULL  # The case where nothing is entered
   } else {
   table_names <- c(paste(rep("Table", n_data_frames), as.list(as.character(1:n_data_frames)), sep = " "))
   names(combined_data_frames) <- table_names
-
+  print(table_names)
   ## Using the names of the tables to render a UI with all the tables in it.
    output$tables_ui <- renderUI({
     lapply(names(combined_data_frames), function(table_name) {
       tagList(
-        table_number <- as.numeric(gsub("Table ", "", table_name)), # Extracting the number from the table name
-        h3(combined_titles[table_number]), # Title for each table
-        tableOutput(outputId = paste0("table_", table_name)) # Table output
+        #table_number <- as.numeric(gsub("Table ", "", table_name)), # Extracting the number from the table name
+        h3(table_name), # Title for each table
+        tableOutput(ns(paste0("table_", table_name))) # Table output
       )
     })
   })
