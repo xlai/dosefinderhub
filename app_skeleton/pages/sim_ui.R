@@ -175,13 +175,28 @@ ns <- session$ns
        crm_modified_tab <- crm_sim[-c(3,5,7)]
       } else {crm_modified_tab <- NULL}
 
+  # Giving Titles to Single Value Ouputs
+  tpt_modified_tab$mean_accuracy <- as.data.frame(tpt_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
+  tpt_modified_tab$mean_overdose <- as.data.frame(tpt_modified_tab$mean_overdose, row.names = "Mean Overdose")
+  tpt_modified_tab$mean_length <- as.data.frame(tpt_modified_tab$mean_length, row.names = "Mean Trial Length")
+  colnames(tpt_modified_tab$mean_accuracy) <- ""
+  colnames(tpt_modified_tab$mean_length)<- ""
+  colnames(tpt_modified_tab$mean_overdose) <- ""
+
+  crm_modified_tab$mean_accuracy <- as.data.frame(crm_modified_tab$mean_accuracy, row.names = "Mean Accuracy", col.names = FALSE)
+  crm_modified_tab$mean_overdose <- as.data.frame(crm_modified_tab$mean_overdose, row.names = "Mean Overdose", col.names = FALSE)
+  crm_modified_tab$mean_length <- as.data.frame(crm_modified_tab$mean_length, row.names = "Mean Trial Length", col.names = FALSE)
+  colnames(crm_modified_tab$mean_accuracy) <- ""
+  colnames(crm_modified_tab$mean_length)<- ""
+  colnames(crm_modified_tab$mean_overdose) <- ""
+
   tpt_to_display <- tpt_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
   crm_to_display <- crm_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
   
   tpt_title <- as.character(rep("3+3 Simulation for Scenario ", 5))
   crm_title <- as.character(rep("CRM Simulation for Scenario ", 5))
   scenario_number <- as.character(rep(j, 5))
-  metric_names <- as.character(c(" - % Times dose was selected as MTD", "- % Treated at each dose",  " - Mean accuracy", " - Mean trial length", " - Mean overdose"))
+  metric_names <- as.character(c(" - % Times Dose Was Selected as MTD", "- % Treated at Each Dose",  " - Mean Accuracy", " - Mean Trial Length", " - Mean Overdose"))
 
   if ("3+3" %in% input$simulation_design_selection_input) {
   full_tpt_titles <- paste(as.character(tpt_title), as.character(scenario_number), as.character(metric_names))
