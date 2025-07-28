@@ -46,6 +46,59 @@ questions <- dummy_data
 
 #column_names <- reactive({sprintf("d(%d)", 1:input$n_doses_inputt)})
 
+######################## Validation Functions ########################
+
+# Reusable validation function
+validate_numeric_input <- function(value, min_val = NULL, max_val = NULL, integer_only = FALSE) {
+
+  if (!is.null(value) && value != "" && !is.na(value)) {
+    if (!is.numeric(value)) {
+      return("Please enter a valid number")
+    }
+    
+    # Check if integer is required
+    if (integer_only) {
+      if (value != as.integer(value)) {
+        return("Please enter a whole number (integer)")
+      }
+    }
+    
+    # Check for positive values when min_val is set to greater than 0
+    if (!is.null(min_val) && value < min_val) {
+      if (min_val > 0) {
+        return(paste("Value must be positive (greater than", min_val - 1, ")"))
+      } else {
+        return(paste("Value must be at least", min_val))
+      }
+    }
+    
+    if (!is.null(max_val) && value > max_val) {
+      return(paste("Value must be at most", max_val))
+    }
+  }
+  
+  return(NULL) # No error
+}
+
+# Reusable UI component for numeric input with validation using bslib
+numericInputWithValidation <- function(inputId, label, value = NULL, min = NA, max = NA, 
+                                       step = NA, width = NULL, help_text = NULL) {
+  div(
+    class = "mb-3",
+    tags$label(label, class = "form-label", `for` = inputId),
+    if (!is.null(help_text)) {
+      tags$small(help_text, class = "form-text text-muted")
+    },
+    numericInput(inputId, label = NULL, value = value, min = min, max = max, step = step, width = width),
+    div(
+      id = paste0(inputId, "_warning"), 
+      class = "invalid-feedback d-block",
+      style = "font-size: 0.875rem; margin-top: 0.25rem; min-height: 1.2em;"
+    )
+  )
+}
+
+
 ############################################ Simulation Code ############################################
 
 ### This is a rewrite of the basesim.r file as a set of functions that can be used reactively to simulate data.

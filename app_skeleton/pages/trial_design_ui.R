@@ -8,17 +8,29 @@ trial_design_ui <- function(id) {
 
 
 # Non-specific UI inputs for trial design
-  n_doses_output <- numericInput(ns("n_doses_inputt"), "How many dose levels are being tested?", min = 1, value = "5", step = 1)
-  ttl_output <- numericInput(ns("ttl_inputt"), "What is the target toxicity level for this trial, as a decimal?", min = 0, max = 1, value = "0.3", step = 0.01)
-  max_size_output <- numericInput(ns("max_size_inputt"), "What is the maximum sample size for this trial?", min = 1, value = "30", step = 1)
-  start_dose_output <- numericInput(ns("start_dose_inputt"), "What is the starting dose level?", min = 1, value = "1", step = 1)
-  cohort_output <- numericInput(ns("cohort_inputt"), "What size will the cohorts be?", min = 1, value = "5", step = 1)
+  n_doses_output <- numericInputWithValidation(ns("n_doses_inputt"), "How many dose levels are being tested?", min = 1, value = "5", step = 1)
+  ttl_output <- numericInputWithValidation(ns("ttl_inputt"), "What is the target toxicity level for this trial, as a decimal?", min = 0, max = 1, value = "0.3", step = 0.01)
+  max_size_output <- numericInputWithValidation(ns("max_size_inputt"), "What is the maximum sample size for this trial?", min = 1, value = "30", step = 1)
+  start_dose_output <- numericInputWithValidation(ns("start_dose_inputt"), "What is the starting dose level?", min = 1, value = "1", step = 1)
+  cohort_output <- numericInputWithValidation(ns("cohort_inputt"), "What size will the cohorts be?", min = 1, value = "5", step = 1)
+  
+  n_doses_warning_text <- textOutput(ns("n_doses_warning"))
+  ttl_warning_text <- textOutput(ns("ttl_warning"))
+  max_size_warning_text <- textOutput(ns("max_size_warning"))
+  start_dose_warning_text <- textOutput(ns("start_dose_warning"))
+  cohort_warning_text <- textOutput(ns("cohort_warning"))
+
   non_specific_ui_inputts <- tagList(
     n_doses_output,
+    n_doses_warning_text,
     ttl_output,
+    ttl_warning_text,
     max_size_output,
+    max_size_warning_text,
     start_dose_output,
-    cohort_output
+    start_dose_warning_text,
+    cohort_output,
+    cohort_warning_text
   )
 
 # Specific UI inputs for trial design
@@ -30,22 +42,34 @@ choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 above_target_input <- radioButtons(ns("above_target_input"),
 "Do you want to prevent escalation of doses if the overall observed DLT rate at the current dose level is above the target DLT rate?",
 choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
-prior_var_input <- numericInput(ns("prior_var_input"), "What is the estimate of the prior variance?", min = 0, value = 0.1)
-stop_n_mtd_input <- numericInput(ns("stop_n_mtd_input"), "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = 24)
+prior_var_input <- numericInputWithValidation(ns("prior_var_input"), "What is the estimate of the prior variance?", min = 0, value = 0.1)
+stop_n_mtd_input <- numericInputWithValidation(ns("stop_n_mtd_input"), "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = 24)
 skeleton_input <- textInput(ns("skeleton_input"), "What are the prior estimates of the DLT rates at each dose? Please make this an increasing list and separate each value with a comma.", value = "0.108321683015674,0.255548628279939,0.425089891767129,0.576775912195444,0.817103320499882")
-prior_mtd_input <- numericInput(ns("prior_mtd_input"), "What is your prior guess of the MTD?", min = 1, value = 8)
-stop_tox_x_input <- numericInput(ns("stop_tox_x_input"), "When using the this Bayesian safety early criterion: p(true DLT rate at lowest dose > target DLT rate + x | data) > y, what would you like x to be? This is the excess toxicity above the target DLT.", min = 0, value = 0.09)
-stop_tox_y_input <- numericInput(ns("stop_tox_y_input"), "What would you like y to be? This is the confidence level for safety stopping.", min = 0, max = 1, value = 0.77)
+prior_mtd_input <- numericInputWithValidation(ns("prior_mtd_input"), "What is your prior guess of the MTD?", min = 1, value = 8)
+stop_tox_x_input <- numericInputWithValidation(ns("stop_tox_x_input"), "When using the this Bayesian safety early criterion: p(true DLT rate at lowest dose > target DLT rate + x | data) > y, what would you like x to be? This is the excess toxicity above the target DLT.", min = 0, value = 0.09)
+stop_tox_y_input <- numericInputWithValidation(ns("stop_tox_y_input"), "What would you like y to be? This is the confidence level for safety stopping.", min = 0, max = 1, value = 0.77)
+
+prior_var_warning_text <- textOutput(ns("prior_var_warning"))
+stop_n_mtd_warning_text <- textOutput(ns("stop_n_mtd_warning"))
+prior_mtd_warning_text <- textOutput(ns("prior_mtd_warning"))
+stop_tox_x_warning_text <- textOutput(ns("stop_tox_x_warning"))
+stop_tox_y_warning_text <- textOutput(ns("stop_tox_y_warning"))
+
 specific_ui_inputs_crm <- tagList(
   skip_esc_crm_input,
   skip_deesc_crm_input,
   above_target_input,
   prior_var_input,
+  prior_var_warning_text,
   stop_n_mtd_input,
+  stop_n_mtd_warning_text,
   skeleton_input,
   prior_mtd_input,
+  prior_mtd_warning_text,
   stop_tox_x_input,
-  stop_tox_y_input
+  stop_tox_x_warning_text,
+  stop_tox_y_input,
+  stop_tox_y_warning_text
 )
 
 # 3+3 specific inputs
@@ -198,6 +222,157 @@ trial_design_server <- function(id, shared) {
 
   # 3+3
   shared$skip_tpt <- reactive({as.logical(input$skip_tpt_input)})
+
+  ############################ Validation Checks and Warning Messages ##############################
+  validation_state <- reactiveValues(
+    n_doses_val = NULL,
+    ttl_val = NULL,
+    max_size_val = NULL,
+    start_dose_val = NULL,
+    cohort_val = NULL,
+
+    prior_var_val = NULL,
+    stop_n_mtd_val = NULL,
+    prior_mtd_val = NULL,
+    stop_tox_x_val = NULL,
+    stop_tox_y_val = NULL
+  )
+  
+  # Define base validation rules for each input
+  base_validation_rules <- list(
+    n_doses_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
+    ttl_val = list(min_val = 0, max_val = 1, integer_only = FALSE),
+    max_size_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
+    start_dose_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
+    cohort_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
+
+    prior_var_val = list(min_val = 0, max_val = 1, integer_only = FALSE),
+    stop_n_mtd_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
+    prior_mtd_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
+    stop_tox_x_val = list(min_val = 0, max_val = 1, integer_only = FALSE),
+    stop_tox_y_val = list(min_val = 0, max_val = 1, integer_only = FALSE)
+  )
+  
+  # Dynamic validation rules (updates based on n_doses input)
+  validation_rules <- reactive({
+    rules <- base_validation_rules
+    # Update start_dose max_val based on n_doses input
+    if (!is.null(input$n_dosess) && !is.na(input$n_dosess) && input$n_dosess > 0) {
+      rules$start_dose_val$max_val <- input$n_dosess
+    }
+    return(rules)
+  })
+  
+  # Function to update validation for a specific input
+  update_validation <- function(input_id, value) {
+    rules <- validation_rules()[[input_id]]
+    error_msg <- validate_numeric_input(
+      value, 
+      min_val = rules$min_val, 
+      max_val = rules$max_val, 
+      integer_only = rules$integer_only
+    )
+    
+    validation_state[[input_id]] <- error_msg
+    
+    # Update the warning message next to the input
+    warning_id <- paste0(input_id, "_warning")
+    if (is.null(error_msg)) {
+      validation_state[[warning_id]] <- ""
+    } else {
+      validation_state[[warning_id]] <- paste("⚠️", error_msg)
+    }
+  }
+  
+  # Observe changes in each input and validate
+  # General Inputs
+  observe({
+    update_validation("n_doses_val", input$n_doses_inputt)
+  })
+  
+  observe({
+    update_validation("ttl_val", input$ttl_inputt)
+  })
+
+    observe({
+    update_validation("max_size_val", input$max_size_inputt)
+  })
+  
+  observe({
+    update_validation("start_dose_val", input$start_dose_inputt)
+    # Re-validate start_dose when dose_levels changes
+    if (!is.null(input$n_doses_inputt)) {
+      update_validation("start_dose_val", input$start_dose_inputt)
+    }
+  })
+  
+  observe({
+    update_validation("cohort_val", input$cohort_size_inputt)
+  })
+  
+  # CRM Inputs
+  observe({
+    update_validation("prior_var_val", input$prior_var_input)
+  })
+  
+  observe({
+    update_validation("stop_n_mtd_val", input$stop_n_mtd_input)
+  })
+
+  observe({
+    update_validation("prior_mtd_val", input$prior_mtd_input)
+  })
+
+  observe({
+    update_validation("stop_tox_x_val", input$stop_tox_x_input)
+  })
+
+  observe({
+    update_validation("stop_tox_y_val", input$stop_tox_y_input)
+  })
+
+  # Render individual warning messages next to each input
+  output$n_doses_warning <- renderText({
+    validation_state$n_doses_val_warning %||% ""
+  })
+
+  output$ttl_warning <- renderText({
+    validation_state$ttl_val_warning %||% ""
+  })
+  
+  output$max_size_warning <- renderText({
+    validation_state$max_size_val_warning %||% ""
+  })
+
+  output$start_dose_warning <- renderText({
+    validation_state$start_dose_val_warning %||% ""
+  })
+  
+  output$cohort_warning <- renderText({
+    validation_state$cohort_val_warning %||% ""
+  })
+
+  # CRM 
+
+  output$prior_var_warning <- renderText({
+    validation_state$prior_var_val_warning %||% ""
+  })
+
+  output$stop_n_mtd_warning <- renderText({
+    validation_state$stop_n_mtd_val_warning %||% ""
+  })
+
+  output$prior_mtd_warning <- renderText({
+    validation_state$prior_mtd_val_warning %||% ""
+  })
+
+  output$stop_tox_x_warning <- renderText({
+    validation_state$stop_tox_x_val_warning %||% ""
+  })
+
+  output$stop_tox_y_warning <- renderText({
+    validation_state$stop_tox_y_val_warning %||% ""
+  })
 
 } # End of function within moduleServer
 ) # End of moduleServer
