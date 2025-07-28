@@ -142,16 +142,6 @@ trial_design_server <- function(id, shared) {
 
     #################################### From Configurations Tab Server #####################################
 
-  # start_dose cannot be greater than the n_doses
-    observe({
-      updateNumericInput(session, "start_dose_inputt", max = input$n_doses_inputt)
-    })
-  
-    # n_doses cannot be less than the start_dose
-    observe({
-      # Update the min value of the maxValue input based on minValue
-      updateNumericInput(session, "n_doses_inputt", min = input$start_dose_inputt)
-    })
  ######################################## Configuration tab's file upload/download ########################################
 
   #Upload
@@ -258,8 +248,8 @@ trial_design_server <- function(id, shared) {
     rules <- base_validation_rules
 
     # start_dose <= n_doses
-    if (!is.null(input$start_dose_inputt) && !is.na(input$start_dose_inputt) && input$start_dose_inputt > 0) {
-      rules$n_doses_val$min_val <- input$start_dose_inputt
+    if (!is.null(input$n_doses_inputt) && !is.na(input$n_doses_inputt) && input$n_doses_inputt > 0) {
+      rules$start_dose_val$max_val <- input$n_doses_inputt
     }
 
     # cohort <= max_size
@@ -305,6 +295,13 @@ trial_design_server <- function(id, shared) {
   # General Inputs
   observe({
     update_validation("n_doses_val", input$n_doses_inputt)
+    # When n_doses changes, re-validate start_dose and prior_mtd to show warning if needed
+    if (!is.null(input$start_dose_inputt)) {
+      update_validation("start_dose_val", input$start_dose_inputt)
+    }
+    if (!is.null(input$prior_mtd_input)) {
+      update_validation("prior_mtd_val", input$prior_mtd_input)
+    }
   })
   
   observe({
@@ -313,14 +310,17 @@ trial_design_server <- function(id, shared) {
 
     observe({
     update_validation("max_size_val", input$max_size_inputt)
+    # When max_size changes, re-validate cohort and stop_n_mtd to show warning if needed
+    if (!is.null(input$cohort_inputt)) {
+      update_validation("cohort_val", input$cohort_inputt)
+    }
+    if (!is.null(input$stop_n_mtd_input)) {
+      update_validation("stop_n_mtd_val", input$stop_n_mtd_input)
+    }
   })
   
   observe({
     update_validation("start_dose_val", input$start_dose_inputt)
-    # Re-validate start_dose when dose_levels changes
-    if (!is.null(input$n_doses_inputt)) {
-      update_validation("start_dose_val", input$start_dose_inputt)
-    }
   })
   
   observe({

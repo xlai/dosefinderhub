@@ -8,10 +8,10 @@ here::i_am("app_skeleton/app.R")
 
 source("app_skeleton/pages/intro_ui.R")
 source("app_skeleton/R/mod_02_questionnaire.R")
+source("app_skeleton/pages/global.R")
 source("app_skeleton/pages/trial_design_ui.R")
 source("app_skeleton/pages/sim_ui.R")
 source("app_skeleton/pages/con_ui.R")
-#works without sourcing yippeee (liar)
 
 # Define UI for the application
 ui <- navbarPage(
@@ -19,7 +19,7 @@ ui <- navbarPage(
     id = "nav",
     theme = bs_theme(version = 5, bootswatch = "flatly"),
     # Intro tab
- #   tabPanel("Introduction", intro_ui("intro")),
+#    tabPanel("Introduction", intro_ui("intro")),
     # Questionnaire tab
     tabPanel("Questionnaire", mod_questionnaire_ui("questionnaire")),
     # Results tab
@@ -35,7 +35,6 @@ server <- function(input, output, session){
     # Defining a shared reactive variable for n_doses
     shared <- reactiveValues()
 
-    # The UIs
     intro_server("intro")
     questionnaire_results <- mod_questionnaire_server("questionnaire")
     trial_design_server("trial_design", shared)
