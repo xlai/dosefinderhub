@@ -9,7 +9,7 @@ trial_design_ui <- function(id) {
 
 # Non-specific UI inputs for trial design
   n_doses_output <- numericInputWithValidation(ns("n_doses_inputt"), "How many dose levels are being tested?", min = 1, value = "5", step = 1)
-  ttl_output <- numericInputWithValidation(ns("ttl_inputt"), "What is the target toxicity level for this trial, as a decimal?", min = 0, max = 1, value = "0.3", step = 0.01)
+  ttl_output <- numericInputWithValidation(ns("ttl_inputt"), "What is the target toxicity level for this trial, as a decimal?", min = 0, max = 0.999, value = "0.3", step = 0.01)
   max_size_output <- numericInputWithValidation(ns("max_size_inputt"), "What is the maximum sample size for this trial?", min = 1, value = "30", step = 1)
   start_dose_output <- numericInputWithValidation(ns("start_dose_inputt"), "What is the starting dose level?", min = 1, value = "1", step = 1)
   cohort_output <- numericInputWithValidation(ns("cohort_inputt"), "What size will the cohorts be?", min = 1, value = "5", step = 1)
@@ -241,7 +241,7 @@ trial_design_server <- function(id, shared) {
   # Define base validation rules for each input
   base_validation_rules <- list(
     n_doses_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
-    ttl_val = list(min_val = 0, max_val = 1, integer_only = FALSE),
+    ttl_val = list(min_val = 0, max_val = 0.999, integer_only = FALSE),
     max_size_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
     start_dose_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
     cohort_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
@@ -253,12 +253,28 @@ trial_design_server <- function(id, shared) {
     stop_tox_y_val = list(min_val = 0, max_val = 1, integer_only = FALSE)
   )
   
-  # Dynamic validation rules (updates based on n_doses input)
+  ##### Dynamic validation rules
   validation_rules <- reactive({
     rules <- base_validation_rules
-    # Update start_dose max_val based on n_doses input
+
+    # start_dose <= n_doses
+    if (!is.null(input$start_dose_inputt) && !is.na(input$start_dose_inputt) && input$start_dose_inputt > 0) {
+      rules$n_doses_val$min_val <- input$start_dose_inputt
+    }
+
+    # cohort <= max_size
+    if (!is.null(input$max_size_inputt) && !is.na(input$max_size_inputt) && input$max_size_inputt > 0) {
+      rules$cohort_val$max_val <- input$max_size_inputt
+    }
+
+    # stop_n_mtd <= max_size
+    if (!is.null(input$max_size_inputt) && !is.na(input$max_size_inputt) && input$max_size_inputt > 0) {
+      rules$stop_n_mtd_val$max_val <- input$max_size_inputt
+    }
+
+    # prior_mtd <= n_doses
     if (!is.null(input$n_doses_inputt) && !is.na(input$n_doses_inputt) && input$n_doses_inputt > 0) {
-      rules$start_dose_val$max_val <- input$n_doses_inputt
+      rules$prior_mtd_val$max_val <- input$n_doses_inputt
     }
     return(rules)
   })
