@@ -32,6 +32,7 @@ sim_ui <- function(id) {
       in the table below. If the dimensions do not match, change the number of scenarios and doses and press 
       'Refresh Dimensions'."),
       test_df_table,
+      textOutput(ns("table_warning")), # Warning message for the table
       input_task_button(ns("refresh_table_input"), "Refresh Table Dimensions")
       )),
 
@@ -96,7 +97,7 @@ sim_server <- function(id, shared) {
   )
   
   validation_rules <- reactive({base_validation_rules})
-  
+
   # Function to update validation for a specific input
   update_validation <- function(input_id, value) {
     rules <- validation_rules()[[input_id]]
@@ -167,6 +168,11 @@ sim_server <- function(id, shared) {
     modified_data[info$row, info$col + 1] <- DT::coerceValue(info$value, modified_data[info$row, info$col]) # +1 is here to counterract the movement of edited data.
     reactive_df(modified_data)
     #print(str(reactive_df()))
+    if (info$value < 0 || info$value > 1) {
+      output$table_warning <- renderText(paste("⚠️", "Please enter a value between 0 and 1 for the True DLT probabilities."))
+    } else {
+      output$table_warning <- renderText("")
+    }
   })
 
   true_dlts <- reactive({
