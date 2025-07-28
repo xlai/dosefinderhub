@@ -7,10 +7,15 @@ sim_ui <- function(id) {
   # Simulation-Specific Inputs
     n_sims_input <- numericInput(ns("n_sims_input"), "How many simulations would you like to run per design per scenario?", value = 10)
     n_scenarios_input <- numericInput(ns("n_scenarios_input"), "How many scenarios would you like to simulate?", min = 1, max = 3, value = 3) # Capping the number of scenarios at 3 (for now)
+
+  n_sims_warning_text <- textOutput(ns("n_sims_warning"))
+  n_scenarios_warning_text <- textOutput(ns("n_scenarios_warning"))
     #table_output <- DT::DTOutput(ns("table_output")) # This is to test the table output used for the simulations tab.
   simulation_inputs <- tagList(
     n_sims_input,
+    n_sims_warning_text,
     n_scenarios_input,
+    n_scenarios_warning_text
     #table_output,
   )
 
@@ -76,7 +81,62 @@ sim_server <- function(id, shared) {
   #### Simulation Variables from Configurations Tab
   n_sims <- reactive({as.numeric(input$n_sims_input)})
   n_scenarios <- reactive({as.numeric(input$n_scenarios_input)})
+  
 
+  ######################### Validation ############################
+  validation_state <- reactiveValues(
+    n_sims_val = NULL,
+    n_scenarios_val = NULL
+  )
+  
+  # Define base validation rules for each input
+  base_validation_rules <- list(
+    n_sims_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
+    n_scenarios_val = list(min_val = 1, max_val = 3, integer_only = TRUE)
+  )
+  
+  validation_rules <- reactive({base_validation_rules})
+  
+  # Function to update validation for a specific input
+  update_validation <- function(input_id, value) {
+    rules <- validation_rules()[[input_id]]
+    error_msg <- validate_numeric_input(
+      value, 
+      min_val = rules$min_val, 
+      max_val = rules$max_val, 
+      integer_only = rules$integer_only
+    )
+    
+    validation_state[[input_id]] <- error_msg
+    
+    # Update the warning message next to the input
+    warning_id <- paste0(input_id, "_warning")
+    if (is.null(error_msg)) {
+      validation_state[[warning_id]] <- ""
+    } else {
+      validation_state[[warning_id]] <- paste("⚠️", error_msg)
+    }
+  }
+
+  # Observe changes in each input and validate
+  # General Inputs
+  observe({
+    update_validation("n_sims_val", input$n_sims_input)
+  })
+  
+  observe({
+    update_validation("n_scenarios_val", input$n_scenarios_input)
+  })
+
+  # Render individual warning messages next to each input
+  output$n_sims_warning <- renderText({
+    validation_state$n_sims_val_warning %||% ""
+  })
+
+  output$n_scenarios_warning <- renderText({
+    validation_state$n_scenarios_val_warning %||% ""
+  })
+  
   ############## Reactive True DLT Probabilities Table ##############
 
   reactive_df <- reactiveVal() # initalising a reactive value to store the data frame

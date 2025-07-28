@@ -257,11 +257,12 @@ trial_design_server <- function(id, shared) {
   validation_rules <- reactive({
     rules <- base_validation_rules
     # Update start_dose max_val based on n_doses input
-    if (!is.null(input$n_dosess) && !is.na(input$n_dosess) && input$n_dosess > 0) {
-      rules$start_dose_val$max_val <- input$n_dosess
+    if (!is.null(input$n_doses_inputt) && !is.na(input$n_doses_inputt) && input$n_doses_inputt > 0) {
+      rules$start_dose_val$max_val <- input$n_doses_inputt
     }
     return(rules)
   })
+
   
   # Function to update validation for a specific input
   update_validation <- function(input_id, value) {
@@ -307,7 +308,7 @@ trial_design_server <- function(id, shared) {
   })
   
   observe({
-    update_validation("cohort_val", input$cohort_size_inputt)
+    update_validation("cohort_val", input$cohort_inputt)
   })
   
   # CRM Inputs
