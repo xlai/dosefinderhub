@@ -158,8 +158,8 @@ ns <- session$ns
   selected_mtd <- {"% times dose was selected as MTD" %in% input$metric_selection_input},
   selected_participant <- {"% participants treated at dose" %in% input$metric_selection_input},
   selected_accuracy <- {"Accuracy" %in% input$metric_selection_input},
-  selected_duration <- {"Duration" %in% input$metric_selection_input},
-  selected_overdose <- {"Overdosing" %in% input$metric_selection_input})
+  selected_overdose <- {"Overdosing" %in% input$metric_selection_input},
+  selected_duration <- {"Duration" %in% input$metric_selection_input})
   #print(selected_metric)
   if (n_scen == 0) {tables_ui <- NULL} else { for (j in 1:n_scen) {
 
@@ -168,27 +168,29 @@ ns <- session$ns
       { #print(unlist(used_true_dlts[j, ]))
         tpt_sim <- sim_tpt(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skip_tpt(), 12345)
        tpt_modified_tab <- tpt_sim[-c(3,5,7)]
+
+      tpt_modified_tab$mean_accuracy <- as.data.frame(tpt_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
+      tpt_modified_tab$mean_overdose <- as.data.frame(tpt_modified_tab$mean_overdose, row.names = "Mean Overdose")
+      tpt_modified_tab$mean_length <- as.data.frame(tpt_modified_tab$mean_length, row.names = "Mean Trial Length")
+      colnames(tpt_modified_tab$mean_accuracy) <- ""
+      colnames(tpt_modified_tab$mean_length)<- ""
+      colnames(tpt_modified_tab$mean_overdose) <- ""
+
       } else {tpt_modified_tab <- NULL}
   if ("CRM" %in% input$simulation_design_selection_input)
       {
-        crm_sim <- sim_crm(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skeleton_crm(), shared$prior_var_crm(), shared$skip_esc_crm(), shared$skip_deesc_crm(), shared$stop_tox_x_crm(), shared$stop_tox_y_crm(), shared$stop_n_mtd_crm())
-       crm_modified_tab <- crm_sim[-c(3,5,7)]
+      crm_sim <- sim_crm(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skeleton_crm(), shared$prior_var_crm(), shared$skip_esc_crm(), shared$skip_deesc_crm(), shared$stop_tox_x_crm(), shared$stop_tox_y_crm(), shared$stop_n_mtd_crm())
+      crm_modified_tab <- crm_sim[-c(3,5,7)]
+
+      crm_modified_tab$mean_accuracy <- as.data.frame(crm_modified_tab$mean_accuracy, row.names = "Mean Accuracy", col.names = FALSE)
+      crm_modified_tab$mean_overdose <- as.data.frame(crm_modified_tab$mean_overdose, row.names = "Mean Overdose", col.names = FALSE)
+      crm_modified_tab$mean_length <- as.data.frame(crm_modified_tab$mean_length, row.names = "Mean Trial Length", col.names = FALSE)
+      colnames(crm_modified_tab$mean_accuracy) <- ""
+      colnames(crm_modified_tab$mean_length)<- ""
+  colnames(crm_modified_tab$mean_overdose) <- ""
       } else {crm_modified_tab <- NULL}
 
   # Giving Titles to Single Value Ouputs
-  tpt_modified_tab$mean_accuracy <- as.data.frame(tpt_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
-  tpt_modified_tab$mean_overdose <- as.data.frame(tpt_modified_tab$mean_overdose, row.names = "Mean Overdose")
-  tpt_modified_tab$mean_length <- as.data.frame(tpt_modified_tab$mean_length, row.names = "Mean Trial Length")
-  colnames(tpt_modified_tab$mean_accuracy) <- ""
-  colnames(tpt_modified_tab$mean_length)<- ""
-  colnames(tpt_modified_tab$mean_overdose) <- ""
-
-  crm_modified_tab$mean_accuracy <- as.data.frame(crm_modified_tab$mean_accuracy, row.names = "Mean Accuracy", col.names = FALSE)
-  crm_modified_tab$mean_overdose <- as.data.frame(crm_modified_tab$mean_overdose, row.names = "Mean Overdose", col.names = FALSE)
-  crm_modified_tab$mean_length <- as.data.frame(crm_modified_tab$mean_length, row.names = "Mean Trial Length", col.names = FALSE)
-  colnames(crm_modified_tab$mean_accuracy) <- ""
-  colnames(crm_modified_tab$mean_length)<- ""
-  colnames(crm_modified_tab$mean_overdose) <- ""
 
   tpt_to_display <- tpt_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
   crm_to_display <- crm_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
@@ -196,7 +198,7 @@ ns <- session$ns
   tpt_title <- as.character(rep("3+3 Simulation for Scenario ", 5))
   crm_title <- as.character(rep("CRM Simulation for Scenario ", 5))
   scenario_number <- as.character(rep(j, 5))
-  metric_names <- as.character(c(" - % Times Dose Was Selected as MTD", "- % Treated at Each Dose",  " - Mean Accuracy", " - Mean Trial Length", " - Mean Overdose"))
+  metric_names <- as.character(c(" - % Times Dose Was Selected as MTD", "- % Treated at Each Dose",  " - Mean Accuracy", " - Mean Overdose", " - Mean Trial Length"))
 
   if ("3+3" %in% input$simulation_design_selection_input) {
   full_tpt_titles <- paste(as.character(tpt_title), as.character(scenario_number), as.character(metric_names))
@@ -241,7 +243,7 @@ ns <- session$ns
     lapply(names(combined_data_frames), function(table_name) {
       table_number <- as.numeric(gsub("Table ", "", table_name)) # Extracting the number from the table name
       tagList(
-        h4(combined_titles[[table_number]]), # Title for each table
+      h4(combined_titles[[table_number]]), # Title for each table
         tableOutput(ns(paste0("table_", table_name))) # Table output
       )
     })
