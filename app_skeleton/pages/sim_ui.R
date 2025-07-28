@@ -144,12 +144,12 @@ ns <- session$ns
     scen2 <- {"Scenario 2" %in% input$scen_output_input},
     scen3 <- {"Scenario 3" %in% input$scen_output_input}
   )
-  print(selected_scenarios)
+  #print(selected_scenarios)
   #print(true_dlts())
   used_true_dlts <- true_dlts()[selected_scenarios, ] # Scenarios are rows!
-  print(used_true_dlts)
+  #print(used_true_dlts)
   n_scen <- nrow(used_true_dlts)
-  print(n_scen)
+  #print(n_scen)
   combined_list <- vector("list", n_scen) # initialising for use later
   title_list <- vector("list", n_scen) # initialising for use later
 
@@ -160,7 +160,7 @@ ns <- session$ns
   selected_accuracy <- {"Accuracy" %in% input$metric_selection_input},
   selected_duration <- {"Duration" %in% input$metric_selection_input},
   selected_overdose <- {"Overdosing" %in% input$metric_selection_input})
-  print(selected_metric)
+  #print(selected_metric)
   if (n_scen == 0) {tables_ui <- NULL} else { for (j in 1:n_scen) {
 
   # Design - only running simulations that are necessary to save time.
@@ -209,23 +209,24 @@ ns <- session$ns
   } # for loop end
 
   combined_data_frames <- do.call(c, combined_list) 
-  print(combined_data_frames)
+  #print(combined_data_frames)
   combined_titles <- do.call(c, title_list) 
+  #print(combined_titles)
   
   n_data_frames <- length(combined_data_frames)
-  print(n_data_frames)
+  #print(n_data_frames)
   # Using generic table names to render the UI with all the tables in it.
   if (n_data_frames == 0) {output$tables_ui <- NULL  # The case where nothing is entered
   } else {
   table_names <- c(paste(rep("Table", n_data_frames), as.list(as.character(1:n_data_frames)), sep = " "))
   names(combined_data_frames) <- table_names
-  print(table_names)
+  #print(table_names)
   ## Using the names of the tables to render a UI with all the tables in it.
    output$tables_ui <- renderUI({
     lapply(names(combined_data_frames), function(table_name) {
       tagList(
-        #table_number <- as.numeric(gsub("Table ", "", table_name)), # Extracting the number from the table name
-        h3(table_name), # Title for each table
+        table_number <- as.numeric(gsub("Table ", "", table_name)), # Extracting the number from the table name
+        h4(combined_titles[[table_number]]), # Title for each table
         tableOutput(ns(paste0("table_", table_name))) # Table output
       )
     })
