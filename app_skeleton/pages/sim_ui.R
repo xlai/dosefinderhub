@@ -224,8 +224,8 @@ ns <- session$ns
   ## Using the names of the tables to render a UI with all the tables in it.
    output$tables_ui <- renderUI({
     lapply(names(combined_data_frames), function(table_name) {
+      table_number <- as.numeric(gsub("Table ", "", table_name)) # Extracting the number from the table name
       tagList(
-        table_number <- as.numeric(gsub("Table ", "", table_name)), # Extracting the number from the table name
         h4(combined_titles[[table_number]]), # Title for each table
         tableOutput(ns(paste0("table_", table_name))) # Table output
       )
