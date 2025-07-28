@@ -48,7 +48,8 @@ generate_recommendation <- function(x) {
 }
 
 # Read questions
-questions <- read.csv("app_skeleton/Inputs/questions.csv", stringsAsFactors = FALSE)
+input_directory <- here::here('app_skeleton','Inputs')
+questions <- read.csv(here::here(input_directory,"questions.csv"))
 
 ############################### UI ##################################
 question_ui <- function(id) {

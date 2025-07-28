@@ -4,14 +4,14 @@ library(shiny)
 library(bslib)
 library(htmltools)
 
+here::i_am("app_skeleton/app.R")
 
-#source("app_skeleton/pages/intro_ui.R")
-#source("app_skeleton/pages/question_ui.R")
-#source("app_skeleton/pages/global.R")
-#source("app_skeleton/pages/trial_design_ui.R")
-#source("app_skeleton/pages/sim_ui.R")
-#source("app_skeleton/pages/con_ui.R")
-#works without sourcing yipeee
+source("app_skeleton/pages/intro_ui.R")
+source("app_skeleton/R/mod_02_questionnaire.R")
+source("app_skeleton/pages/global.R")
+source("app_skeleton/pages/trial_design_ui.R")
+source("app_skeleton/pages/sim_ui.R")
+source("app_skeleton/pages/con_ui.R")
 
 # Define UI for the application
 ui <- navbarPage(
@@ -19,9 +19,9 @@ ui <- navbarPage(
     id = "nav",
     theme = bs_theme(version = 5, bootswatch = "flatly"),
     # Intro tab
-    tabPanel("Introduction", intro_ui("intro")),
+#    tabPanel("Introduction", intro_ui("intro")),
     # Questionnaire tab
-    tabPanel("Questionnaire", question_ui("questionnaire")),
+    tabPanel("Questionnaire", mod_questionnaire_ui("questionnaire")),
     # Results tab
     tabPanel("Trial Design", trial_design_ui("trial_design")),
     # Simulation tab
@@ -35,12 +35,25 @@ server <- function(input, output, session){
     # Defining a shared reactive variable for n_doses
     shared <- reactiveValues()
 
-    # The UIs
     intro_server("intro")
-    question_server("questionnaire")
+    questionnaire_results <- mod_questionnaire_server("questionnaire")
     trial_design_server("trial_design", shared)
     sim_server("simulation", shared)
     con_server("conduct")
+
+      observe({
+    if (!is.null(questionnaire_results) && 
+        !is.null(questionnaire_results$is_complete) &&
+        questionnaire_results$is_complete()) {
+      
+      # Enable other tabs or provide navigation hints
+      showNotification(
+        "Questionnaire completed! You can now proceed to Trial Design.",
+        type = "success",
+        duration = 5
+      )
+    }
+    })
 }
 
 shinyApp(ui, server)

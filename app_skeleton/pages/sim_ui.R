@@ -7,10 +7,15 @@ sim_ui <- function(id) {
   # Simulation-Specific Inputs
     n_sims_input <- numericInput(ns("n_sims_input"), "How many simulations would you like to run per design per scenario?", value = 10)
     n_scenarios_input <- numericInput(ns("n_scenarios_input"), "How many scenarios would you like to simulate?", min = 1, max = 3, value = 3) # Capping the number of scenarios at 3 (for now)
+
+  n_sims_warning_text <- textOutput(ns("n_sims_warning"))
+  n_scenarios_warning_text <- textOutput(ns("n_scenarios_warning"))
     #table_output <- DT::DTOutput(ns("table_output")) # This is to test the table output used for the simulations tab.
   simulation_inputs <- tagList(
     n_sims_input,
+    n_sims_warning_text,
     n_scenarios_input,
+    n_scenarios_warning_text
     #table_output,
   )
 
