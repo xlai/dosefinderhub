@@ -117,6 +117,13 @@ mod_questionnaire_server <- function(id, shared) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
+   # Initialise reactive values
+   shared$q_n_doses <- reactiveVal(numeric(0))
+   shared$q_start_dose <- reactiveVal(numeric(0))
+   shared$q_ttl <- reactiveVal(numeric(0))
+   shared$q_cohort <- reactiveVal(numeric(0))
+   shared$q_max_size <- reactiveVal(numeric(0))
+
     # Load questions data 
     questions <- tryCatch({
       input_directory <- here::here('app_skeleton', 'Inputs')
@@ -279,7 +286,7 @@ mod_questionnaire_server <- function(id, shared) {
     })
     
     question_responses <- reactiveValues(list = vector("list", length = nrow(questions)))
-    
+
     # Next button logic with conditional navigation
     observeEvent(input$next_button, {
       
@@ -440,12 +447,12 @@ mod_questionnaire_server <- function(id, shared) {
         all_question_responses <- question_responses$list # saving set of responses
 
         # Defining shared variables to move to trial design
-        shared$q_n_doses <- as.numeric(all_question_responses[[3]])
-        shared$q_start_dose <- as.numeric(all_question_responses[[4]])
-        shared$q_ttl <- as.numeric(all_question_responses[[7]])
-        shared$q_cohort <- as.numeric(all_question_responses[[12]])
-        shared$q_max_size <- as.numeric(all_question_responses[[14]])
-
+        shared$q_n_doses <- reactive(as.numeric(all_question_responses[[3]]))
+        shared$q_start_dose <- reactive(as.numeric(all_question_responses[[4]]))
+        shared$q_ttl <- reactive(as.numeric(all_question_responses[[7]]))
+        shared$q_cohort <- reactive(as.numeric(all_question_responses[[12]]))
+        shared$q_max_size <- reactive(as.numeric(all_question_responses[[14]]))
+        print(shared$q_start_dose())
       } else {
         shiny::updateActionButton(
           session, 

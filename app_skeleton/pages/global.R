@@ -81,20 +81,6 @@ validate_numeric_input <- function(value, min_val = NULL, max_val = NULL, intege
 }
 
 # Reusable UI component for numeric input with validation using bslib
-numericInputWithValidation <- function(inputId, label, value = NULL, min = NA, max = NA, 
-                                       step = NA, width = NULL) {
-  div(
-    class = "mb-3",
-    tags$label(label, class = "form-label", `for` = inputId),
-  
-    numericInput(inputId, label = NULL, value = value, min = min, max = max, step = step, width = width),
-    div(
-      id = paste0(inputId, "_warning"), 
-      class = "invalid-feedback d-block",
-      style = "font-size: 0.875rem; margin-top: 0.25rem; min-height: 1.2em;"
-    )
-  )
-}
 
 
 ############################################ Simulation Code ############################################
