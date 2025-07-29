@@ -3,24 +3,81 @@ title: "The Three Models"
 output: html_document
 ---
 ---
-The three trial models DoseFinderHub aims to explore are 3+3 design, Continual Reassessment Method (CRM), and Bayesian Optimal Interval (BOIN). Each model has its own strengths and weaknesses, and the choice of model can significantly impact the trial's outcomes. 
+DoseFinderHub aims to explore 3 different models of dose-escalation in early phase trials, which are 3+3 design, Continual Reassessment Method (CRM), and Bayesian Optimal Interval (BOIN). Each model has its own strengths and weaknesses, and the choice of model can significantly impact the trial's outcomes.
 
 <div style="text-align: center;">
 <u><h5 id="models_a">Model A: 3+3</h5></u>
 </div>
 
-- The classic rule-based dose escalation method.
+The 3+3 design is a traditional and widely used method for determining the maximum tolerated dose (MTD) in Phase I clinical trials, particularly in oncology. It follows a simple, rule-based approach:
+
+•	Three patients are treated at a starting dose.
+•	If 0 of 3 patients experience a dose-limiting toxicity (DLT), the dose is escalated for the next cohort.
+•	If 1 of 3 patients experiences a DLT, the cohort is expanded to six patients.
+•	If ≥2 of 3 or 2 of 6 patients experience DLTs, the dose escalation stops, and the previous dose is considered the MTD.
+________________________________________
+✅ Pros of the 3+3 Design
+
+- Simplicity: The 3+3 design is easy to understand, implement, and communicate to clinical teams.
+- Common practice: 3+3 is the predominant design in early phase trials and is familiar to regulators, investigators, and ethics committees. This makes for easier protocol development and approval.
+- No need for modeling: It does not rely on statistical modeling or software.
+________________________________________
+❌ Cons of the 3+3 Design
+
+- Statistically inefficient: 3+3 provides limited information about the dose-toxicity relationship.
+- Inaccurate MTD estimation: It tends to identify doses that are either too low or too high.
+- Slow escalation: The design can be overly conservative, delaying identification of effective doses.
+- Lacks flexibility: It does not incorporate prior knowledge or allow for adaptive learning.
+________________________________________
+Despite its limitations, the 3+3 design remains widely used due to its simplicity. However, more modern approaches such as CRM or BOIN offer improved accuracy and efficiency, making them increasingly preferred in early-phase trial design.
+
 
 <div style="text-align: center;">
-<u><h5 id="models_b">Model B: CRM</h5></u>
+<u><h5 id="models_b">Model B: Continual Reassessment Method (CRM)</h5></u>
 </div>
 
+The Continual Reassessment Method (CRM) is a model-based dose-escalation design used in Phase I clinical trials to identify the maximum tolerated dose (MTD) more accurately than traditional methods. It uses a statistical model to estimate the probability of dose-limiting toxicity (DLT) at each dose level and updates this estimate continually as patient data accrue.
+- After each cohort of patients, the model is updated with observed DLT outcomes.
+- The next dose level is chosen based on which dose has an estimated DLT probability closest to a pre-specified target (e.g., 25%-30%).
+- Dose assignments are data-driven and can escalate, de-escalate, or remain at the current dose.
 
+CRM can incorporate prior information, such as historical data or expert opinion, to improve dose selection. It is often implemented using Bayesian methods, allowing for continuous updating of the model as new data become available.
+________________________________________
+✅ Pros of CRM
 
-- Model-based design using Bayesian statistics.
+- Statistically efficient: Makes better use of patient data and provides more accurate MTD estimation.
+- Faster escalation: Can reach the target dose more quickly than rule-based methods.
+- Flexible: Allows incorporation of prior information and continuous updating.
+- Customizable: Can be tailored to different toxicity targets or trial needs.
+________________________________________
+❌ Cons of CRM
+
+- Complexity: Requires statistical modeling, software, and expertise to implement.
+- Less familiar: May be less well understood by clinicians, ethics boards, and regulators.
+- Slower adoption: Not yet standard practice in many clinical settings.
+
 <div style="text-align: center;">
 <u><h5 id="models_c">Model C: Bayesian Optimal Interval (BOIN)</h5></u>
 </div>
 
-  
-- Interval-based design for flexible, adaptive trials.
+The Bayesian Optimal Interval (BOIN) design is a model-assisted method for dose-finding in Phase I trials. It combines the simplicity of rule-based designs with the improved performance of model-based approaches. BOIN defines statistically derived escalation and de-escalation boundaries around a target DLT rate (e.g., 30%). After observing outcomes at a dose level, the design compares the observed DLT rate to these boundaries:
+
+- If below the lower boundary → escalate
+- If within the boundaries → stay
+- If above the upper boundary → de-escalate
+
+The final MTD is selected based on pooled data using isotonic regression.
+________________________________________
+✅ Pros of BOIN
+
+- Simple rules: Easy to implement and explain, similar to 3+3 in operational ease.
+- Improved accuracy: Offers better MTD estimation than 3+3 with minimal added complexity.
+- No need for prior distributions: Unlike CRM, it doesn't require specification of a prior model.
+- Regulatory friendly: Transparent decision rules improve acceptability.
+________________________________________
+❌ Cons of BOIN
+
+- Less efficient than CRM: While better than 3+3, it may not be as statistically efficient as CRM.
+- Newer method: May be less familiar to some clinical teams or oversight bodies.
+- Limited flexibility: Not as customizable as CRM in terms of model adaptation.
+
