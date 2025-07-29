@@ -11,10 +11,10 @@ DoseFinderHub aims to explore 3 different models of dose-escalation in early pha
 
 The 3+3 design is a traditional and widely used method for determining the maximum tolerated dose (MTD) in Phase I clinical trials, particularly in oncology. It follows a simple, rule-based approach:
 
-•	Three patients are treated at a starting dose.
-•	If 0 of 3 patients experience a dose-limiting toxicity (DLT), the dose is escalated for the next cohort.
-•	If 1 of 3 patients experiences a DLT, the cohort is expanded to six patients.
-•	If ≥2 of 3 or 2 of 6 patients experience DLTs, the dose escalation stops, and the previous dose is considered the MTD.
+- Three patients are treated at a starting dose.
+- If 0 of 3 patients experience a dose-limiting toxicity (DLT), the dose is escalated for the next cohort.
+- If 1 of 3 patients experiences a DLT, the cohort is expanded to six patients.
+- If ≥2 of 3 or 2 of 6 patients experience DLTs, the dose escalation stops, and the previous dose is considered the MTD.
 ________________________________________
 ✅ Pros of the 3+3 Design
 
@@ -78,6 +78,4 @@ ________________________________________
 ❌ Cons of BOIN
 
 - Less efficient than CRM: While better than 3+3, it may not be as statistically efficient as CRM.
-- Newer method: May be less familiar to some clinical teams or oversight bodies.
-- Limited flexibility: Not as customizable as CRM in terms of model adaptation.
 
