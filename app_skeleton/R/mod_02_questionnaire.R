@@ -452,7 +452,7 @@ mod_questionnaire_server <- function(id, shared) {
         shared$q_ttl <- reactive(as.numeric(all_question_responses[[7]]))
         shared$q_cohort <- reactive(as.numeric(all_question_responses[[12]]))
         shared$q_max_size <- reactive(as.numeric(all_question_responses[[14]]))
-        print(shared$q_start_dose())
+        #print(shared$q_start_dose())
       } else {
         shiny::updateActionButton(
           session, 
