@@ -278,10 +278,20 @@ mod_questionnaire_server <- function(id) {
       }
     })
     
+    question_responses <- reactiveValues(list = list())
+
     # Next button logic with conditional navigation
     observeEvent(input$next_button, {
+      
       # Save current response
-      save_current_response()
+      if(!is.null(current_question())) {
+      current_q_num <- current_question()
+
+      question_response <- questions$q_variable[questions$q_number == current_q_num]
+      question_responses$list[[current_q_num]] <- input[[question_response]]
+
+      print(question_responses$list)
+    }
       
       current_q_num <- current_question()
       
