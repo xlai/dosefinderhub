@@ -113,7 +113,7 @@ mod_questionnaire_ui <- function(id) {
 #' @param id Module id
 #' 
 #' @noRd 
-mod_questionnaire_server <- function(id) {
+mod_questionnaire_server <- function(id, shared) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
@@ -278,8 +278,8 @@ mod_questionnaire_server <- function(id) {
       }
     })
     
-    question_responses <- reactiveValues(list = list())
-
+    question_responses <- reactiveValues(list = vector("list", length = nrow(questions)))
+    
     # Next button logic with conditional navigation
     observeEvent(input$next_button, {
       
@@ -290,7 +290,7 @@ mod_questionnaire_server <- function(id) {
       question_response <- questions$q_variable[questions$q_number == current_q_num]
       question_responses$list[[current_q_num]] <- input[[question_response]]
 
-      print(question_responses$list)
+      #print(question_responses$list)
     }
       
       current_q_num <- current_question()
@@ -437,6 +437,15 @@ mod_questionnaire_server <- function(id) {
           "next_button", 
           label = "Generate Recommendation"
         )
+        all_question_responses <- question_responses$list # saving set of responses
+
+        # Defining shared variables to move to trial design
+        shared$q_n_doses <- as.numeric(all_question_responses[[3]])
+        shared$q_start_dose <- as.numeric(all_question_responses[[4]])
+        shared$q_ttl <- as.numeric(all_question_responses[[7]])
+        shared$q_cohort <- as.numeric(all_question_responses[[12]])
+        shared$q_max_size <- as.numeric(all_question_responses[[14]])
+
       } else {
         shiny::updateActionButton(
           session, 

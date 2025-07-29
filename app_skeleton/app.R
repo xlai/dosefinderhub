@@ -36,7 +36,7 @@ server <- function(input, output, session){
     shared <- reactiveValues()
 
     intro_server("intro")
-    questionnaire_results <- mod_questionnaire_server("questionnaire")
+    questionnaire_results <- mod_questionnaire_server("questionnaire", shared)
     trial_design_server("trial_design", shared)
     sim_server("simulation", shared)
     con_server("conduct")
@@ -62,8 +62,14 @@ shinyApp(ui, server)
 
 ### Defined in trial_design_server ###
 
+# shared$q_n_doses: Number of doses response from questionnaire
+# shared$q_start_dose: Starting dose level response from questionnaire
+# shared$q_ttl: ttl response from questionnaire
+# shared$q_cohort: Cohort size response from questionnaire
+# shared$q_max_size: Maximum sample size response from questionnaire
+
 # shared$n_dosess: Number of doses
-# shared$ttl: Total number of trials
+# shared$ttl: ttl
 # shared$max_size: Maximum sample size
 # shared$start_dose: Starting dose level
 # shared$cohort: Cohort size
