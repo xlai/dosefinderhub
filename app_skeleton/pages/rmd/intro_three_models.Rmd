@@ -2,22 +2,25 @@
 title: "The Three Models"
 output: html_document
 ---
+---
+The three trial models DoseFinderHub aims to explore are 3+3 design, Continual Reassessment Method (CRM), and Bayesian Optimal Interval (BOIN). Each model has its own strengths and weaknesses, and the choice of model can significantly impact the trial's outcomes. 
 
-<h3 id="models_a">Model A: 3+3</h3>
-- 
-- 
-- 
+<div style="text-align: center;">
+<u><h5 id="models_a">Model A: 3+3</h5></u>
+</div>
+
 - The classic rule-based dose escalation method.
 
-<h3 id="models_b">Model B: CRM</h3>
-  
+<div style="text-align: center;">
+<u><h5 id="models_b">Model B: CRM</h5></u>
+</div>
 
 
 
 - Model-based design using Bayesian statistics.
-
-<h3 id="models_c">Model C: Bayesian Optimal Interval (BOIN)</h3>
-  
+<div style="text-align: center;">
+<u><h5 id="models_c">Model C: Bayesian Optimal Interval (BOIN)</h5></u>
+</div>
 
   
 - Interval-based design for flexible, adaptive trials.

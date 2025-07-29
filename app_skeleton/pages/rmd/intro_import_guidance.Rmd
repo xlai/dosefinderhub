@@ -2,7 +2,7 @@
 title: "Guidance on Importing"
 output: html_document
 ---
-
+---
 <h3 id="import_formats">Supported Formats</h3>
 - CSV and Excel files with specified column headers.
 
