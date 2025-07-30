@@ -123,7 +123,7 @@ mod_questionnaire_ui <- function(id) {
 #' @param id Module id
 #' 
 #' @noRd 
-mod_questionnaire_server <- function(id, shared) {
+mod_questionnaire_server <- function(id, shared, parent_session = NULL) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
@@ -533,10 +533,85 @@ mod_questionnaire_server <- function(id, shared) {
                 )
               )
             )
+          ),
+          
+          # Navigation buttons in modal footer
+          footer = htmltools::div(
+            style = "display: flex; justify-content: center; gap: 20px; padding: 15px;",
+            shiny::actionButton(
+              ns("go_to_simulation"),
+              htmltools::tagList(
+                htmltools::tags$i(class = "fas fa-play", style = "margin-right: 8px;"),
+                "Go to Simulation"
+              ),
+              class = "btn-success btn-lg",
+              style = "border-radius: 8px; font-weight: 500;"
+            ),
+            shiny::actionButton(
+              ns("advanced_settings"), 
+              htmltools::tagList(
+                htmltools::tags$i(class = "fas fa-cog", style = "margin-right: 8px;"),
+                "Advanced Settings"
+              ),
+              class = "btn-primary btn-lg", 
+              style = "border-radius: 8px; font-weight: 500;"
+            )
           )
         )
       )
     }
+    
+    # Transfer questionnaire values to shared variables for Trial Design/Simulation
+    transfer_questionnaire_values <- function() {
+      # Only map essential questionnaire values - advanced parameters handled in trial design
+      shared$n_dosess <- shared$q_n_doses
+      shared$ttl <- shared$q_ttl  
+      shared$max_size <- shared$q_max_size
+      shared$start_dose <- shared$q_start_dose
+      shared$cohort_size <- shared$q_cohort
+    }
+    
+    # Handler for "Go to Simulation" button
+    observeEvent(input$go_to_simulation, {
+      # Transfer questionnaire values
+      transfer_questionnaire_values()
+      
+      # Navigate to Simulation tab
+      if (!is.null(parent_session)) {
+        updateNavbarPage(parent_session, "nav", selected = "Simulation")
+      }
+      
+      # Close modal
+      removeModal()
+      
+      # Show success notification
+      showNotification(
+        "Questionnaire values transferred! Navigating to Simulation...",
+        type = "default",
+        duration = 3
+      )
+    })
+    
+    # Handler for "Advanced Settings" button  
+    observeEvent(input$advanced_settings, {
+      # Transfer questionnaire values
+      transfer_questionnaire_values()
+      
+      # Navigate to Trial Design tab
+      if (!is.null(parent_session)) {
+        updateNavbarPage(parent_session, "nav", selected = "Trial Design")
+      }
+      
+      # Close modal
+      removeModal()
+      
+      # Show success notification
+      showNotification(
+        "Questionnaire values transferred! Navigating to Trial Design...",
+        type = "default", 
+        duration = 3
+      )
+    })
     
     # Continuously save responses as they change (only for shown questions)
     observe({
