@@ -65,41 +65,51 @@ mod_questionnaire_ui <- function(id) {
       htmltools::div(
         id = ns("question_container"),
         htmltools::h4("Please answer the questions below:", 
-                     style = "margin-bottom: 30px;"),
+                     style = "margin-bottom: 30px; color: #495057;"),
         shiny::uiOutput(ns("questions_ui"))
       ),
       
       # Navigation buttons
       htmltools::div(
-        class = "navigation-buttons",
-        style = "margin-top: 40px;",
-        
-        shiny::fluidRow(
-          shiny::column(
-            4, 
-            shiny::actionButton(
-              ns("prev_button"),
-              "Previous",
-              class = "btn-secondary",
-              style = "width: 100%;"
+        style = "max-width: 800px; margin: 20px auto 0 auto;",
+        bslib::card(
+          bslib::card_body(
+            style = "padding: 15px;",
+            shiny::fluidRow(
+              shiny::column(
+                4, 
+                shiny::actionButton(
+                  ns("prev_button"),
+                  htmltools::tagList(
+                    htmltools::tags$i(class = "fas fa-chevron-left", style = "margin-right: 8px;"),
+                    "Previous"
+                  ),
+                  class = "btn-outline-secondary",
+                  style = "width: 100%; border-radius: 8px;"
+                )
+              ),
+              shiny::column(
+                4,
+                htmltools::div(
+                  style = "text-align: center; padding-top: 8px; color: #6c757d; font-weight: 500;",
+                  shiny::textOutput(ns("question_counter"))
+                )
+              ),
+              shiny::column(
+                4, 
+                shiny::actionButton(
+                  ns("next_button"),
+                  htmltools::tagList(
+                    "Next",
+                    htmltools::tags$i(class = "fas fa-chevron-right", style = "margin-left: 8px;")
+                  ),
+                  class = "btn-primary",
+                  style = "width: 100%; border-radius: 8px;"
+                )
+              )
             )
           ),
-          shiny::column(
-            4,
-            htmltools::div(
-              style = "text-align: center; padding-top: 8px;",
-              shiny::textOutput(ns("question_counter"))
-            )
-          ),
-          shiny::column(
-            4, 
-            shiny::actionButton(
-              ns("next_button"),
-              "Next", 
-              class = "btn-primary",
-              style = "width: 100%;"
-            )
-          )
+          style = "box-shadow: 0 1px 3px rgba(0,0,0,0.1);"
         )
       )
     )
@@ -168,21 +178,21 @@ mod_questionnaire_server <- function(id, shared) {
           question_ns <- question
           question_ns$q_variable <- ns(question$q_variable)
           
-          # Use your existing renderUI logic
+          # Create question input wrapped in bslib card
           params <- parse_params(question$params)
-          switch(question$q_type,
+          question_input <- switch(question$q_type,
             radioButtons = shiny::radioButtons(
               inputId = ns(question$q_variable),
               label = question$q_text,
               choices = strsplit(params[["choices"]], ",")[[1]],
-              width = 500
+              width = "100%"
             ),
             numeric = shiny::numericInput(
               inputId = ns(question$q_variable),
               label = question$q_text,
               min = as.numeric(params[["min"]]),
-              value = 0,
-              width = 500
+              value = as.numeric(params[["min"]]),
+              width = "100%"
             ),
             slider = shiny::sliderInput(
               inputId = ns(question$q_variable),
@@ -190,14 +200,40 @@ mod_questionnaire_server <- function(id, shared) {
               min = as.numeric(params[["min"]]),
               max = as.numeric(params[["max"]]),
               value = as.numeric(params[["min"]]),
-              width = 500
+              width = "100%"
             ),
             text = shiny::textInput(
               inputId = ns(question$q_variable),
               label = question$q_text,
               placeholder = "i.e. 0.05, 0.15, 0.3, 0.7",
               value = "", 
-              width = 500
+              width = "100%"
+            )
+          )
+          
+          # Wrap question in bslib card with max width
+          htmltools::div(
+            style = "max-width: 800px; margin: 0 auto;",
+            bslib::card(
+              bslib::card_header(
+                htmltools::div(
+                  style = "display: flex; justify-content: space-between; align-items: center;",
+                  htmltools::h5(sprintf("Question %d of %d", current_q_num, nrow(questions)), 
+                               style = "margin: 0; color: #495057;"),
+                  htmltools::span(
+                    class = "badge bg-primary",
+                    sprintf("%d%%", round((current_q_num / nrow(questions)) * 100))
+                  )
+                )
+              ),
+              bslib::card_body(
+                htmltools::div(
+                  style = "padding: 10px 0;",
+                  question_input
+                )
+              ),
+              height = "auto",
+              style = "box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;"
             )
           )
         }
@@ -447,11 +483,11 @@ mod_questionnaire_server <- function(id, shared) {
         all_question_responses <- question_responses$list # saving set of responses
 
         # Defining shared variables to move to trial design
-        shared$q_n_doses <- reactive(as.numeric(all_question_responses[[3]]))
+        shared$q_n_doses <- reactive(as.numeric(all_question_responses[[1]]))
         shared$q_start_dose <- reactive(as.numeric(all_question_responses[[4]]))
-        shared$q_ttl <- reactive(as.numeric(all_question_responses[[7]]))
-        shared$q_cohort <- reactive(as.numeric(all_question_responses[[12]]))
-        shared$q_max_size <- reactive(as.numeric(all_question_responses[[14]]))
+        shared$q_ttl <- reactive(as.numeric(all_question_responses[[2]]))
+        shared$q_cohort <- reactive(as.numeric(all_question_responses[[5]]))
+        shared$q_max_size <- reactive(as.numeric(all_question_responses[[3]]))
         #print(shared$q_start_dose())
       } else {
         shiny::updateActionButton(
