@@ -36,7 +36,7 @@ server <- function(input, output, session){
     # Defining a shared reactive variable for n_doses
     shared <- reactiveValues()
 
-    intro_server("intro")
+    intro_server("intro", session)
     questionnaire_results <- mod_questionnaire_server("questionnaire", shared, session)
     trial_design_server("trial_design", shared)
     sim_server("simulation", shared)

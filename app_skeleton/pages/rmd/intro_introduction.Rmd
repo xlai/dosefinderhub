@@ -2,20 +2,31 @@
 title: "intro_introduction"
 output: html_document
 ---
----
 
 <div style="text-align: center;">
-<h3 id="introduction_intro">An Introduction to the Dose-Finder Hub</h3>
+<h3 id="introduction_intro">Welcome to DoseFinderHub</h3>
 </div>
 
-The Dose-Finder Hub is an innovative, web-based tool developed by the Clinical Trials and Statistics Unit (CTSU) at the Institute of Cancer Research (ICR), UK, designed to support clinicians and trial designers working in early-phase oncology clinical trials. This platform bridges clinical expertise with advanced statistical methods, offering an accessible, simulation-driven environment to guide optimal trial design.
-The first stage of the Dose-Finder Hub is a user-friendly questionnaire interface that captures key trial characteristics and clinical preferences. Based on this input, the platform generates both a recommendation of the most suitable trial design and tailored simulations comparing multiple dose-escalation strategies. These include:
-  
-- The traditional 3+3 design
-- The model-based Continual Reassessment Method (CRM)
-- The model-assisted Bayesian Optimal Interval (BOIN) design
-  
-By visualising and comparing outcomes from each approach—such as safety, accuracy, and sample size—the Dose-Finder Hub empowers clinical teams to make informed, evidence-based decisions about the most appropriate design for their specific trial context. The platform thus serves as both a decision-support tool and an educational resource, enhancing the adoption of statistically robust methods in early-phase trials.
+**DoseFinderHub helps you select and compare dose-finding methods for Phase I clinical trials through guided questionnaires and simulations.**
+
+## How It Works
+
+<div style="margin: 20px 0;">
+<h4>📋 Step 1: Answer Questionnaire</h4>
+Get personalized recommendations based on your trial characteristics and preferences.
+
+<h4>💡 Step 2: Review Recommendation</h4>
+See which method suits your trial among 3+3, CRM, and BOIN designs.
+
+<h4>🛤️ Step 3: Choose Your Path</h4>
+Go directly to Simulation OR customize parameters in Trial Design.
+
+<h4>⚡ Step 4: Run Simulations</h4>
+Compare method performance across safety, accuracy, and efficiency metrics.
+
+<h4>✅ Step 5: Select Design</h4>
+Use results to make informed decisions for your Phase I trial.
+</div>
 
 
 

@@ -8,13 +8,6 @@ library(bslib)
 
 intro_ui <- function(id) {
   ns <- NS(id)
-  tab_info <- list(
-    "Introduction"         = "app_skeleton/pages/rmd/intro_introduction.Rmd",
-    "Workflow"             = "app_skeleton/pages/rmd/intro_workflow.Rmd",
-    "The Three Models"     = "app_skeleton/pages/rmd/intro_three_models.Rmd",
-    "The Team"             = "app_skeleton/pages/rmd/intro_team.Rmd",
-    "Guidance on Importing"= "app_skeleton/pages/rmd/intro_import_guidance.Rmd"
-  )
 
   fluidPage(
     div(
@@ -22,31 +15,37 @@ intro_ui <- function(id) {
       navset_tab(
         nav_panel(
           "Introduction",
-          includeMarkdown("app_skeleton/pages/rmd/intro_introduction.Rmd")
+          includeMarkdown("app_skeleton/pages/rmd/intro_introduction.Rmd"),
+          div(
+            style = "text-align: center; margin: 30px 0;",
+            actionButton(
+              ns("navigate_to_questionnaire"),
+              "Which Method for Me?",
+              class = "btn-primary btn-lg",
+              style = "padding: 15px 30px; font-size: 18px; font-weight: bold;"
+            )
+          )
         ),
         nav_panel(
-          "The Three Models",
+          "Dose-Finding Methods",
           includeMarkdown("app_skeleton/pages/rmd/intro_three_models.Rmd")
         ),
         nav_panel(
-          "Workflow",
-          includeMarkdown("app_skeleton/pages/rmd/intro_workflow.Rmd")
-        ),
-        nav_panel(
-            "Team",
-            includeMarkdown("app_skeleton/pages/rmd/intro_team.Rmd")
-          ),
-          nav_panel(
-            "Guide to Importing",
-            includeMarkdown("app_skeleton/pages/rmd/intro_import_guidance.Rmd")    
-          )
+          "Team",
+          includeMarkdown("app_skeleton/pages/rmd/intro_team.Rmd")
         )
       )  
     )
+  )
 }
 
-intro_server <- function(id) {
+intro_server <- function(id, parent_session = NULL) {
   moduleServer(id, function(input, output, session) {
-    # Server logic for the intro module can be added here if needed
+    # Handle navigation button clicks
+    observeEvent(input$navigate_to_questionnaire, {
+      if (!is.null(parent_session)) {
+        updateNavbarPage(parent_session, "nav", selected = "Questionnaire")
+      }
+    })
   })
 }
