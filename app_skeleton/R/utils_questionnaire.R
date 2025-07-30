@@ -81,14 +81,6 @@ generate_recommendation <- function(x) {
 #' @return List with ranked methods, scores, confidence, rationale, and display text
 generate_intelligent_recommendation <- function(user_responses) {
   
-  # Debug: Check what we received
-  cat("In generate_intelligent_recommendation:\n")
-  cat("Received responses:", names(user_responses), "\n")
-  cat("toxicity_confidence:", user_responses$toxicity_confidence, "\n")
-  cat("trial_priorities:", user_responses$trial_priorities, "\n")
-  cat("statistical_support:", user_responses$statistical_support, "\n")
-  cat("decision_transparency:", user_responses$decision_transparency, "\n")
-  
   # Initialize scores for each method
   scores <- c(CRM = 0, BOIN = 0, "3+3" = 0)
   
@@ -136,12 +128,8 @@ generate_intelligent_recommendation <- function(user_responses) {
     scores <- scores + transparency_scores
   }
   
-  # Debug: Show final scores
-  cat("Final scores:", scores, "\n")
-  
   # Rank methods by score (highest first)
   ranked_methods <- names(sort(scores, decreasing = TRUE))
-  cat("Ranked methods:", ranked_methods, "\n")
   
   # Calculate confidence based on score separation
   max_score <- max(scores)

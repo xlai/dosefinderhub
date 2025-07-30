@@ -276,18 +276,9 @@ mod_questionnaire_server <- function(id, shared) {
         if (nrow(question) > 0) {
           original_var <- question$q_variable
           
-          # Try both namespaced and non-namespaced versions
+          # Save response using non-namespaced input name
           if (original_var %in% names(input) && !is.null(input[[original_var]])) {
             user_responses[[original_var]] <- input[[original_var]]
-            cat("Saved response for", original_var, ":", input[[original_var]], "\n")
-          } else {
-            namespaced_var <- ns(original_var)
-            if (namespaced_var %in% names(input) && !is.null(input[[namespaced_var]])) {
-              user_responses[[original_var]] <- input[[namespaced_var]]
-              cat("Saved namespaced response for", original_var, ":", input[[namespaced_var]], "\n")
-            } else {
-              cat("No input found for", original_var, "or", namespaced_var, "\n")
-            }
           }
         }
       }
@@ -296,28 +287,15 @@ mod_questionnaire_server <- function(id, shared) {
     # Alternative helper to save ALL current responses (only for shown questions)
     save_all_responses <- function() {
       shown_q_numbers <- questions_shown()
-      cat("Questions shown so far:", paste(shown_q_numbers, collapse = ", "), "\n")
-      cat("All input names:", paste(names(input), collapse = ", "), "\n")
       
       for (q_num in shown_q_numbers) {
         question <- questions[questions$q_number == q_num, ]
         if (nrow(question) > 0) {
           original_var <- question$q_variable
           
-          cat("Looking for input:", original_var, "\n")
-          
-          # Try both namespaced and non-namespaced versions
+          # Save response using non-namespaced input name
           if (original_var %in% names(input) && !is.null(input[[original_var]])) {
             user_responses[[original_var]] <- input[[original_var]]
-            cat("Saved response for", original_var, ":", input[[original_var]], "\n")
-          } else {
-            namespaced_var <- ns(original_var)
-            if (namespaced_var %in% names(input) && !is.null(input[[namespaced_var]])) {
-              user_responses[[original_var]] <- input[[namespaced_var]]
-              cat("Saved namespaced response for", original_var, ":", input[[namespaced_var]], "\n")
-            } else {
-              cat("Input", original_var, "not found or is NULL\n")
-            }
           }
         }
       }
@@ -402,13 +380,8 @@ mod_questionnaire_server <- function(id, shared) {
       # Save all responses before generating recommendation
       save_all_responses()
       
-      # Debug: Check what responses we have
-      all_responses <- reactiveValuesToList(user_responses)
-      cat("Available responses:", names(all_responses), "\n")
-      cat("Response values:", sapply(all_responses, function(x) if(is.null(x)) "NULL" else as.character(x)), "\n")
-      
       # Use the new intelligent recommendation function
-      recommendation_result <- generate_intelligent_recommendation(all_responses)
+      recommendation_result <- generate_intelligent_recommendation(reactiveValuesToList(user_responses))
       
       shiny::showModal(
         shiny::modalDialog(
@@ -573,14 +546,9 @@ mod_questionnaire_server <- function(id, shared) {
         if (nrow(question) > 0) {
           original_var <- question$q_variable
           
-          # Try both namespaced and non-namespaced versions
+          # Save response using non-namespaced input name
           if (original_var %in% names(input) && !is.null(input[[original_var]])) {
             user_responses[[original_var]] <- input[[original_var]]
-          } else {
-            namespaced_var <- ns(original_var)
-            if (namespaced_var %in% names(input) && !is.null(input[[namespaced_var]])) {
-              user_responses[[original_var]] <- input[[namespaced_var]]
-            }
           }
         }
       }
