@@ -123,7 +123,7 @@ mod_questionnaire_ui <- function(id) {
 #' @param id Module id
 #' 
 #' @noRd 
-mod_questionnaire_server <- function(id, shared, parent_session = NULL) {
+mod_questionnaire_server <- function(id, shared, move_data, parent_session = NULL) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
@@ -576,6 +576,9 @@ mod_questionnaire_server <- function(id, shared, parent_session = NULL) {
       # Transfer questionnaire values
       transfer_questionnaire_values()
       
+      # Trigger the transfer function in the Trial Design Module
+      move_data(TRUE)
+
       # Navigate to Simulation tab
       if (!is.null(parent_session)) {
         updateNavbarPage(parent_session, "nav", selected = "Simulation")
@@ -596,7 +599,10 @@ mod_questionnaire_server <- function(id, shared, parent_session = NULL) {
     observeEvent(input$advanced_settings, {
       # Transfer questionnaire values
       transfer_questionnaire_values()
-      
+
+      # Trigger the transfer function in the Trial Design Module
+      move_data(TRUE)
+
       # Navigate to Trial Design tab
       if (!is.null(parent_session)) {
         updateNavbarPage(parent_session, "nav", selected = "Trial Design")
