@@ -274,17 +274,11 @@ mod_questionnaire_server <- function(id, shared) {
         # Find question by q_number
         question <- questions[questions$q_number == current_q_num, ]
         if (nrow(question) > 0) {
-          # Get the original variable name (without namespace)
           original_var <- question$q_variable
-          # Get the namespaced variable name
-          namespaced_var <- ns(original_var)
           
-          # Save the response if it exists
-          if (!is.null(input[[namespaced_var]])) {
-            user_responses[[original_var]] <- input[[namespaced_var]]
-            cat("Saved response for", original_var, ":", input[[namespaced_var]], "\n")
-          } else {
-            cat("No input found for", namespaced_var, "\n")
+          # Save response using non-namespaced input name
+          if (original_var %in% names(input) && !is.null(input[[original_var]])) {
+            user_responses[[original_var]] <- input[[original_var]]
           }
         }
       }
@@ -293,20 +287,15 @@ mod_questionnaire_server <- function(id, shared) {
     # Alternative helper to save ALL current responses (only for shown questions)
     save_all_responses <- function() {
       shown_q_numbers <- questions_shown()
-      cat("Questions shown so far:", paste(shown_q_numbers, collapse = ", "), "\n")
       
       for (q_num in shown_q_numbers) {
         question <- questions[questions$q_number == q_num, ]
         if (nrow(question) > 0) {
           original_var <- question$q_variable
-          namespaced_var <- ns(original_var)
           
-          # Only try to save if the input exists
-          if (namespaced_var %in% names(input) && !is.null(input[[namespaced_var]])) {
-            user_responses[[original_var]] <- input[[namespaced_var]]
-            cat("Saved response for", original_var, ":", input[[namespaced_var]], "\n")
-          } else {
-            cat("Input", namespaced_var, "not found or is NULL\n")
+          # Save response using non-namespaced input name
+          if (original_var %in% names(input) && !is.null(input[[original_var]])) {
+            user_responses[[original_var]] <- input[[original_var]]
           }
         }
       }
@@ -386,60 +375,162 @@ mod_questionnaire_server <- function(id, shared) {
       }
     })
 
-    # Helper function to show recommendation modal using your existing function
+    # Helper function to show recommendation modal using intelligent recommendation
     show_recommendation_modal <- function() {
-      # Calculate recommendation using your existing logic
-      numeric_ids <- questions$q_variable[questions$q_type == "numeric"]
-      values <- sapply(numeric_ids, function(var) {
-        val <- user_responses[[var]]
-        if (is.null(val)) return(0)
-        as.numeric(val)
-      })
+      # Save all responses before generating recommendation
+      save_all_responses()
       
-      x <- mean(values, na.rm = TRUE) / 10
-      
-      # Use your existing generate_recommendation function
-      recommendation_text <- generate_recommendation(x)
+      # Use the new intelligent recommendation function
+      recommendation_result <- generate_intelligent_recommendation(reactiveValuesToList(user_responses))
       
       shiny::showModal(
         shiny::modalDialog(
-          title = "Your Recommendation",
+          title = "Your Method Recommendation",
           size = "l",
           easyClose = TRUE,
           
           shiny::tabsetPanel(
             shiny::tabPanel(
-              "Summary", 
+              "Recommendation", 
               htmltools::div(
                 style = "padding: 20px;",
-                htmltools::p(recommendation_text, style = "font-size: 16px;")
+                
+                # Ranking display with badges
+                htmltools::div(
+                  style = "margin-bottom: 20px;",
+                  htmltools::h4("Recommended Ranking", style = "color: #495057; margin-bottom: 15px;"),
+                  
+                  # First choice
+                  htmltools::div(
+                    style = "display: flex; align-items: center; margin-bottom: 10px;",
+                    htmltools::span("1st Choice:", style = "font-weight: bold; margin-right: 10px; min-width: 100px;"),
+                    htmltools::span(
+                      class = "badge bg-success fs-6",
+                      style = "margin-right: 10px; padding: 8px 12px;",
+                      paste0(recommendation_result$ranked_methods[1], " (Score: ", recommendation_result$scores[recommendation_result$ranked_methods[1]], ")")
+                    )
+                  ),
+                  
+                  # Second choice
+                  htmltools::div(
+                    style = "display: flex; align-items: center; margin-bottom: 10px;",
+                    htmltools::span("2nd Choice:", style = "font-weight: bold; margin-right: 10px; min-width: 100px;"),
+                    htmltools::span(
+                      class = "badge bg-warning fs-6",
+                      style = "margin-right: 10px; padding: 8px 12px;",
+                      paste0(recommendation_result$ranked_methods[2], " (Score: ", recommendation_result$scores[recommendation_result$ranked_methods[2]], ")")
+                    )
+                  ),
+                  
+                  # Third choice
+                  htmltools::div(
+                    style = "display: flex; align-items: center; margin-bottom: 15px;",
+                    htmltools::span("3rd Choice:", style = "font-weight: bold; margin-right: 10px; min-width: 100px;"),
+                    htmltools::span(
+                      class = "badge bg-secondary fs-6",
+                      style = "margin-right: 10px; padding: 8px 12px;",
+                      paste0(recommendation_result$ranked_methods[3], " (Score: ", recommendation_result$scores[recommendation_result$ranked_methods[3]], ")")
+                    )
+                  ),
+                  
+                  # Confidence level
+                  htmltools::div(
+                    style = "margin-top: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 5px;",
+                    htmltools::span("Confidence Level: ", style = "font-weight: bold;"),
+                    htmltools::span(
+                      class = if (recommendation_result$confidence == "High") "badge bg-success" else if (recommendation_result$confidence == "Medium") "badge bg-warning" else "badge bg-secondary",
+                      style = "font-size: 14px; padding: 6px 10px;",
+                      recommendation_result$confidence
+                    )
+                  )
+                ),
+                
+                # Rationale section
+                htmltools::div(
+                  htmltools::h5("Why This Recommendation?", style = "color: #495057; margin-bottom: 10px;"),
+                  htmltools::p(
+                    recommendation_result$rationale,
+                    style = "font-size: 15px; line-height: 1.5; text-align: justify;"
+                  )
+                )
               )
             ),
             shiny::tabPanel(
-              "CRM", 
+              "CRM Details", 
               htmltools::div(
                 style = "padding: 20px;",
-                htmltools::p("CRM Pros: Adaptive, efficient"),
-                htmltools::br(),
-                htmltools::p("CRM Cons: Complex, prior-dependent")
+                htmltools::h5("Continual Reassessment Method (CRM)", style = "color: #495057; margin-bottom: 15px;"),
+                htmltools::div(
+                  style = "margin-bottom: 15px;",
+                  htmltools::h6("Advantages:", style = "color: #28a745; font-weight: bold;"),
+                  htmltools::tags$ul(
+                    htmltools::tags$li("Most efficient at finding the MTD"),
+                    htmltools::tags$li("Continuously learns from data"),
+                    htmltools::tags$li("Flexible adaptation to new information"),
+                    htmltools::tags$li("Can incorporate prior knowledge effectively")
+                  )
+                ),
+                htmltools::div(
+                  htmltools::h6("Disadvantages:", style = "color: #dc3545; font-weight: bold;"),
+                  htmltools::tags$ul(
+                    htmltools::tags$li("Requires statistical expertise"),
+                    htmltools::tags$li("More complex to implement"),
+                    htmltools::tags$li("Results depend on prior specification"),
+                    htmltools::tags$li("Less transparent decision-making")
+                  )
+                )
               )
             ),
             shiny::tabPanel(
-              "3+3", 
+              "BOIN Details", 
               htmltools::div(
                 style = "padding: 20px;",
-                htmltools::p("3+3 Pros: Simple, standard"), 
-                htmltools::br(),
-                htmltools::p("3+3 Cons: Statistically inefficient, rigid")
+                htmltools::h5("Bayesian Optimal Interval (BOIN)", style = "color: #495057; margin-bottom: 15px;"),
+                htmltools::div(
+                  style = "margin-bottom: 15px;",
+                  htmltools::h6("Advantages:", style = "color: #28a745; font-weight: bold;"),
+                  htmltools::tags$ul(
+                    htmltools::tags$li("Balances efficiency with simplicity"),
+                    htmltools::tags$li("Pre-specified transparent decision rules"),
+                    htmltools::tags$li("Good statistical properties"),
+                    htmltools::tags$li("Suitable for regulatory submissions")
+                  )
+                ),
+                htmltools::div(
+                  htmltools::h6("Disadvantages:", style = "color: #dc3545; font-weight: bold;"),
+                  htmltools::tags$ul(
+                    htmltools::tags$li("Less familiar to many clinicians"),
+                    htmltools::tags$li("Requires some statistical understanding"),
+                    htmltools::tags$li("Less efficient than CRM"),
+                    htmltools::tags$li("Fixed boundaries may not suit all scenarios")
+                  )
+                )
               )
             ),
             shiny::tabPanel(
-              "BOIN", 
+              "3+3 Details", 
               htmltools::div(
                 style = "padding: 20px;",
-                htmltools::p("BOIN Pros: Balanced, less prior-dependent"),
-                htmltools::br(), 
-                htmltools::p("BOIN Cons: Less intuitive to clinicians")
+                htmltools::h5("Traditional 3+3 Design", style = "color: #495057; margin-bottom: 15px;"),
+                htmltools::div(
+                  style = "margin-bottom: 15px;",
+                  htmltools::h6("Advantages:", style = "color: #28a745; font-weight: bold;"),
+                  htmltools::tags$ul(
+                    htmltools::tags$li("Simple and well-understood"),
+                    htmltools::tags$li("No statistical expertise required"),
+                    htmltools::tags$li("Widely accepted by regulators"),
+                    htmltools::tags$li("Easy to implement and explain")
+                  )
+                ),
+                htmltools::div(
+                  htmltools::h6("Disadvantages:", style = "color: #dc3545; font-weight: bold;"),
+                  htmltools::tags$ul(
+                    htmltools::tags$li("Statistically inefficient"),
+                    htmltools::tags$li("Often treats patients at suboptimal doses"),
+                    htmltools::tags$li("Rigid escalation rules"),
+                    htmltools::tags$li("Higher risk of under-dosing")
+                  )
+                )
               )
             )
           )
@@ -454,11 +545,10 @@ mod_questionnaire_server <- function(id, shared) {
         question <- questions[questions$q_number == current_q_num, ]
         if (nrow(question) > 0) {
           original_var <- question$q_variable
-          namespaced_var <- ns(original_var)
           
-          # Only watch for changes if the input actually exists
-          if (namespaced_var %in% names(input) && !is.null(input[[namespaced_var]])) {
-            user_responses[[original_var]] <- input[[namespaced_var]]
+          # Save response using non-namespaced input name
+          if (original_var %in% names(input) && !is.null(input[[original_var]])) {
+            user_responses[[original_var]] <- input[[original_var]]
           }
         }
       }
