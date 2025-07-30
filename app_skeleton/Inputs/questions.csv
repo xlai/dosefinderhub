@@ -1,15 +1,10 @@
 config,q_number,q_type,q_variable,q_text,answer_type,params,condition
-N,2,radioButtons,know_doses,Do you know how many dose levels are being tested?,categorical,"choices=Yes,No",
-Y,3,slider,n_doses,How many dose levels are being tested?,numeric_bounded,min=2;max=10;step=1,know_doses == 'No'
-N,1,radioButtons,drug_type,What type of drug is being tested?,categorical,"choices=Chemotherapy,Immunotherapy,Targeted agent",
-N,6,radioButtons,know_ttl,Do you know the target toxicity level for this trial?,categorical,"choices=Yes,No",
-Y,7,slider,ttl,What is the target toxicity level for this trial?,numeric_bounded,min=0;max=0.8;step=0.05,know_ttl == 'No'
-N,8,radioButtons,need_tox_interval,Do you want to provide an indifference interval in which you are happy for the toxicity rate of the recommended dose to fall?,categorical,"choices=Yes,No",
-N,5,radioButtons,know_prior_tox_info,How much prior knowledge of the drug's toxicity do you have?,categorical,"choices=None,Some pre-clinical information,Lots of pre-clinical information,Some clinical information,Lots of clinical information",
-N,9,radioButtons,stats_help,Are you able and willing to provide real time data to a statistician for analysis during the trial?,categorical,"choices=Yes,No",
-N,10,radioButtons,know_late_tox,Do you need to consider late toxicities occurring in your trial?,categorical,"choices=Yes,No",
-N,11,radioButtons,cohort_vary,Do you need to have varying cohort sizes?,categorical,"choices=Yes,No",
-N,13,radioButtons,know_max_n,Is there a maximum sample size for this trial?,categorical,"choices=Yes,No",
-Y,14,numeric,max_n,What is the maximum sample size for this trial?,numeric,min=10;dummy_max=100;step=1,know_max_n == 'No'
+Y,1,slider,n_doses,How many dose levels are being tested?,numeric_bounded,min=2;max=10;step=1,
+Y,2,slider,ttl,What is the target toxicity level for this trial?,numeric_bounded,min=0;max=0.8;step=0.05,
+Y,3,numeric,max_n,What is the maximum sample size for this trial?,numeric,min=10;dummy_max=100;step=1,
 Y,4,numeric,start_dose,What is the starting dose level?,numeric_bounded,min=1;max=10;step=1,
-Y,12,slider,cohort_size,What size will the cohorts be?,numeric_bounded,min=1;max=6;step=1,cohort_vary == 'Yes'
+Y,5,slider,cohort_size,What size will the cohorts be?,numeric_bounded,min=1;max=6;step=1,
+Y,6,radioButtons,toxicity_confidence,How confident are you about which doses might be toxic?,categorical,"choices=Very confident (good historical data),Somewhat confident,Not confident/limited data",
+Y,7,radioButtons,trial_priorities,What's more important for your trial?,categorical,"choices=Getting started quickly with simple rules,Finding the best dose efficiently,Balance of both",
+Y,8,radioButtons,statistical_support,Do you have access to a statistician experienced with dose-finding designs?,categorical,"choices=Yes experienced with complex modeling,Yes but prefer simpler approaches,Limited statistical support",
+Y,9,radioButtons,decision_transparency,How important is it to have pre-specified transparent decision rules?,categorical,"choices=Very important (regulatory/reproducibility),Flexible adaptation preferred,Simple fixed rules fine",
