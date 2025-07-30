@@ -113,10 +113,17 @@ mod_questionnaire_ui <- function(id) {
 #' @param id Module id
 #' 
 #' @noRd 
-mod_questionnaire_server <- function(id) {
+mod_questionnaire_server <- function(id, shared) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
+   # Initialise reactive values
+   shared$q_n_doses <- reactiveVal(numeric(0))
+   shared$q_start_dose <- reactiveVal(numeric(0))
+   shared$q_ttl <- reactiveVal(numeric(0))
+   shared$q_cohort <- reactiveVal(numeric(0))
+   shared$q_max_size <- reactiveVal(numeric(0))
+
     # Load questions data 
     questions <- tryCatch({
       input_directory <- here::here('app_skeleton', 'Inputs')
@@ -278,10 +285,20 @@ mod_questionnaire_server <- function(id) {
       }
     })
     
+    question_responses <- reactiveValues(list = vector("list", length = nrow(questions)))
+
     # Next button logic with conditional navigation
     observeEvent(input$next_button, {
+      
       # Save current response
-      save_current_response()
+      if(!is.null(current_question())) {
+      current_q_num <- current_question()
+
+      question_response <- questions$q_variable[questions$q_number == current_q_num]
+      question_responses$list[[current_q_num]] <- input[[question_response]]
+
+      #print(question_responses$list)
+    }
       
       current_q_num <- current_question()
       
@@ -427,6 +444,15 @@ mod_questionnaire_server <- function(id) {
           "next_button", 
           label = "Generate Recommendation"
         )
+        all_question_responses <- question_responses$list # saving set of responses
+
+        # Defining shared variables to move to trial design
+        shared$q_n_doses <- reactive(as.numeric(all_question_responses[[3]]))
+        shared$q_start_dose <- reactive(as.numeric(all_question_responses[[4]]))
+        shared$q_ttl <- reactive(as.numeric(all_question_responses[[7]]))
+        shared$q_cohort <- reactive(as.numeric(all_question_responses[[12]]))
+        shared$q_max_size <- reactive(as.numeric(all_question_responses[[14]]))
+        #print(shared$q_start_dose())
       } else {
         shiny::updateActionButton(
           session, 

@@ -8,12 +8,12 @@ trial_design_ui <- function(id) {
 
 
 # Non-specific UI inputs for trial design
-  n_doses_output <- numericInputWithValidation(ns("n_doses_inputt"), "How many dose levels are being tested?", min = 1, value = "5", step = 1)
-  ttl_output <- numericInputWithValidation(ns("ttl_inputt"), "What is the target toxicity level for this trial, as a decimal?", min = 0, max = 0.999, value = "0.3", step = 0.01)
-  max_size_output <- numericInputWithValidation(ns("max_size_inputt"), "What is the maximum sample size for this trial?", min = 1, value = "30", step = 1)
-  start_dose_output <- numericInputWithValidation(ns("start_dose_inputt"), "What is the starting dose level?", min = 1, value = "1", step = 1)
-  cohort_output <- numericInputWithValidation(ns("cohort_inputt"), "What size will the cohorts be?", min = 1, value = "5", step = 1)
-  
+  n_doses_output <- numericInput(ns("n_doses_inputt"), "How many dose levels are being tested?", min = 1, value = "5", step = 1)
+  ttl_output <- numericInput(ns("ttl_inputt"), "What is the target toxicity level for this trial, as a decimal?", min = 0, max = 0.999, value = "0.3", step = 0.01)
+  max_size_output <- numericInput(ns("max_size_inputt"), "What is the maximum sample size for this trial?", min = 1, value = "30", step = 1)
+  start_dose_output <- numericInput(ns("start_dose_inputt"), "What is the starting dose level?", min = 1, value = "1", step = 1)
+  cohort_output <- numericInput(ns("cohort_inputt"), "What size will the cohorts be?", min = 1, value = "5", step = 1)
+
   n_doses_warning_text <- textOutput(ns("n_doses_warning"))
   ttl_warning_text <- textOutput(ns("ttl_warning"))
   max_size_warning_text <- textOutput(ns("max_size_warning"))
@@ -42,12 +42,12 @@ choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 above_target_input <- radioButtons(ns("above_target_input"),
 "Do you want to prevent escalation of doses if the overall observed DLT rate at the current dose level is above the target DLT rate?",
 choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
-prior_var_input <- numericInputWithValidation(ns("prior_var_input"), "What is the estimate of the prior variance?", min = 0, value = 0.1)
-stop_n_mtd_input <- numericInputWithValidation(ns("stop_n_mtd_input"), "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = 24)
+prior_var_input <- numericInput(ns("prior_var_input"), "What is the estimate of the prior variance?", min = 0, value = 0.1)
+stop_n_mtd_input <- numericInput(ns("stop_n_mtd_input"), "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = 24)
 skeleton_input <- textInput(ns("skeleton_input"), "What are the prior estimates of the DLT rates at each dose? Please make this an increasing list and separate each value with a comma.", value = "0.108321683015674,0.255548628279939,0.425089891767129,0.576775912195444,0.817103320499882")
-prior_mtd_input <- numericInputWithValidation(ns("prior_mtd_input"), "What is your prior guess of the MTD?", min = 1, value = 8)
-stop_tox_x_input <- numericInputWithValidation(ns("stop_tox_x_input"), "When using the this Bayesian safety early criterion: p(true DLT rate at lowest dose > target DLT rate + x | data) > y, what would you like x to be? This is the excess toxicity above the target DLT.", min = 0, value = 0.09)
-stop_tox_y_input <- numericInputWithValidation(ns("stop_tox_y_input"), "What would you like y to be? This is the confidence level for safety stopping.", min = 0, max = 1, value = 0.77)
+prior_mtd_input <- numericInput(ns("prior_mtd_input"), "What is your prior guess of the MTD?", min = 1, value = 8)
+stop_tox_x_input <- numericInput(ns("stop_tox_x_input"), "When using the this Bayesian safety early criterion: p(true DLT rate at lowest dose > target DLT rate + x | data) > y, what would you like x to be? This is the excess toxicity above the target DLT.", min = 0, value = 0.09)
+stop_tox_y_input <- numericInput(ns("stop_tox_y_input"), "What would you like y to be? This is the confidence level for safety stopping.", min = 0, max = 1, value = 0.77)
 
 prior_var_warning_text <- textOutput(ns("prior_var_warning"))
 stop_n_mtd_warning_text <- textOutput(ns("stop_n_mtd_warning"))
@@ -122,7 +122,11 @@ choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
       ),
     sidebar = sidebar(
       h3("Trial Design"),
-      
+      h4("Transfer Questionnaire Results"),
+      p("Press the button below to transfer your results from the questionnaire to the trial design inputs. This will allow you to run simulations and conduct based on your questionnaire responses. Note that you must press Generate Recommendation to save your questionnaire responses."),
+      input_task_button(ns("transfer_questionnaire"), "Transfer Questionnaire Results"),
+
+      tags$hr(), # Separator line
       fileInput("config_file_upload", 
       "Saved a Trial Design file? Input it here to retrieve your configurations.", 
       accept = c(".csv", ".rds")),
@@ -139,6 +143,39 @@ choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 
 trial_design_server <- function(id, shared) {
   moduleServer(id, function(input, output, session) {
+
+################## Questionnaire Inputs ##################    
+observeEvent({input$transfer_questionnaire}, {
+  # Transfer questionnaire results to trial design inputs
+  if (length(shared$q_n_doses()) > 0) {
+    updateNumericInput(session, "n_doses_inputt", value = shared$q_n_doses())
+  } else {
+    updateNumericInput(session, "n_doses_inputt", value = 5) # Default value if not set
+  }
+  if (length(shared$q_ttl()) > 0) {
+    updateNumericInput(session, "ttl_inputt", value = shared$q_ttl())
+  } else {
+    updateNumericInput(session, "ttl_inputt", value = 0.3) # Default value if not set
+  }
+  if (length(shared$q_max_size()) > 0) {
+    updateNumericInput(session, "max_size_inputt", value = shared$q_max_size())
+  }
+  else {
+    updateNumericInput(session, "max_size_inputt", value = 30) # Default value if not set
+  }
+  if (length(shared$q_start_dose()) > 0) {
+    updateNumericInput(session, "start_dose_inputt", value = shared$q_start_dose())
+  }
+  else {
+    updateNumericInput(session, "start_dose_inputt", value = 1) # Default value if not set
+  }
+  if (length(shared$q_cohort()) > 0) {
+    updateNumericInput(session, "cohort_inputt", value = shared$q_cohort())
+  }
+  else {
+    updateNumericInput(session, "cohort_inputt", value = 3) # Default value if not set
+  }
+})
 
     #################################### From Configurations Tab Server #####################################
 
