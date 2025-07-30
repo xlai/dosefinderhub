@@ -256,7 +256,15 @@ generate_rationale <- function(user_responses, top_method, scores) {
   }
   
   # Combine all parts
-  full_rationale <- paste(paste(rationale_parts, collapse = " "), method_desc, caveat, sep = ". ")
+  parts <- c()
+  if (length(rationale_parts) > 0) {
+    parts <- c(parts, paste(rationale_parts, collapse = " "))
+  }
+  parts <- c(parts, method_desc)
+  if (nzchar(caveat)) {
+    parts <- c(parts, caveat)
+  }
+  full_rationale <- paste(parts, collapse = ". ")
   
   return(full_rationale)
 }
