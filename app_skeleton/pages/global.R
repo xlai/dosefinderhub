@@ -46,6 +46,43 @@ questions <- dummy_data
 
 #column_names <- reactive({sprintf("d(%d)", 1:input$n_doses_inputt)})
 
+######################## Validation Functions ########################
+
+# Reusable validation function
+validate_numeric_input <- function(value, min_val = NULL, max_val = NULL, integer_only = FALSE) {
+
+  if (!is.null(value) && value != "" && !is.na(value)) {
+    if (!is.numeric(value)) {
+      return("Please enter a valid number")
+    }
+    
+    # Check if integer is required
+    if (integer_only) {
+      if (value != as.integer(value)) {
+        return("Please enter a whole number (integer)")
+      }
+    }
+    
+    # Check for positive values when min_val is set to greater than 0
+    if (!is.null(min_val) && value < min_val) {
+      if (min_val > 0) {
+        return(paste("Value must be positive (greater than", min_val - 1, ")"))
+      } else {
+        return(paste("Value must be at least", min_val))
+      }
+    }
+    
+    if (!is.null(max_val) && value > max_val) {
+      return(paste("Value must be at most", max_val))
+    }
+  }
+  
+  return(NULL) # No error
+}
+
+# Reusable UI component for numeric input with validation using bslib
+
+
 ############################################ Simulation Code ############################################
 
 ### This is a rewrite of the basesim.r file as a set of functions that can be used reactively to simulate data.

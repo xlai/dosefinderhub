@@ -3,24 +3,26 @@
 library(shiny)
 library(bslib)
 library(htmltools)
+library(markdown)
 
+here::i_am("app_skeleton/app.R")
 
-#source("app_skeleton/pages/intro_ui.R")
-#source("app_skeleton/pages/question_ui.R")
-#source("app_skeleton/pages/trial_design_ui.R")
-#source("app_skeleton/pages/sim_ui.R")
-#source("app_skeleton/pages/con_ui.R")
-#works without sourcing yipeee
+source("app_skeleton/pages/intro_ui.R")
+source("app_skeleton/R/mod_02_questionnaire.R")
+source("app_skeleton/pages/global.R")
+source("app_skeleton/pages/trial_design_ui.R")
+source("app_skeleton/pages/sim_ui.R")
+source("app_skeleton/pages/con_ui.R")
 
 # Define UI for the application
 ui <- navbarPage(
-    title = "Dose Finder Hub",
+    title = "DoseFinderHub",
     id = "nav",
     theme = bs_theme(version = 5, bootswatch = "flatly"),
     # Intro tab
     tabPanel("Introduction", intro_ui("intro")),
     # Questionnaire tab
-    tabPanel("Questionnaire", question_ui("questionnaire")),
+    tabPanel("Questionnaire", mod_questionnaire_ui("questionnaire")),
     # Results tab
     tabPanel("Trial Design", trial_design_ui("trial_design")),
     # Simulation tab
@@ -31,11 +33,56 @@ ui <- navbarPage(
 
 # Define server logic
 server <- function(input, output, session){
+    # Defining a shared reactive variable for n_doses
+    shared <- reactiveValues()
+
     intro_server("intro")
-    question_server("questionnaire")
-    trial_design_server("trial_design")
-    sim_server("simulation")
+    questionnaire_results <- mod_questionnaire_server("questionnaire", shared)
+    trial_design_server("trial_design", shared)
+    sim_server("simulation", shared)
     con_server("conduct")
+
+      observe({
+    if (!is.null(questionnaire_results) && 
+        !is.null(questionnaire_results$is_complete) &&
+        questionnaire_results$is_complete()) {
+      
+      # Enable other tabs or provide navigation hints
+      showNotification(
+        "Questionnaire completed! You can now proceed to Trial Design.",
+        type = "success",
+        duration = 5
+      )
+    }
+    })
 }
 
 shinyApp(ui, server)
+
+##### List of Shared Variables #####
+
+### Defined in trial_design_server ###
+
+# shared$q_n_doses: Number of doses response from questionnaire
+# shared$q_start_dose: Starting dose level response from questionnaire
+# shared$q_ttl: ttl response from questionnaire
+# shared$q_cohort: Cohort size response from questionnaire
+# shared$q_max_size: Maximum sample size response from questionnaire
+
+# shared$n_dosess: Number of doses
+# shared$ttl: ttl
+# shared$max_size: Maximum sample size
+# shared$start_dose: Starting dose level
+# shared$cohort: Cohort size
+
+# shared$skip_esc_crm: Skip escalation in CRM
+# shared$skip_deesc_crm: Skip de-escalation in CRM
+# shared$above_target_crm: Above target in CRM
+# shared$prior_var_crm: Prior variance in CRM
+# shared$stop_n_mtd_crm: Stop at n MTD in CRM
+# shared$skeleton_crm: Skeleton in CRM
+# shared$prior_mtd_crm: Prior MTD in CRM
+# shared$stop_tox_x_crm: Stop toxicity x in CRM
+# shared$stop_tox_y_crm: Stop toxicity y in CRM
+
+# shared$skip_tpt: Skip de-escalation in 3+3
