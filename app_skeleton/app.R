@@ -3,6 +3,7 @@
 library(shiny)
 library(bslib)
 library(htmltools)
+library(markdown)
 
 here::i_am("app_skeleton/app.R")
 
@@ -15,11 +16,11 @@ source("app_skeleton/pages/con_ui.R")
 
 # Define UI for the application
 ui <- navbarPage(
-    title = "Dose Finder Hub",
+    title = "DoseFinderHub",
     id = "nav",
     theme = bs_theme(version = 5, bootswatch = "flatly"),
     # Intro tab
-#    tabPanel("Introduction", intro_ui("intro")),
+    tabPanel("Introduction", intro_ui("intro")),
     # Questionnaire tab
     tabPanel("Questionnaire", mod_questionnaire_ui("questionnaire")),
     # Results tab

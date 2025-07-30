@@ -1,0 +1,10 @@
+---
+title: "The Team"
+output: html_document
+---
+---
+<h3 id="team_members">Members</h3>
+- Dr. Lai, and collaborators.
+
+<h3 id="team_contact">Contact</h3>
+- For questions or feedback, visit https://github.com/xlai/dosefinderhub.

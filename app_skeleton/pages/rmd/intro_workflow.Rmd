@@ -1,0 +1,10 @@
+---
+title: "Workflow"
+output: html_document
+---
+---
+<h4 id="workflow_step1">Step 1: Questionnaire</h4>
+- Answer trial-related questions to help customize the design.
+
+<h3 id="workflow_step2">Step 2: Review Design</h3>
+- Examine recommended trial designs and select the best option for your study.

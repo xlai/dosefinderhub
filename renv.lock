@@ -301,8 +301,7 @@
       "Description": "Provides color schemes for maps (and other graphics) designed by Cynthia Brewer as described at http://colorbrewer2.org.",
       "License": "Apache License 2.0",
       "NeedsCompilation": "no",
-      "Repository": "CRAN",
-      "Encoding": "UTF-8"
+      "Repository": "CRAN"
     },
     "Rcpp": {
       "Package": "Rcpp",
@@ -2247,8 +2246,7 @@
         "stats",
         "graphics"
       ],
-      "Repository": "CRAN",
-      "Encoding": "UTF-8"
+      "Repository": "CRAN"
     },
     "later": {
       "Package": "later",
@@ -2389,6 +2387,38 @@
       "Maintainer": "Lionel Henry <lionel@posit.co>",
       "Repository": "CRAN"
     },
+    "litedown": {
+      "Package": "litedown",
+      "Version": "0.7",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "A Lightweight Version of R Markdown",
+      "Authors@R": "c( person(\"Yihui\", \"Xie\", role = c(\"aut\", \"cre\"), email = \"xie@yihui.name\", comment = c(ORCID = \"0000-0003-0645-5666\", URL = \"https://yihui.org\")), person(\"Tim\", \"Taylor\", role = \"ctb\", comment = c(ORCID = \"0000-0002-8587-7113\")), person() )",
+      "Description": "Render R Markdown to Markdown (without using 'knitr'), and Markdown to lightweight HTML or 'LaTeX' documents with the 'commonmark' package (instead of 'Pandoc'). Some missing Markdown features in 'commonmark' are also supported, such as raw HTML or 'LaTeX' blocks, 'LaTeX' math, superscripts, subscripts, footnotes, element attributes, and appendices, but not all 'Pandoc' Markdown features are (or will be) supported. With additional JavaScript and CSS, you can also create HTML slides and articles. This package can be viewed as a trimmed-down version of R Markdown and 'knitr'. It does not aim at rich Markdown features or a large variety of output formats (the primary formats are HTML and 'LaTeX'). Book and website projects of multiple input documents are also supported.",
+      "Depends": [
+        "R (>= 3.2.0)"
+      ],
+      "Imports": [
+        "utils",
+        "commonmark (>= 1.9.5)",
+        "xfun (>= 0.52)"
+      ],
+      "Suggests": [
+        "rbibutils",
+        "rstudioapi",
+        "tinytex"
+      ],
+      "License": "MIT + file LICENSE",
+      "URL": "https://github.com/yihui/litedown",
+      "BugReports": "https://github.com/yihui/litedown/issues",
+      "VignetteBuilder": "litedown",
+      "RoxygenNote": "7.3.2",
+      "Encoding": "UTF-8",
+      "NeedsCompilation": "no",
+      "Author": "Yihui Xie [aut, cre] (<https://orcid.org/0000-0003-0645-5666>, https://yihui.org), Tim Taylor [ctb] (<https://orcid.org/0000-0002-8587-7113>)",
+      "Maintainer": "Yihui Xie <xie@yihui.name>",
+      "Repository": "CRAN"
+    },
     "loo": {
       "Package": "loo",
       "Version": "2.8.0",
@@ -2463,6 +2493,38 @@
       "NeedsCompilation": "yes",
       "Author": "Stefan Milton Bache [aut, cph] (Original author and creator of magrittr), Hadley Wickham [aut], Lionel Henry [cre], RStudio [cph, fnd]",
       "Maintainer": "Lionel Henry <lionel@rstudio.com>",
+      "Repository": "CRAN"
+    },
+    "markdown": {
+      "Package": "markdown",
+      "Version": "2.0",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Render Markdown with 'commonmark'",
+      "Authors@R": "c( person(\"Yihui\", \"Xie\", role = c(\"aut\", \"cre\"), email = \"xie@yihui.name\", comment = c(ORCID = \"0000-0003-0645-5666\")), person(\"JJ\", \"Allaire\", role = \"aut\"), person(\"Jeffrey\", \"Horner\", role = \"aut\"), person(\"Henrik\", \"Bengtsson\", role = \"ctb\"), person(\"Jim\", \"Hester\", role = \"ctb\"), person(\"Yixuan\", \"Qiu\", role = \"ctb\"), person(\"Kohske\", \"Takahashi\", role = \"ctb\"), person(\"Adam\", \"November\", role = \"ctb\"), person(\"Nacho\", \"Caballero\", role = \"ctb\"), person(\"Jeroen\", \"Ooms\", role = \"ctb\"), person(\"Thomas\", \"Leeper\", role = \"ctb\"), person(\"Joe\", \"Cheng\", role = \"ctb\"), person(\"Andrzej\", \"Oles\", role = \"ctb\"), person(given = \"Posit Software, PBC\", role = c(\"cph\", \"fnd\")) )",
+      "Description": "Render Markdown to full and lightweight HTML/LaTeX documents with the 'commonmark' package. This package has been superseded by 'litedown'.",
+      "Depends": [
+        "R (>= 2.11.1)"
+      ],
+      "Imports": [
+        "utils",
+        "xfun",
+        "litedown (>= 0.6)"
+      ],
+      "Suggests": [
+        "knitr",
+        "rmarkdown (>= 2.18)",
+        "yaml",
+        "RCurl"
+      ],
+      "License": "MIT + file LICENSE",
+      "URL": "https://github.com/rstudio/markdown",
+      "BugReports": "https://github.com/rstudio/markdown/issues",
+      "RoxygenNote": "7.3.2",
+      "Encoding": "UTF-8",
+      "NeedsCompilation": "no",
+      "Author": "Yihui Xie [aut, cre] (<https://orcid.org/0000-0003-0645-5666>), JJ Allaire [aut], Jeffrey Horner [aut], Henrik Bengtsson [ctb], Jim Hester [ctb], Yixuan Qiu [ctb], Kohske Takahashi [ctb], Adam November [ctb], Nacho Caballero [ctb], Jeroen Ooms [ctb], Thomas Leeper [ctb], Joe Cheng [ctb], Andrzej Oles [ctb], Posit Software, PBC [cph, fnd]",
+      "Maintainer": "Yihui Xie <xie@yihui.name>",
       "Repository": "CRAN"
     },
     "matrixStats": {
@@ -3630,31 +3692,6 @@
       "Maintainer": "Thomas Lin Pedersen <thomas.pedersen@posit.co>",
       "Repository": "CRAN"
     },
-    "semantic.assets": {
-      "Package": "semantic.assets",
-      "Version": "1.1.0",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Assets for 'shiny.semantic'",
-      "Authors@R": "c( person(\"Jakub\", \"Nowicki\", role = c(\"aut\", \"cre\"), email = \"opensource+kuba@appsilon.com\") )",
-      "Description": "Style sheets and JavaScript assets for 'shiny.semantic' package.",
-      "URL": "https://github.com/Appsilon/semantic.assets",
-      "BugReports": "https://github.com/Appsilon/semantic.assets/issues",
-      "License": "LGPL-3",
-      "Encoding": "UTF-8",
-      "RoxygenNote": "7.2.3",
-      "Imports": [
-        "htmlwidgets"
-      ],
-      "Suggests": [
-        "shiny",
-        "shiny.semantic"
-      ],
-      "NeedsCompilation": "no",
-      "Author": "Jakub Nowicki [aut, cre]",
-      "Maintainer": "Jakub Nowicki <opensource+kuba@appsilon.com>",
-      "Repository": "CRAN"
-    },
     "shiny": {
       "Package": "shiny",
       "Version": "1.11.1",
@@ -3723,58 +3760,6 @@
       "NeedsCompilation": "no",
       "Author": "Winston Chang [aut, cre] (ORCID: <https://orcid.org/0000-0002-1576-2126>), Joe Cheng [aut], JJ Allaire [aut], Carson Sievert [aut] (ORCID: <https://orcid.org/0000-0002-4958-2844>), Barret Schloerke [aut] (ORCID: <https://orcid.org/0000-0001-9986-114X>), Yihui Xie [aut], Jeff Allen [aut], Jonathan McPherson [aut], Alan Dipert [aut], Barbara Borges [aut], Posit Software, PBC [cph, fnd], jQuery Foundation [cph] (jQuery library and jQuery UI library), jQuery contributors [ctb, cph] (jQuery library; authors listed in inst/www/shared/jquery-AUTHORS.txt), jQuery UI contributors [ctb, cph] (jQuery UI library; authors listed in inst/www/shared/jqueryui/AUTHORS.txt), Mark Otto [ctb] (Bootstrap library), Jacob Thornton [ctb] (Bootstrap library), Bootstrap contributors [ctb] (Bootstrap library), Twitter, Inc [cph] (Bootstrap library), Prem Nawaz Khan [ctb] (Bootstrap accessibility plugin), Victor Tsaran [ctb] (Bootstrap accessibility plugin), Dennis Lembree [ctb] (Bootstrap accessibility plugin), Srinivasu Chakravarthula [ctb] (Bootstrap accessibility plugin), Cathy O'Connor [ctb] (Bootstrap accessibility plugin), PayPal, Inc [cph] (Bootstrap accessibility plugin), Stefan Petre [ctb, cph] (Bootstrap-datepicker library), Andrew Rowls [ctb, cph] (Bootstrap-datepicker library), Brian Reavis [ctb, cph] (selectize.js library), Salmen Bejaoui [ctb, cph] (selectize-plugin-a11y library), Denis Ineshin [ctb, cph] (ion.rangeSlider library), Sami Samhuri [ctb, cph] (Javascript strftime library), SpryMedia Limited [ctb, cph] (DataTables library), John Fraser [ctb, cph] (showdown.js library), John Gruber [ctb, cph] (showdown.js library), Ivan Sagalaev [ctb, cph] (highlight.js library), R Core Team [ctb, cph] (tar implementation from R)",
       "Maintainer": "Winston Chang <winston@posit.co>",
-      "Repository": "CRAN"
-    },
-    "shiny.semantic": {
-      "Package": "shiny.semantic",
-      "Version": "0.5.1",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Semantic UI Support for Shiny",
-      "Authors@R": "c(person(\"Filip\", \"Stachura\", email = \"filip@appsilon.com\", role = \"aut\"), person(\"Dominik\", \"Krzeminski\", role = \"aut\"), person(\"Krystian\", \"Igras\", role = \"aut\"), person(\"Adam\", \"Forys\", role = \"aut\"), person(\"Paweł\", \"Przytuła\", email = \"pawel@appsilon.com\", role = \"aut\"), person(\"Jakub\", \"Chojna\", email = \"jakub.chojna@appsilon.com\", role = \"aut\"), person(\"Olga\", \"Mierzwa-Sulima\", email = \"olga@appsilon.com\", role = \"aut\"), person(\"Jakub\", \"Nowicki\", email = \"opensource+kuba@appsilon.com\", role = c(\"aut\", \"cre\")), person(\"Tymoteusz\", \"Makowski\", email = \"tymoteusz.makowski@appsilon.com\", role = \"aut\"), person(\"Ashley\", \"Baldry\", role = \"ctb\"), person(\"Pedro\", \"Manuel Coutinho da Silva\", email = \"pedro@appsilon.com\", role = \"ctb\"), person(\"Kamil\", \"Żyła\", email = \"kamil@appsilon.com\", role = \"ctb\"), person(\"Rabii\", \"Bouhestine\", role = \"ctb\"), person(\"Federico\", \"Rivandeira\", email = \"federico@appsilon.com\", role = \"ctb\"), person(family = \"Appsilon Sp. z o.o.\", role = c(\"cph\")))",
-      "Description": "Creating a great user interface for your Shiny apps can be a hassle, especially if you want to work purely in R and don't want to use, for instance HTML templates. This package adds support for a powerful UI library Fomantic UI - <https://fomantic-ui.com/> (before Semantic). It also supports universal UI input binding that works with various DOM elements.",
-      "License": "MIT + file LICENSE",
-      "URL": "https://appsilon.github.io/shiny.semantic/, https://github.com/Appsilon/shiny.semantic",
-      "BugReports": "https://github.com/Appsilon/shiny.semantic/issues",
-      "Imports": [
-        "glue",
-        "grDevices",
-        "htmltools (>= 0.2.6)",
-        "htmlwidgets (>= 0.8)",
-        "jsonlite",
-        "magrittr",
-        "purrr (>= 0.2.2)",
-        "R6",
-        "semantic.assets (>= 1.1.0)",
-        "shiny (>= 0.12.1)",
-        "stats"
-      ],
-      "Suggests": [
-        "covr",
-        "chromote",
-        "dplyr",
-        "DT",
-        "gapminder",
-        "knitr",
-        "leaflet",
-        "lintr",
-        "markdown",
-        "mockery",
-        "plotly",
-        "rcmdcheck",
-        "rmarkdown",
-        "testthat",
-        "shinytest2",
-        "tibble",
-        "withr"
-      ],
-      "VignetteBuilder": "knitr",
-      "Encoding": "UTF-8",
-      "Language": "en-US",
-      "RoxygenNote": "7.3.1",
-      "NeedsCompilation": "no",
-      "Author": "Filip Stachura [aut], Dominik Krzeminski [aut], Krystian Igras [aut], Adam Forys [aut], Paweł Przytuła [aut], Jakub Chojna [aut], Olga Mierzwa-Sulima [aut], Jakub Nowicki [aut, cre], Tymoteusz Makowski [aut], Ashley Baldry [ctb], Pedro Manuel Coutinho da Silva [ctb], Kamil Żyła [ctb], Rabii Bouhestine [ctb], Federico Rivandeira [ctb], Appsilon Sp. z o.o. [cph]",
-      "Maintainer": "Jakub Nowicki <opensource+kuba@appsilon.com>",
       "Repository": "CRAN"
     },
     "shinyjs": {
@@ -3905,7 +3890,7 @@
       "NeedsCompilation": "no",
       "Author": "Hadley Wickham [aut, cre, cph], Posit Software, PBC [cph, fnd]",
       "Maintainer": "Hadley Wickham <hadley@posit.co>",
-      "Repository": "RSPM"
+      "Repository": "CRAN"
     },
     "svUnit": {
       "Package": "svUnit",
