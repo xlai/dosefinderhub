@@ -195,13 +195,29 @@ ns <- session$ns
   colnames(crm_modified_tab$mean_overdose) <- ""
       } else {crm_modified_tab <- NULL}
 
+   if ("BOIN" %in% input$simulation_design_selection_input)
+      { #print(unlist(used_true_dlts[j, ]))
+       boin_sim <- sim_boin(5, 1/3, 24, 1, 100, c(0.05, 0.15, 1/3, 0.5, 0.8), 3, 15, 0.6, 0.1, TRUE, 10) # testing with hard-coded values for now
+       boin_modified_tab <- boin_sim[-c(3,5,7)]
+
+      boin_modified_tab$mean_accuracy <- as.data.frame(boin_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
+      boin_modified_tab$mean_overdose <- as.data.frame(boin_modified_tab$mean_overdose, row.names = "Mean Overdose")
+      boin_modified_tab$mean_length <- as.data.frame(boin_modified_tab$mean_length, row.names = "Mean Trial Length")
+      colnames(boin_modified_tab$mean_accuracy) <- ""
+      colnames(boin_modified_tab$mean_length)<- ""
+      colnames(boin_modified_tab$mean_overdose) <- ""
+
+      } else {boin_modified_tab <- NULL}
+
   # Giving Titles to Single Value Ouputs
 
   tpt_to_display <- tpt_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
   crm_to_display <- crm_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
-  
+  boin_to_display <- boin_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
+
   tpt_title <- as.character(rep("3+3 Simulation for Scenario ", 5))
   crm_title <- as.character(rep("CRM Simulation for Scenario ", 5))
+  boin_title <- as.character(rep("BOIN Simulation for Scenario ", 5))
   scenario_number <- as.character(rep(j, 5))
   metric_names <- as.character(c(" - % Times Dose Was Selected as MTD", "- % Treated at Each Dose",  " - Mean Accuracy", " - Mean Overdose", " - Mean Trial Length"))
 
@@ -213,19 +229,21 @@ ns <- session$ns
   full_crm_titles <- paste(as.character(crm_title), as.character(scenario_number), as.character(metric_names))
   } else {full_crm_titles <- NULL}
 
-  #print(full_tpt_titles)
-  used_tpt_titles <- full_tpt_titles[c(which(selected_metric == TRUE))] # A list of titles we want to display
-  
-  #print(used_tpt_titles)
+   if("BOIN" %in% input$simulation_design_selection_input) {
+  full_boin_titles <- paste(as.character(boin_title), as.character(scenario_number), as.character(metric_names))
+  } else {full_boin_titles <- NULL}
 
+ 
+  used_tpt_titles <- full_tpt_titles[c(which(selected_metric == TRUE))] # A list of titles we want to display
   used_crm_titles <- full_crm_titles[c(which(selected_metric == TRUE))] # A list of titles we want to display
-  #print(used_crm_titles)
+  used_boin_titles <- full_boin_titles[c(which(selected_metric == TRUE))] # A list of titles we want to display
 
   tpt_data_frames <- lapply(tpt_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
   crm_data_frames <- lapply(crm_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
-  
-  combined_list[[j]]  <- cbind(tpt_data_frames, crm_data_frames)
-  cbind_titles <- cbind(used_tpt_titles, used_crm_titles)
+  boin_data_frames <- lapply(boin_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
+
+  combined_list[[j]]  <- cbind(tpt_data_frames, crm_data_frames, boin_data_frames)
+  cbind_titles <- cbind(used_tpt_titles, used_crm_titles, used_boin_titles)
   title_list[[j]] <- unname(unlist(cbind_titles))
 
   } # for loop end

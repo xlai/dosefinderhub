@@ -23,12 +23,12 @@ dummy_data_ranking <- dummy_data$ranking
 #View(dummy_data_ranking)
 ranking <- c(dummy_data_ranking$method)
 #ranking
-ranking <- c("crm", "tpt", "other") #REMOVE/COMMENT OUT; JUST TO TEST TAB DYNAMICS
+ranking <- c("crm", "tpt", "boin") #REMOVE/COMMENT OUT; JUST TO TEST TAB DYNAMICS
 prettify_ranking <- function(ranking_argument) {
   pretty_ranking <- ranking_argument
   pretty_ranking[pretty_ranking == "crm"] <- "CRM"
   pretty_ranking[pretty_ranking == "tpt"] <- "3+3"
-  pretty_ranking[pretty_ranking == "other"] <- "Other design (TEST)"
+  pretty_ranking[pretty_ranking == "boin"] <- "BOIN"
   return(pretty_ranking)
 }
 pretty_ranking <- prettify_ranking(ranking)
@@ -435,10 +435,6 @@ output <- list(
   return(output)
                     }
 
-boin_sim <- sim_boin(5, 1/3, 24, 1, 100, c(0.05, 0.15, 1/3, 0.5, 0.8), 3, 15, 0.6, 0.1, TRUE, 10)
-
-
-# Testing the function
 
 
 ### PLOTS - To return to later.
