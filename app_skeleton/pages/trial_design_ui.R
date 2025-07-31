@@ -76,9 +76,71 @@ specific_ui_inputs_crm <- tagList(
 skip_tpt_input <- radioButtons(ns("skip_tpt_input"),"Would you like to be able to skip doses when de-escalating?",
 choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 
-# Other specific inputs (placeholder)
-specific_ui_inputs_other <- radioButtons(ns("specific_ui_inputs_other"),"This is a placeholder. Clicking this button will do nothing.",
-choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
+# BOIN specific inputs
+
+boin_stopping_rule <- radioButtons(ns("boin_stopping_rule"), "Would you like to use the BOIN toxicity stopping rule?",
+choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE)
+
+boin_cohorts <- numericInput(ns("boin_cohorts"), "How many cohorts would you like to use?", min = 1, value = 3)
+stop_n_mtd_boin <- numericInput(ns("stop_n_mtd_input"), "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = 24)
+
+ttl_multiple_phi_1 <- numericInput(ns("ttl_multiple_phi_1"), "What is the highest multiple of the target toxicity level such that dose escalation should be made?", min = 0, max = 1, value = 0.6)
+ttl_multiple_phi_2 <- numericInput(ns("ttl_multiple_phi_2"), "What is the lowest multiple of the target toxicity level such that dose de-escalation should be made?", min = 0, max = 1, value = 1.4)
+
+direct_phi_1 <- numericInput(ns("direct_phi_1"), "What is the highest toxicity probability below the target toxicity level such that dose escalation should be made?", min = 0, max = 1, value = 0.2)
+direct_phi_2 <- numericInput(ns("direct_phi_2"), "What is the lowest toxicity probability above the target toxicity level such that dose de-escalation should be made?", min = 0, max = 1, value = 0.3)
+
+direct_lambda_e <- numericInput(ns("direct_lambda_e"), "What is the escalation boundary, lambda_e?", min = 0, value = 0.9)
+direct_lambda_d <- numericInput(ns("direct_lambda_d"), "What is the de-escalation boundary, lambda_d?", min = 0, value = 0.1)
+
+boin_ui_inputs_multiple_ttl <- tagList( 
+  boin_stopping_rule,
+  boin_cohorts,
+  stop_n_mtd_boin,
+  hr(),
+  ttl_multiple_phi_1,
+  ttl_multiple_phi_2,
+  hr(),
+  actionButton(ns("boin_generate_boundaries"), "Generate Escalation Boundaries"),
+  hr(),
+  textOutput(paste("lambda_e = ", ns("boin_output_lambda_e"))),
+  textOutput(paste("lambda_d = ", ns("boin_output_lambda_d")))
+)
+
+boin_ui_inputs_direct_tox_prob <- tagList(
+  boin_stopping_rule,
+  boin_cohorts,
+  stop_n_mtd_boin,
+  hr(),
+  direct_phi_1,
+  direct_phi_2,
+  hr(),
+  actionButton(ns("boin_generate_boundaries"), "Generate Escalation Boundaries"),
+  hr(),
+  textOutput(paste("lambda_e = ", ns("boin_output_lambda_e"))),
+  textOutput(paste("lambda_d = ", ns("boin_output_lambda_d")))
+)
+
+boin_ui_inputs_direct_boundaries <- tagList(
+  boin_stopping_rule,
+  boin_cohorts,
+  stop_n_mtd_boin,
+  hr(),
+  direct_lambda_e,
+  direct_lambda_d,
+  hr(),
+  actionButton(ns("boin_generate_probabilites"), "Generate Escalation Probabilities"),
+  hr(),
+  textOutput(paste("phi_1 = ", ns("boin_output_lambda_e"))),
+  textOutput(paste("phi_2 = ", ns("boin_output_lambda_d")))
+)
+
+boin_input_choice <- radioButtons("boin_input_choice", "How Would You Like to Input the BOIN Escalation Boundaries?",
+choices = c("Enter the toxicity probability threshold as a multiple of the target toxicity level" = 1, 
+            "Enter the toxicity probability threshold independently of the target toxicity level" = 2,
+            "Enter the escalation boundaries directly" = 3),
+              selected = NULL, inline = TRUE)
+
 
 ########################################### Running the UI ###########################################
 
@@ -113,10 +175,13 @@ choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
           )
         ),
         card(full_screen = TRUE,
-          card_header("Other (TEST) Parameters"),
+          card_header("BOIN Parameters"),
           card_body(
-            checkboxInput("display_other", "Display parameters", value = F),
-           conditionalPanel(condition = "input.display_other==1", specific_ui_inputs_other)
+            checkboxInput("display_boin", "Display parameters", value = F),
+           conditionalPanel(condition = "input.display_boin == 1", boin_input_choice, tags$hr()),
+           conditionalPanel(condition = "input.display_boin == 1 && input.boin_input_choice == 1", boin_ui_inputs_multiple_ttl),
+           conditionalPanel(condition = "input.display_boin == 1 && input.boin_input_choice == 2", boin_ui_inputs_direct_tox_prob),
+           conditionalPanel(condition = "input.display_boin == 1 && input.boin_input_choice == 3", boin_ui_inputs_direct_boundaries),
           )
         )
       ),

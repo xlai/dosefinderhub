@@ -361,7 +361,7 @@ best_dose_level <- match(best_dose, true_dlt_ss)
 
 model <- get_boin(num_doses = n_doses, target = ttl, use_stopping_rule = use_stopping_rule, p.saf = p_saf, p.tox = p_tox,
                        cutoff.eli = 0.95, extrasafe = FALSE, offset = 0.05) %>%
-  escalation::stop_when_n_at_dose(n = stop_n_mtd - 1, dose = "recommended") %>% 
+  escalation::stop_when_n_at_dose(n = stop_n_mtd, dose = "recommended") %>% 
   escalation::stop_at_n(n = max_n)
   # Might be worth looking at https://www.rdocumentation.org/packages/BOIN/versions/2.7.2/topics/get.boundary to refine this.
 
@@ -434,6 +434,11 @@ output <- list(
   )
   return(output)
                     }
+
+boin_sim <- sim_boin(5, 1/3, 24, 1, 100, c(0.05, 0.15, 1/3, 0.5, 0.8), 3, 15, 0.6, 0.1, TRUE, 10)
+
+
+# Testing the function
 
 
 ### PLOTS - To return to later.
