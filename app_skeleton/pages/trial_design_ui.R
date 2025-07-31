@@ -82,7 +82,7 @@ boin_stopping_rule <- radioButtons(ns("boin_stopping_rule"), "Would you like to 
 choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE)
 
 boin_cohorts <- numericInput(ns("boin_cohorts"), "How many cohorts would you like to use?", min = 1, value = 3)
-stop_n_mtd_boin <- numericInput(ns("stop_n_mtd_input"), "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = 24)
+stop_n_mtd_boin <- numericInput(ns("stop_n_mtd_boin"), "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = 24)
 
 ttl_multiple_phi_1 <- numericInput(ns("ttl_multiple_phi_1"), "What is the highest multiple of the target toxicity level such that dose escalation should be made?", min = 0, max = 1, value = 0.6)
 ttl_multiple_phi_2 <- numericInput(ns("ttl_multiple_phi_2"), "What is the lowest multiple of the target toxicity level such that dose de-escalation should be made?", min = 0, max = 1, value = 1.4)
@@ -322,6 +322,13 @@ trial_design_server <- function(id, shared) {
 
   # 3+3
   shared$skip_tpt <- reactive({as.logical(input$skip_tpt_input)})
+
+  # BOIN
+  shared$boin_stopping_rule <- reactive({as.logical(input$boin_stopping_rule)})
+  shared$boin_cohorts <- reactive({as.numeric(input$boin_cohorts)})
+  shared$stop_n_mtd_boin <- reactive({as.numeric(input$stop_n_mtd_boin)})
+  shared$phi_1 <- reactive({as.numeric(input$ttl_multiple_phi_1) * shared$ttl()})
+  shared$phi_2 <- reactive({as.numeric(input$ttl_multiple_phi_2)* shared$ttl()})
 
   ############################ Validation Checks and Warning Messages ##############################
   validation_state <- reactiveValues(

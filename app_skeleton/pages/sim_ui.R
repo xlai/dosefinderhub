@@ -197,7 +197,7 @@ ns <- session$ns
 
    if ("BOIN" %in% input$simulation_design_selection_input)
       { #print(unlist(used_true_dlts[j, ]))
-       boin_sim <- sim_boin(5, 1/3, 24, 1, 100, c(0.05, 0.15, 1/3, 0.5, 0.8), 3, 15, 0.6, 0.1, TRUE, 10) # testing with hard-coded values for now
+       boin_sim <- sim_boin(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$boin_cohorts(), shared$stop_n_mtd_boin(), shared$phi_2(), shared$phi_1(), TRUE, 10) # testing with hard-coded values for now
        boin_modified_tab <- boin_sim[-c(3,5,7)]
 
       boin_modified_tab$mean_accuracy <- as.data.frame(boin_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
