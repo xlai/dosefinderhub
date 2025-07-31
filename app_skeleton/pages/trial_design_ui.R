@@ -137,12 +137,45 @@ choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
     )
 }
 
-trial_design_server <- function(id, shared) {
+trial_design_server <- function(id, shared, move_data) {
   moduleServer(id, function(input, output, session) {
 
 ################## Questionnaire Inputs ##################    
-# Transfer logic removed - now handled in questionnaire modal navigation
+# There needs to be logic here to trasnfer data - I have taken this directly from the old Transfer Results From Questionnaire button.
+observeEvent(move_data(), {
+# Transfer questionnaire results to trial design inputs
+  if (length(shared$q_n_doses()) > 0) {
+    updateNumericInput(session, "n_doses_inputt", value = shared$q_n_doses())
+  } else {
+    updateNumericInput(session, "n_doses_inputt", value = 5) # Default value if not set
+  }
+  if (length(shared$q_ttl()) > 0) {
+    updateNumericInput(session, "ttl_inputt", value = shared$q_ttl())
+  } else {
+    updateNumericInput(session, "ttl_inputt", value = 0.3) # Default value if not set
+  }
+  if (length(shared$q_max_size()) > 0) {
+    updateNumericInput(session, "max_size_inputt", value = shared$q_max_size())
+  }
+  else {
+    updateNumericInput(session, "max_size_inputt", value = 30) # Default value if not set
+  }
+  if (length(shared$q_start_dose()) > 0) {
+    updateNumericInput(session, "start_dose_inputt", value = shared$q_start_dose())
+  }
+  else {
+    updateNumericInput(session, "start_dose_inputt", value = 1) # Default value if not set
+  }
+  if (length(shared$q_cohort()) > 0) {
+    updateNumericInput(session, "cohort_inputt", value = shared$q_cohort())
+  }
+  else {
+    updateNumericInput(session, "cohort_inputt", value = 3) # Default value if not set
+  }
 
+  # Need to make move_data FALSE again so that it doesn't keep transferring data
+  move_data(FALSE)
+})
     #################################### From Configurations Tab Server #####################################
 
  ######################################## Configuration tab's file upload/download ########################################
