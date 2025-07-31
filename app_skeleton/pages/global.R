@@ -389,12 +389,12 @@ treated <- colSums(sims %>%
 treatedpct <- treated / sum(treated)
 # coerce into selection table
 
-selection_df <- data.frame(selection)
+selection_df <- data.frame(selection*100)
 
 
 selection_tab <- rbind(t(selection_df), c(NA, true_dlt_ss))
 
-rownames(selection_tab) <- c("Dose Selected by Model", "True Toxicity Probabilities")
+rownames(selection_tab) <- c("% of Simulations that Chose Dose as MTD", "True Toxicity Probabilities")
 #selection_tab
 # coerce into treatment table
 
@@ -402,7 +402,7 @@ treatedpct_df <- data.frame(treatedpct)
 
 treatment_tab <- rbind(t(treatedpct_df), true_dlt_ss)
 
-rownames(treatment_tab) <- c("% Patients Treated by Model", "True Toxicity Probabilities")
+rownames(treatment_tab) <- c("% of Patients Treated at Dose", "True Toxicity Probabilities")
 #treatment_tab
 
 # i) accuracy
