@@ -24,7 +24,7 @@ sim_ui <- function(id) {
 
   # Running the tab itself
   page_sidebar(
-     card(height = 250,
+     card(height = 600,
       card_header("Simulation Inputs"),
       card_body(
       simulation_inputs,
@@ -32,6 +32,7 @@ sim_ui <- function(id) {
       in the table below. If the dimensions do not match, change the number of scenarios and doses and press 
       'Refresh Dimensions'."),
       test_df_table,
+      tags$hr(), # Separator line
       input_task_button(ns("refresh_table_input"), "Refresh Table Dimensions")
       )),
       card(
@@ -75,7 +76,7 @@ sim_ui <- function(id) {
       p("Want to save your simulation results? Click a button below to download them as a CSV file."),
       downloadButton(ns("download_simulation_results"), "Download Simulation Results")
     )
-  ) 
+  )
 }
 
 sim_server <- function(id, shared) {
