@@ -18,15 +18,15 @@ For 3+3, this is automatically 1/3, so if e.g. 0.28 < x <0.38 then award all des
 3. How confident are you about which dose might be toxic? (Current q6, in recommendation)
 This question could be reworded to “What is the estimated MTD?”, to consider the fact that CRM outperforms 3+3 when MDT is at a higher dose level. Question could also be “Do you suspect MTD to be a higher-level dose?”, with (once references are found) a “higher-dose level” being defined and anything that or above scores for CRM/BOIN?
 
-4. To what degree is the accuracy of DLT desired?  (this is the other half of q7)
+4. To what degree is the accuracy of DLT desired?  (This is one half of the current question 7)
 Prioritises CRM and BOIN over 3+3. Options could be “As close as possible”, “Somewhat” and a third option to account for 3+3
 
 5. How important is it to have pre-specified, transparent decision rules? (Current q9, in recommendation)
 
 ### <u>Operational Constraints</u>
 
-1. How much time/budget is available for trial design set up? (This is one half of the current question 7)
-If the answer is “limited” = 3+3.
+1. How much time/budget is available for trial design set up? (this is the other half of current q7)
+*"Knock out factor"* If the answer is “limited” = 3+3.
 
 ### <u>Study Population Characteristics</u>
 
