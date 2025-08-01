@@ -435,6 +435,74 @@ output <- list(
   return(output)
                     }
 
+sim_plots <- function(sim, ttl, col1, col2, col3) {
+  true_dlts <- sim$treatment_tab[2,] # True DLTs from treatment table
+  best_dose <- max(true_dlts[true_dlts <= ttl])
+  mtd <- match(best_dose, true_dlts)
+
+  selection <- as.vector(sim$selection_tab[1,])
+  treatment <- as.vector(sim$treatment_tab[1,])
+  Dose_Level <- seq(1, length(treatment))
+  no_dose <- "No Dose"
+  Dose <- c(no_dose, Dose_Level)
+
+ # % selected as MTD and % Treaed at each dose as a bar plot
+  data <- as.data.frame(selection)
+  data$Dose <- factor(Dose, levels = c(no_dose, as.character(Dose_Level)))
+  data$selection <- selection
+  data_treatment <- as.data.frame(cbind(Dose_Level, treatment))
+
+  # Highlighting the MTD
+  data$highlight <- ifelse(data$Dose == mtd, "MTD", "Other")
+  data_treatment$highlight <- ifelse(Dose_Level == mtd, "MTD", "Other")
+
+  plot_mtd <- ggplot(data, aes(x=Dose, y=selection, color = highlight)) +
+  geom_bar(stat="identity", fill = col1) +
+  scale_color_manual(values=c("MTD" = col2, "Other" = col1)) +
+  theme_minimal() +
+  ggtitle("Percentage of Trials Selecting Dose as MTD") +
+  xlab("Dose Level") +
+  ylab("Percentage of Trials Selecting Dose as MTD") +
+  labs(color = "Is the Dose the True MTD?")
+
+  plot_treated <- ggplot(data_treatment, aes(x=Dose_Level, y=treatment, color = highlight)) +
+  geom_bar(stat="identity", fill = col1) +
+  scale_color_manual(values=c("MTD" = col2, "Other" = col1)) +
+  theme_minimal() +
+  ggtitle("Percentage of Patients Treated at Each Dose") +
+  xlab("Dose Level") +
+  ylab("Percentage of Patients Treated") +
+  labs(color = "Is the Dose the True MTD?")
+
+  # Distrubtion of accuracy, overdose, and trial length as histograms
+  plot_accuracy <- ggplot(data.frame(sim$dist_accuracy), aes(x=sim$dist_accuracy)) +
+    geom_histogram(binwidth = 1, fill = col1, color = "black") +
+    geom_vline(aes(xintercept = sim$mean_accuracy), color = col3, linetype = "dashed") +
+    labs(title = "Distribution of Accuracy", x = "Dose Level", y = "Frequency") +
+    theme_minimal() 
+
+  plot_overdose <- ggplot(data.frame(sim$dist_overdose), aes(x=sim$dist_overdose)) +
+    geom_histogram(binwidth = 1, fill = col1, color = "black") +
+    geom_vline(aes(xintercept = sim$mean_overdose), color = col3, linetype = "dashed") +
+    labs(title = "Distribution of Overdose", x = "Number of Overdoses", y = "Frequency") +
+    theme_minimal()
+
+  plot_length <- ggplot(data.frame(sim$dist_length), aes(x=sim$dist_length)) +
+    geom_histogram(binwidth = 1, fill = col1, color = "black") +
+    geom_vline(aes(xintercept = sim$mean_length), color = col3, linetype = "dashed") +
+    labs(title = "Distribution of Trial Length", x = "Trial Length", y = "Frequency") +
+    theme_minimal()
+
+  # Return a list of plots
+  output <- list(
+    plot_mtd = plot_mtd,
+    plot_treated = plot_treated,
+    plot_accuracy = plot_accuracy,
+    plot_overdose = plot_overdose,
+    plot_length = plot_length
+  )
+  return(output)
+}
 
 
 ### PLOTS - To return to later.
