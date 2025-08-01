@@ -152,7 +152,9 @@ reactive_skeleton <- reactiveVal() # initalising a reactive value to store the d
  observeEvent({input$n_doses_inputt | input$prior_mtd_input}, {  
     if (is.na(input$n_doses_inputt) | is.na(input$prior_mtd_input)) {  
       reactive_skeleton(NULL)  
-    } else {  
+    } else if (input$prior_mtd_input > input$n_doses_inputt)  {  
+      reactive_skeleton(NULL)  
+    } else {
   dose <- as.integer(input$n_doses_inputt)  
   Prior <- dfcrm::getprior(halfwidth = 0.25*input$ttl_inputt, target = input$ttl_inputt, nu = input$prior_mtd_input, nlevel = dose)
 
