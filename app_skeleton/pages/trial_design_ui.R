@@ -44,8 +44,9 @@ above_target_input <- radioButtons(ns("above_target_input"),
 choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 prior_var_input <- numericInput(ns("prior_var_input"), "What is the estimate of the prior variance?", min = 0, value = 0.1)
 stop_n_mtd_input <- numericInput(ns("stop_n_mtd_input"), "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = 24)
-skeleton_input <- textInput(ns("skeleton_input"), "What are the prior estimates of the DLT rates at each dose? Please make this an increasing list and separate each value with a comma.", value = "0.108321683015674,0.255548628279939,0.425089891767129,0.576775912195444,0.817103320499882")
-prior_mtd_input <- numericInput(ns("prior_mtd_input"), "What is your prior guess of the MTD?", min = 1, value = 8)
+skeleton_table <- DT::DTOutput(ns("skeleton_df"))
+# textInput(ns("skeleton_input"), "What are the prior estimates of the DLT rates at each dose? Please make this an increasing list and separate each value with a comma.", value = "0.108321683015674,0.255548628279939,0.425089891767129,0.576775912195444,0.817103320499882")
+prior_mtd_input <- numericInput(ns("prior_mtd_input"), "What is your prior guess of the MTD?", min = 1, value = 3)
 stop_tox_x_input <- numericInput(ns("stop_tox_x_input"), "When using the this Bayesian safety early criterion: p(true DLT rate at lowest dose > target DLT rate + x | data) > y, what would you like x to be? This is the excess toxicity above the target DLT.", min = 0, value = 0.09)
 stop_tox_y_input <- numericInput(ns("stop_tox_y_input"), "What would you like y to be? This is the confidence level for safety stopping.", min = 0, max = 1, value = 0.77)
 
@@ -63,7 +64,8 @@ specific_ui_inputs_crm <- tagList(
   prior_var_warning_text,
   stop_n_mtd_input,
   stop_n_mtd_warning_text,
-  skeleton_input,
+  p("What are the prior estimates of the DLT rates at each dose? Please add them to the table below."),
+  skeleton_table,
   prior_mtd_input,
   prior_mtd_warning_text,
   stop_tox_x_input,
@@ -139,6 +141,42 @@ choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 
 trial_design_server <- function(id, shared, move_data) {
   moduleServer(id, function(input, output, session) {
+
+##### Reactive Skeleton Input ######
+reactive_skeleton <- reactiveVal() # initalising a reactive value to store the data frame
+
+ observeEvent({input$n_doses_inputt | input$prior_mtd_input}, {  
+    if (is.na(input$n_doses_inputt) | is.na(input$prior_mtd_input)) {  
+      reactive_skeleton(NULL)  
+    } else if (input$prior_mtd_input > input$n_doses_inputt)  {  
+      reactive_skeleton(NULL)  
+    } else {
+  dose <- as.integer(input$n_doses_inputt)  
+  Prior <- dfcrm::getprior(halfwidth = 0.25*input$ttl_inputt, target = input$ttl_inputt, nu = input$prior_mtd_input, nlevel = dose)
+
+  rownames_skel <-paste("d", 1:dose, sep = "")
+
+  df <- data.frame(Dose = rownames_skel, Prior = Prior)
+
+  reactive_skeleton(df) # Updating the reactive value with the new data frame
+   } })
+  
+  output$skeleton_df <- renderDT({
+    datatable(reactive_skeleton(), editable = TRUE, rownames = FALSE, options = list(searching = FALSE, paging = FALSE, info = FALSE)) #, scrollX = TRUE, scrollX="250px", paging = FALSE
+  })
+
+  observeEvent(input$skeleton_df_cell_edit, {
+    info <- input$skeleton_df_cell_edit
+
+    modified_data <- reactive_skeleton()
+    modified_data[info$row, info$col + 1] <- DT::coerceValue(info$value, modified_data[info$row, info$col]) # +1 is here to counterract the movement of edited data.
+    reactive_skeleton(modified_data)
+  })
+
+  shared$skeleton_crm <- reactive({
+    as.vector(reactive_skeleton()[, -1])
+  })
+  #print(shared$skeleton_crm())
 
 ################## Questionnaire Inputs ##################    
 # There needs to be logic here to trasnfer data - I have taken this directly from the old Transfer Results From Questionnaire button.
@@ -269,21 +307,7 @@ observeEvent(move_data(), {
   shared$above_target_crm <- reactive({as.logical(input$above_target_input)}) # This isn't used in the sim_crm function
   shared$prior_var_crm <- reactive({as.numeric(input$prior_var_input)})
   shared$stop_n_mtd_crm <- reactive({as.numeric(input$stop_n_mtd_input)})
-  shared$skeleton_crm <- reactive({
-    # If user has entered custom skeleton, use that
-    if (nchar(input$skeleton_input) > 0 && input$skeleton_input != "") {
-      as.numeric(unlist(strsplit(input$skeleton_input, ",")))
-    } else {
-      # Generate default skeleton based on number of doses
-      n_doses <- shared$n_dosess()
-      if (!is.null(n_doses) && !is.na(n_doses) && n_doses > 0) {
-        seq(0.1, 0.8, length.out = n_doses)
-      } else {
-        # Fallback to original default
-        as.numeric(unlist(strsplit("0.108321683015674,0.255548628279939,0.425089891767129,0.576775912195444,0.817103320499882", ",")))
-      }
-    }
-  })
+  
   shared$prior_mtd_crm <- reactive({as.numeric(input$prior_mtd_input)})  # This isn't used in the sim_crm function
   shared$stop_tox_x_crm <- reactive({as.numeric(input$stop_tox_x_input)})
   shared$stop_tox_y_crm <- reactive({as.numeric(input$stop_tox_y_input)})  
