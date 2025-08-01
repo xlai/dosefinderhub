@@ -33,14 +33,17 @@ ui <- navbarPage(
 
 # Define server logic
 server <- function(input, output, session){
-    # Defining a shared reactive variable for n_doses
+    # Defining Buttons that move data between tabs
+    move_data <- reactiveVal(FALSE)
+
+    # Defining shared reactive variables
     shared <- reactiveValues()
 
-    intro_server("intro")
-    questionnaire_results <- mod_questionnaire_server("questionnaire", shared)
-    trial_design_server("trial_design", shared)
+    intro_server("intro", session)
+    questionnaire_results <- mod_questionnaire_server("questionnaire", shared, session, move_data = move_data)
+    trial_design_server("trial_design", shared, move_data = move_data)
     sim_server("simulation", shared)
-    con_server("conduct")
+    con_server("conduct", shared)
 
       observe({
     if (!is.null(questionnaire_results) && 

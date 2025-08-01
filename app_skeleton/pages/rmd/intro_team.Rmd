@@ -1,10 +1,26 @@
 ---
-title: "The Team"
+title: "Team"
 output: html_document
 ---
----
-<h3 id="team_members">Members</h3>
-- Dr. Lai, and collaborators.
 
-<h3 id="team_contact">Contact</h3>
-- For questions or feedback, visit https://github.com/xlai/dosefinderhub.
+## Project Lead
+**Xiaoran Lai**  
+Clinical Trials and Statistics Unit (CTSU)  
+Institute of Cancer Research (ICR), UK
+
+## Current Team Members
+- **Heather Christie**
+- **Madeleine Thomas**
+
+## Past Contributors
+- **Sian Dennett**
+- **Jake Holton**
+- **Eduardo Viegas**
+
+## Institution
+**Clinical Trials and Statistics Unit (CTSU)**  
+Institute of Cancer Research (ICR), UK
+
+## Contact
+For questions, feedback, or contributions, please visit our GitHub repository:  
+**https://github.com/xlai/dosefinderhub**

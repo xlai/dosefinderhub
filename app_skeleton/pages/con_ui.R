@@ -18,7 +18,7 @@ con_ui <- function(id) {
   )
 }
 
-con_server <- function(id) {
+con_server <- function(id, shared) {
   moduleServer(id, function(input, output, session) {
     # Placeholder logic
   })

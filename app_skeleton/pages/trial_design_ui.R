@@ -124,10 +124,6 @@ choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
       ),
     sidebar = sidebar(
       h3("Trial Design"),
-      h4("Transfer Questionnaire Results"),
-      p("Press the button below to transfer your results from the questionnaire to the trial design inputs. This will allow you to run simulations and conduct based on your questionnaire responses. Note that you must press Generate Recommendation to save your questionnaire responses."),
-      input_task_button(ns("transfer_questionnaire"), "Transfer Questionnaire Results"),
-
       tags$hr(), # Separator line
       fileInput("config_file_upload", 
       "Saved a Trial Design file? Input it here to retrieve your configurations.", 
@@ -143,7 +139,7 @@ choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
     )
 }
 
-trial_design_server <- function(id, shared) {
+trial_design_server <- function(id, shared, move_data) {
   moduleServer(id, function(input, output, session) {
 
 ##### Reactive Skeleton Input ######
@@ -183,8 +179,9 @@ reactive_skeleton <- reactiveVal() # initalising a reactive value to store the d
   #print(shared$skeleton_crm())
 
 ################## Questionnaire Inputs ##################    
-observeEvent({input$transfer_questionnaire}, {
-  # Transfer questionnaire results to trial design inputs
+# There needs to be logic here to trasnfer data - I have taken this directly from the old Transfer Results From Questionnaire button.
+observeEvent(move_data(), {
+# Transfer questionnaire results to trial design inputs
   if (length(shared$q_n_doses()) > 0) {
     updateNumericInput(session, "n_doses_inputt", value = shared$q_n_doses())
   } else {
@@ -213,8 +210,10 @@ observeEvent({input$transfer_questionnaire}, {
   else {
     updateNumericInput(session, "cohort_inputt", value = 3) # Default value if not set
   }
-})
 
+  # Need to make move_data FALSE again so that it doesn't keep transferring data
+  move_data(FALSE)
+})
     #################################### From Configurations Tab Server #####################################
 
  ######################################## Configuration tab's file upload/download ########################################
@@ -264,12 +263,42 @@ observeEvent({input$transfer_questionnaire}, {
 
   ################################ Configuration tab's sidebar code ################################
 
-  # General variables from configuration tab 
-  shared$n_dosess <- reactive({as.numeric(input$n_doses_inputt)}) # Using double ending letters to avoid mixing up with other input (for now)
-  shared$ttl <- reactive({as.numeric(input$ttl_inputt)})
-  shared$max_size <- reactive({as.numeric(input$max_size_inputt)})
-  shared$start_dose <- reactive({as.numeric(input$start_dose_inputt)}) 
-  shared$cohort_size <- reactive({as.numeric(input$cohort_inputt)})
+  # General variables from configuration tab - use questionnaire values if available, otherwise UI inputs
+  shared$n_dosess <- reactive({
+    if (!is.null(shared$q_n_doses) && length(shared$q_n_doses()) > 0) {
+      shared$q_n_doses()
+    } else {
+      as.numeric(input$n_doses_inputt)
+    }
+  })
+  shared$ttl <- reactive({
+    if (!is.null(shared$q_ttl) && length(shared$q_ttl()) > 0) {
+      shared$q_ttl()
+    } else {
+      as.numeric(input$ttl_inputt)
+    }
+  })
+  shared$max_size <- reactive({
+    if (!is.null(shared$q_max_size) && length(shared$q_max_size()) > 0) {
+      shared$q_max_size()
+    } else {
+      as.numeric(input$max_size_inputt)
+    }
+  })
+  shared$start_dose <- reactive({
+    if (!is.null(shared$q_start_dose) && length(shared$q_start_dose()) > 0) {
+      shared$q_start_dose()
+    } else {
+      as.numeric(input$start_dose_inputt)
+    }
+  })
+  shared$cohort_size <- reactive({
+    if (!is.null(shared$q_cohort) && length(shared$q_cohort()) > 0) {
+      shared$q_cohort()
+    } else {
+      as.numeric(input$cohort_inputt)
+    }
+  })
 
   # Model-specific variables from configuration tab
   # CRM
