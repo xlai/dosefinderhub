@@ -149,13 +149,12 @@ trial_design_server <- function(id, shared) {
 ##### Reactive Skeleton Input ######
 reactive_skeleton <- reactiveVal() # initalising a reactive value to store the data frame
 
-  observeEvent({input$n_doses_inputt}, {
-    if (is.na(input$n_doses_inputt)) {
-      reactive_skeleton(NULL)
-    } else {
-  dose <- as.integer(input$n_doses_inputt)
-  large_vector <- c(2:(dose + 1))
-  Prior <- large_vector/(dose + 2)
+ observeEvent({input$n_doses_inputt | input$prior_mtd_input}, {  
+    if (is.na(input$n_doses_inputt) | is.na(input$prior_mtd_input)) {  
+      reactive_skeleton(NULL)  
+    } else {  
+  dose <- as.integer(input$n_doses_inputt)  
+  Prior <- dfcrm::getprior(halfwidth = 0.25*input$ttl_inputt, target = input$ttl_inputt, nu = input$prior_mtd_input, nlevel = dose)
 
   rownames_skel <-paste("d", 1:dose, sep = "")
 
