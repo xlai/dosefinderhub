@@ -24,7 +24,7 @@ sim_ui <- function(id) {
 
   # Running the tab itself
   page_sidebar(
-     card(height = 250,
+     card(height = 600,
       card_header("Simulation Inputs"),
       card_body(
       simulation_inputs,
@@ -35,9 +35,14 @@ sim_ui <- function(id) {
       input_task_button(ns("refresh_table_input"), "Refresh Table Dimensions")
       )),
       card(
-        card_header("Simulation Outputs"),
+        card_header("Simulation Table Outputs"),
         card_body(
           uiOutput(ns("tables_ui")) # Simulation tables
+      )),
+      card(
+        card_header("Simulation Plot Outputs"),
+        card_body(
+          uiOutput(ns("tpt_plots")) # Simulation plots
       )),
 
     sidebar = sidebar(
@@ -173,6 +178,7 @@ ns <- session$ns
       { #print(unlist(used_true_dlts[j, ]))
         tpt_sim <- sim_tpt(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skip_tpt(), 12345)
        tpt_modified_tab <- tpt_sim[-c(3,5,7)]
+       tpt_modified_plot <- tpt_sim[-c(4,6,8)]
 
       tpt_modified_tab$mean_accuracy <- as.data.frame(tpt_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
       tpt_modified_tab$mean_overdose <- as.data.frame(tpt_modified_tab$mean_overdose, row.names = "Mean Overdose")
@@ -181,7 +187,17 @@ ns <- session$ns
       colnames(tpt_modified_tab$mean_length)<- ""
       colnames(tpt_modified_tab$mean_overdose) <- ""
 
-      } else {tpt_modified_tab <- NULL}
+      tpt_plots <- lapply(tpt_modified_plot, function(x) {
+        x$plot <- renderPlot({
+          plot(x)
+        })
+        return(x)
+      })
+
+      } else {tpt_modified_tab <- NULL
+      tpt_plots <- NULL}
+      output$tpt_plots <- renderUI({tpt_plots})
+
   if ("CRM" %in% input$simulation_design_selection_input)
       {
       crm_sim <- sim_crm(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skeleton_crm(), shared$prior_var_crm(), shared$skip_esc_crm(), shared$skip_deesc_crm(), shared$stop_tox_x_crm(), shared$stop_tox_y_crm(), shared$stop_n_mtd_crm())
