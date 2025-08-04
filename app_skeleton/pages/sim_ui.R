@@ -23,28 +23,43 @@ sim_ui <- function(id) {
   # The 'Refresh Dimensions' button doesn't work, so the table changes dimensions when the number of scenarios changes.
 
   # Running the tab itself
+  fluidPage(
   page_sidebar(
-     card(height = 600,
-      card_header("Simulation Inputs"),
-      card_body(
-      simulation_inputs,
-      p("Please fill out each scenario's and each dose's 'True' Dose Limiting Toxicity probabilities 
-      in the table below. If the dimensions do not match, change the number of scenarios and doses and press 
-      'Refresh Dimensions'."),
-      test_df_table,
-      input_task_button(ns("refresh_table_input"), "Refresh Table Dimensions")
-      )),
-      card(
-        card_header("Simulation Table Outputs"),
-        card_body(
-          uiOutput(ns("tables_ui")) # Simulation tables
-      )),
-      card(
-        card_header("Simulation Plot Outputs"),
-        card_body(
-          uiOutput(ns("tpt_plots")) # Simulation plots
-      )),
-
+      div(
+        navset_tab(
+          nav_panel(
+            "Simulation Inputs", 
+            h3("Simulation Inputs"),
+            p("Please fill out the following inputs before running the simulation."),
+            tags$hr(),
+            simulation_inputs,
+            p("Please fill out each scenario's and each dose's 'True' Dose Limiting Toxicity probabilities 
+            in the table below. If the dimensions do not match, change the number of scenarios and doses and press 
+            'Refresh Dimensions'."),
+            test_df_table,
+            input_task_button(ns("refresh_table_input"), "Refresh Table Dimensions")
+            ),
+          nav_panel(
+            "Simulation Output - Tables",
+            h3("Simulation Output - Tables"),
+            p("Below are two cards containing the same table outputs. Scroll within each card to see tables side by side."),
+            layout_column_wrap( 
+            card(height = 400, card_header("Comparison Card 1"), uiOutput(ns("tables1"))),
+            card(height = 400, card_header("Comparison Card 2"), uiOutput(ns("tables2")))
+            )
+          ),
+          nav_panel("Simulation Output - Plots",
+          h3("Simulation Output - Plots"),
+          card(
+            card_header("How do you want to Compare Results?"),
+            card_body(
+                      radioButtons(ns("display_plots"),"How would you like to display the simulation results?",
+                      choices = c("By Model", "By Scenario", "No Comparison"), selected = "No Comparison", inline = TRUE)
+            )
+          )
+          )
+        )
+      ),
     sidebar = sidebar(
       h3("What Do You Want to Simulate?"),
             ################################ Simulation tab UI ################################
@@ -81,6 +96,7 @@ sim_ui <- function(id) {
       downloadButton(ns("download_simulation_results"), "Download Simulation Results")
     )
   ) 
+  )
 }
 
 sim_server <- function(id, shared) {
@@ -187,16 +203,7 @@ ns <- session$ns
       colnames(tpt_modified_tab$mean_length)<- ""
       colnames(tpt_modified_tab$mean_overdose) <- ""
 
-      tpt_plots <- lapply(tpt_modified_plot, function(x) {
-        x$plot <- renderPlot({
-          plot(x)
-        })
-        return(x)
-      })
-
-      } else {tpt_modified_tab <- NULL
-      tpt_plots <- NULL}
-      output$tpt_plots <- renderUI({tpt_plots})
+      } else {tpt_modified_tab <- NULL}
 
   if ("CRM" %in% input$simulation_design_selection_input)
       {
@@ -272,13 +279,13 @@ ns <- session$ns
   n_data_frames <- length(combined_data_frames)
   #print(n_data_frames)
   # Using generic table names to render the UI with all the tables in it.
-  if (n_data_frames == 0) {output$tables_ui <- NULL  # The case where nothing is entered
+  if (n_data_frames == 0) {generate_tables_ui <- NULL  # The case where nothing is entered
   } else {
   table_names <- c(paste(rep("Table", n_data_frames), as.list(as.character(1:n_data_frames)), sep = " "))
   names(combined_data_frames) <- table_names
   #print(table_names)
   ## Using the names of the tables to render a UI with all the tables in it.
-   output$tables_ui <- renderUI({
+  generate_tables_ui <- renderUI({
     lapply(names(combined_data_frames), function(table_name) {
       table_number <- as.numeric(gsub("Table ", "", table_name)) # Extracting the number from the table name
       tagList(
@@ -295,7 +302,10 @@ ns <- session$ns
     }, rownames = TRUE, colnames = TRUE) 
   }) 
 
-  
+  tables_and_titles <- renderUI({ generate_tables_ui })
+  output$tables1 <- tables_and_titles
+  output$tables2 <- tables_and_titles
+
   } # else (after for loop)
   } # else (before for loop)
   }) # observe function
