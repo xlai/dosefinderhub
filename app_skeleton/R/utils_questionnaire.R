@@ -110,7 +110,7 @@ generate_intelligent_recommendation <- function(user_responses) {
       switch(user_responses$statistical_support,
              "Yes experienced with complex modeling" = c(CRM = 3, BOIN = 1, "3+3" = 0),
              "Yes but prefer simpler approaches" = c(CRM = 1, BOIN = 3, "3+3" = 1),
-             "Limited statistical support" = c(CRM = 0, BOIN = 1, "3+3" = 15),
+             "Limited statistical support" = c(CRM = 0, BOIN = 1, "3+3" = 8),
              c(CRM = 0, BOIN = 0, "3+3" = 0))
   }
 
@@ -172,91 +172,6 @@ generate_recommendation <- function(x) {
 #' Generate intelligent method recommendation based on user responses
 #' @param user_responses Named list containing user responses to recommendation questions
 #' @return List with ranked methods, scores, confidence, rationale, and display text
-generate_intelligent_recommendation <- function(user_responses) {
-  
-  # Initialize scores for each method
-  scores <- c(CRM = 0, BOIN = 0, "3+3" = 0)
-  
-  # Decision matrix for toxicity_confidence
-  if (!is.null(user_responses$toxicity_confidence)) {
-    toxicity_scores <- switch(user_responses$toxicity_confidence,
-      "Very confident (good historical data)" = c(CRM = 3, BOIN = 1, "3+3" = 0),
-      "Somewhat confident" = c(CRM = 1, BOIN = 3, "3+3" = 1),
-      "Not confident/limited data" = c(CRM = 0, BOIN = 1, "3+3" = 3),
-      c(CRM = 0, BOIN = 0, "3+3" = 0)  # fallback
-    )
-    scores <- scores + toxicity_scores
-  }
-  
-  # Decision matrix for trial_priorities
-  if (!is.null(user_responses$trial_priorities)) {
-    priority_scores <- switch(user_responses$trial_priorities,
-      "Getting started quickly with simple rules" = c(CRM = 0, BOIN = 1, "3+3" = 3),
-      "Finding the best dose efficiently" = c(CRM = 3, BOIN = 2, "3+3" = 0),
-      "Balance of both" = c(CRM = 1, BOIN = 3, "3+3" = 1),
-      c(CRM = 0, BOIN = 0, "3+3" = 0)  # fallback
-    )
-    scores <- scores + priority_scores
-  }
-  
-  # Decision matrix for statistical_support
-  if (!is.null(user_responses$statistical_support)) {
-    support_scores <- switch(user_responses$statistical_support,
-      "Yes experienced with complex modeling" = c(CRM = 3, BOIN = 1, "3+3" = 0),
-      "Yes but prefer simpler approaches" = c(CRM = 1, BOIN = 3, "3+3" = 1),
-      "Limited statistical support" = c(CRM = 0, BOIN = 1, "3+3" = 3),
-      c(CRM = 0, BOIN = 0, "3+3" = 0)  # fallback
-    )
-    scores <- scores + support_scores
-  }
-  
-  # Decision matrix for decision_transparency
-  if (!is.null(user_responses$decision_transparency)) {
-    transparency_scores <- switch(user_responses$decision_transparency,
-      "Very important (regulatory/reproducibility)" = c(CRM = 0, BOIN = 3, "3+3" = 1),
-      "Flexible adaptation preferred" = c(CRM = 3, BOIN = 1, "3+3" = 0),
-      "Simple fixed rules fine" = c(CRM = 0, BOIN = 1, "3+3" = 3),
-      c(CRM = 0, BOIN = 0, "3+3" = 0)  # fallback
-    )
-    scores <- scores + transparency_scores
-  }
-  
-  # Rank methods by score (highest first)
-  ranked_methods <- names(sort(scores, decreasing = TRUE))
-  
-  # Calculate confidence based on score separation
-  max_score <- max(scores)
-  second_score <- sort(scores, decreasing = TRUE)[2]
-  score_gap <- max_score - second_score
-  
-  confidence <- if (score_gap >= 3) {
-    "High"
-  } else if (score_gap >= 2) {
-    "Medium"
-  } else {
-    "Low"
-  }
-  
-  # Generate rationale based on responses and dominant factors
-  rationale <- generate_rationale(user_responses, ranked_methods[1], scores)
-  
-  # Create formatted recommendation text
-  recommendation_text <- sprintf(
-    "Based on your responses, we recommend:\n\n1st choice: %s (score: %d)\n2nd choice: %s (score: %d)\n3rd choice: %s (score: %d)\n\nConfidence: %s\n\n%s",
-    ranked_methods[1], scores[ranked_methods[1]],
-    ranked_methods[2], scores[ranked_methods[2]], 
-    ranked_methods[3], scores[ranked_methods[3]],
-    confidence, rationale
-  )
-  
-  return(list(
-    ranked_methods = ranked_methods,
-    scores = scores,
-    confidence = confidence,
-    rationale = rationale,
-    recommendation_text = recommendation_text
-  ))
-}
 
 #' Generate explanatory rationale for recommendation
 #' @param user_responses User responses to recommendation questions
