@@ -504,7 +504,7 @@ sim_plots <- function(sim, ttl, col1, col2, col3) {
   return(output)
 }
 
-data_for_plotting <- function(sim, ttl, col1 = "#69b3a2", col2 = "#404080", col3 = "red") {
+data_for_plotting <- function(sim, ttl) {
   true_dlts <- sim$treatment_tab[2,] # True DLTs from treatment table
   best_dose <- max(true_dlts[true_dlts <= ttl])
   mtd <- match(best_dose, true_dlts)
@@ -525,15 +525,51 @@ data_for_plotting <- function(sim, ttl, col1 = "#69b3a2", col2 = "#404080", col3
   data_selection$highlight <- ifelse(data_selection$Dose == mtd, "MTD", "Other")
   data_treatment$highlight <- ifelse(Dose_Level == mtd, "MTD", "Other")
   
-  return(list(
+  output <- list(
     data_selection = data_selection,
     data_treatment = data_treatment,
     accuracy = data.frame(sim$dist_accuracy),
     overdose = data.frame(sim$dist_overdose),
-    length = data.frame(sim$dist_length),
-    mtd = mtd
-  ))
+    length = data.frame(sim$dist_length)
+  )
 }
+
+plot_bar <- function(data, category, value, title, y_title, col) {
+  valid_data <- Filter(Negate(is.null), data)
+
+  if (length(valid_data) == 0) {
+    return(NULL)
+  } else {
+  
+  named_data <- lapply(seq_along(valid_data), function(i) {
+    df <- valid_data[[i]]
+    df$source <- paste0("DF_", i)
+    return(df)
+
+  })
+
+  combined_data <- do.call(rbind, named_data)
+  print(combined_data)
+
+  plot <- ggplot(combined_data, aes(x = {{category}}, y = {{value}}, fill = source, color = highlight)) +
+     geom_bar(stat = "identity", position = position_dodge()) +
+     scale_color_manual(values=c("MTD" = col, "Other" = NULL)) +
+     labs(title = title, x = "Dose Level", y = y_title, color = "Is the Dose the True MTD?") +
+    theme_minimal()
+
+  #plot <- ggplot(combined_data, aes(x = category, y = value, color = highlight)) +
+   # geom_bar(stat = "identity", position = position_dodge(), fill = col1) +
+    #scale_color_manual(values=c("MTD" = col2, "Other" = col1)) +
+    #theme_minimal() +
+    #ggtitle(Title) +
+    #xlab("Dose Level") +
+    #ylab(y_title) +
+    #labs(color = "Is the Dose the True MTD?")
+
+    return(plot)
+}}
+
+
 
 ### PLOTS - To return to later.
 #par(mfrow = c(1,3))
