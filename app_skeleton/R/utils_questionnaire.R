@@ -232,20 +232,7 @@ generate_rationale <- function(user_responses, top_method, scores) {
   }
 
   # --- Study Population ---
-  if (!is.null(user_responses$max_sample_size)) {
-    reasons <- c(reasons, switch(user_responses$max_sample_size,
-      "x > ?" = if (top_method == "CRM") "you have a large sample size, which CRM can utilize effectively",
-      "x < ?" = if (top_method == "3+3") "your sample size is limited, making 3+3 more feasible",
-      NULL))
-  }
-
-  if (!is.null(user_responses$cohort_size)) {
-    reasons <- c(reasons, switch(user_responses$cohort_size,
-      "Small cohorts (1-2 patients)" = if (top_method == "CRM") "CRM supports flexible cohort sizes including small cohorts",
-      "Standard cohorts (3 patients)" = if (top_method == "3+3") "you prefer standard cohort sizes, which align with 3+3",
-      "Flexible cohort sizes" = if (top_method == "CRM") "CRM accommodates flexible cohort sizes",
-      NULL))
-  }
+  ####need to add cohort size and maximum sample size
 
   # --- Infrastructure Capabilities ---
   if (!is.null(user_responses$statistical_support)) {
@@ -269,10 +256,19 @@ generate_rationale <- function(user_responses, top_method, scores) {
     "3+3" = "The 3+3 design follows simple escalation rules (treat 3, escalate if 0/3 toxicities), making it the most straightforward to implement."
   )
 
+  # Adding to flag if statistical support is limited
+ stat_support_flag <- !is.null(user_responses$statistical_support) &&
+                     user_responses$statistical_support == "Limited statistical support"
+ flag_message <- if (stat_support_flag) {
+  "\n\n⚠️ You selected 'Limited statistical support'. This had a strong influence on the recommendation, favoring simpler designs like 3+3. Consider acquiring more statistical support for a potentially more accurate and flexible recommendation."
+  } else {
+  ""
+ }
+
   # Add caveat if scores are close
   max_score <- max(scores)
   second_score <- sort(scores, decreasing = TRUE)[2]
-  caveat <- if (max_score - second_score <= 1) {
+  caveat <- if (max_score - second_score <= 0.5) {
     sprintf("\n\nNote: The scores are quite close (difference of %.2f), so %s could also be a reasonable choice depending on your specific context.",
             max_score - second_score, names(sort(scores, decreasing = TRUE))[2])
   } else {
