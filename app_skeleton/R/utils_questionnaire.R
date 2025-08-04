@@ -265,10 +265,8 @@ generate_intelligent_recommendation <- function(user_responses) {
 #' @return Character string explaining the recommendation
 generate_rationale <- function(user_responses, top_method, scores) {
   
-  # Start building rationale based on top method
   rationale_parts <- c()
   
-  # Method-specific opening
   method_intro <- switch(top_method,
     "CRM" = "CRM (Continual Reassessment Method) is recommended because",
     "BOIN" = "BOIN (Bayesian Optimal Interval) is recommended because", 
@@ -276,88 +274,96 @@ generate_rationale <- function(user_responses, top_method, scores) {
   )
   
   rationale_parts <- c(rationale_parts, method_intro)
-  
-  # Add reasoning based on responses
   reasons <- c()
-  
-  # Toxicity confidence reasoning
+
+  # --- Performance Metrics ---
   if (!is.null(user_responses$toxicity_confidence)) {
-    if (user_responses$toxicity_confidence == "Very confident (good historical data)" && top_method == "CRM") {
-      reasons <- c(reasons, "you have strong historical toxicity data that CRM can leverage effectively")
-    } else if (user_responses$toxicity_confidence == "Not confident/limited data" && top_method == "3+3") {
-      reasons <- c(reasons, "with limited toxicity data, the 3+3 design provides a simple, well-understood approach")
-    } else if (user_responses$toxicity_confidence == "Somewhat confident" && top_method == "BOIN") {
-      reasons <- c(reasons, "BOIN provides a good balance when toxicity confidence is moderate")
-    }
+    reasons <- c(reasons, switch(user_responses$toxicity_confidence,
+      "Very confident (good historical data)" = if (top_method == "CRM") "you have strong historical toxicity data that CRM can leverage effectively",
+      "Somewhat confident" = if (top_method == "BOIN") "BOIN provides a good balance when toxicity confidence is moderate",
+      "Not confident/limited data" = if (top_method == "3+3") "with limited toxicity data, the 3+3 design provides a simple, well-understood approach",
+      NULL))
   }
-  
-  # Trial priorities reasoning
-  if (!is.null(user_responses$trial_priorities)) {
-    if (user_responses$trial_priorities == "Finding the best dose efficiently" && top_method == "CRM") {
-      reasons <- c(reasons, "CRM is most efficient at finding the maximum tolerated dose")
-    } else if (user_responses$trial_priorities == "Getting started quickly with simple rules" && top_method == "3+3") {
-      reasons <- c(reasons, "the 3+3 design offers the simplest implementation with fixed decision rules")
-    } else if (user_responses$trial_priorities == "Balance of both" && top_method == "BOIN") {
-      reasons <- c(reasons, "BOIN balances efficiency with simplicity")
-    }
+
+  if (!is.null(user_responses$dlt_accuracy)) {
+    reasons <- c(reasons, switch(user_responses$dlt_accuracy,
+      "As much as possible" = if (top_method == "CRM") "you prioritize accurate DLT estimation, which CRM supports",
+      "Other things are the priority" = if (top_method == "3+3") "you prefer simplicity over detailed DLT modeling",
+      NULL))
   }
-  
-  # Statistical support reasoning
-  if (!is.null(user_responses$statistical_support)) {
-    if (user_responses$statistical_support == "Yes experienced with complex modeling" && top_method == "CRM") {
-      reasons <- c(reasons, "your statistical expertise enables effective use of CRM's adaptive modeling")
-    } else if (user_responses$statistical_support == "Limited statistical support" && top_method == "3+3") {
-      reasons <- c(reasons, "the 3+3 design requires minimal statistical expertise to implement")
-    } else if (user_responses$statistical_support == "Yes but prefer simpler approaches" && top_method == "BOIN") {
-      reasons <- c(reasons, "BOIN provides statistical rigor without excessive complexity")
-    }
-  }
-  
-  # Transparency reasoning
+
   if (!is.null(user_responses$decision_transparency)) {
-    if (user_responses$decision_transparency == "Very important (regulatory/reproducibility)" && top_method == "BOIN") {
-      reasons <- c(reasons, "BOIN provides transparent, pre-specified decision boundaries")
-    } else if (user_responses$decision_transparency == "Flexible adaptation preferred" && top_method == "CRM") {
-      reasons <- c(reasons, "CRM allows flexible adaptation based on accumulating data")
-    } else if (user_responses$decision_transparency == "Simple fixed rules fine" && top_method == "3+3") {
-      reasons <- c(reasons, "the 3+3 design uses simple, fixed escalation rules")
-    }
+    reasons <- c(reasons, switch(user_responses$decision_transparency,
+      "Very important (regulatory/reproducibility)" = if (top_method == "BOIN") "BOIN provides transparent, pre-specified decision boundaries",
+      "Flexible adaptation preferred" = if (top_method == "CRM") "CRM allows flexible adaptation based on accumulating data",
+      "Simple fixed rules fine" = if (top_method == "3+3") "the 3+3 design uses simple, fixed escalation rules",
+      NULL))
   }
-  
+
+  # --- Operational Constraints ---
+  if (!is.null(user_responses$trial_priorities)) {
+    reasons <- c(reasons, switch(user_responses$trial_priorities,
+      "Finding the best dose efficiently" = if (top_method == "CRM") "CRM is most efficient at finding the maximum tolerated dose",
+      "Getting started quickly with simple rules" = if (top_method == "3+3") "the 3+3 design offers the simplest implementation with fixed decision rules",
+      "Balance of both" = if (top_method == "BOIN") "BOIN balances efficiency with simplicity",
+      NULL))
+  }
+
+  if (!is.null(user_responses$time_budget_availability)) {
+    reasons <- c(reasons, switch(user_responses$time_budget_availability,
+      "Limited by time/budget" = if (top_method == "3+3") "you are constrained by time or budget, making 3+3 a practical choice",
+      "Not limited by time/budget" = if (top_method == "CRM") "you have resources to support more complex modeling",
+      NULL))
+  }
+
+  # --- Study Population ---
+  if (!is.null(user_responses$max_sample_size)) {
+    reasons <- c(reasons, switch(user_responses$max_sample_size,
+      "x > ?" = if (top_method == "CRM") "you have a large sample size, which CRM can utilize effectively",
+      "x < ?" = if (top_method == "3+3") "your sample size is limited, making 3+3 more feasible",
+      NULL))
+  }
+
+  if (!is.null(user_responses$cohort_size)) {
+    reasons <- c(reasons, switch(user_responses$cohort_size,
+      "Small cohorts (1-2 patients)" = if (top_method == "CRM") "CRM supports flexible cohort sizes including small cohorts",
+      "Standard cohorts (3 patients)" = if (top_method == "3+3") "you prefer standard cohort sizes, which align with 3+3",
+      "Flexible cohort sizes" = if (top_method == "CRM") "CRM accommodates flexible cohort sizes",
+      NULL))
+  }
+
+  # --- Infrastructure Capabilities ---
+  if (!is.null(user_responses$statistical_support)) {
+    reasons <- c(reasons, switch(user_responses$statistical_support,
+      "Yes experienced with complex modeling" = if (top_method == "CRM") "your statistical expertise enables effective use of CRM's adaptive modeling",
+      "Yes but prefer simpler approaches" = if (top_method == "BOIN") "BOIN provides statistical rigor without excessive complexity",
+      "Limited statistical support" = if (top_method == "3+3") "the 3+3 design requires minimal statistical expertise to implement",
+      NULL))
+  }
+
   # Combine reasons
   if (length(reasons) > 0) {
-    reason_text <- paste(reasons, collapse = ", and ")
+    reason_text <- paste(reasons[!is.null(reasons)], collapse = ", and ")
     rationale_parts <- c(rationale_parts, reason_text)
   }
-  
+
   # Add method characteristics
   method_desc <- switch(top_method,
     "CRM" = "CRM continuously updates dose-toxicity estimates using Bayesian methods, making it highly efficient but requiring more statistical expertise.",
     "BOIN" = "BOIN uses pre-specified decision boundaries that balance efficiency with transparency, making it suitable for many regulatory contexts.",
     "3+3" = "The 3+3 design follows simple escalation rules (treat 3, escalate if 0/3 toxicities), making it the most straightforward to implement."
   )
-  
-  # Check for close scores and add caveats
+
+  # Add caveat if scores are close
   max_score <- max(scores)
   second_score <- sort(scores, decreasing = TRUE)[2]
-  
   caveat <- if (max_score - second_score <= 1) {
-    sprintf("\n\nNote: The scores are quite close (difference of %d), so %s could also be a reasonable choice depending on your specific context.", 
+    sprintf("\n\nNote: The scores are quite close (difference of %.2f), so %s could also be a reasonable choice depending on your specific context.",
             max_score - second_score, names(sort(scores, decreasing = TRUE))[2])
   } else {
     ""
   }
-  
-  # Combine all parts
-  parts <- c()
-  if (length(rationale_parts) > 0) {
-    parts <- c(parts, paste(rationale_parts, collapse = " "))
-  }
-  parts <- c(parts, method_desc)
-  if (nzchar(caveat)) {
-    parts <- c(parts, caveat)
-  }
-  full_rationale <- paste(parts, collapse = ". ")
-  
+
+  full_rationale <- paste(c(rationale_parts, method_desc, caveat), collapse = ". ")
   return(full_rationale)
 }
