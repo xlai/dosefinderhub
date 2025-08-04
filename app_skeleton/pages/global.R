@@ -504,6 +504,36 @@ sim_plots <- function(sim, ttl, col1, col2, col3) {
   return(output)
 }
 
+data_for_plotting <- function(sim, ttl, col1 = "#69b3a2", col2 = "#404080", col3 = "red") {
+  true_dlts <- sim$treatment_tab[2,] # True DLTs from treatment table
+  best_dose <- max(true_dlts[true_dlts <= ttl])
+  mtd <- match(best_dose, true_dlts)
+
+  selection <- as.vector(sim$selection_tab[1,])
+  treatment <- as.vector(sim$treatment_tab[1,])
+  Dose_Level <- seq(1, length(treatment))
+  no_dose <- "No Dose"
+  Dose <- c(no_dose, Dose_Level)
+
+ # % selected as MTD and % Treaed at each dose as a bar plot
+  data_selection <- as.data.frame(selection)
+  data_selection$Dose <- factor(Dose, levels = c(no_dose, as.character(Dose_Level)))
+  data_selection$selection <- selection
+  data_treatment <- as.data.frame(cbind(Dose_Level, treatment))
+
+  # Highlighting the MTD
+  data_selection$highlight <- ifelse(data_selection$Dose == mtd, "MTD", "Other")
+  data_treatment$highlight <- ifelse(Dose_Level == mtd, "MTD", "Other")
+  
+  return(list(
+    data_selection = data_selection,
+    data_treatment = data_treatment,
+    accuracy = data.frame(sim$dist_accuracy),
+    overdose = data.frame(sim$dist_overdose),
+    length = data.frame(sim$dist_length),
+    mtd = mtd
+  ))
+}
 
 ### PLOTS - To return to later.
 #par(mfrow = c(1,3))
