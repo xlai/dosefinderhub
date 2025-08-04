@@ -47,6 +47,17 @@ generate_intelligent_recommendation <- function(user_responses) {
   )
 
   # --- Performance Metrics ---
+ if (!is.null(user_responses$ttl)) {
+  ttl <- as.numeric(user_responses$ttl)
+  if (ttl > 0.28 && ttl < 0.38) {
+    domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] + c(CRM = 1, BOIN = 1, "3+3" = 1)
+  } else if (ttl < 0.28) {
+    domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] + c(CRM = 1, BOIN = 2, "3+3" = 0)
+  } else if (ttl > 0.38) {
+    domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] + c(CRM = 2, BOIN = 1, "3+3" = 0)
+  }
+ }
+
   if (!is.null(user_responses$toxicity_confidence)) {
     domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] +
       switch(user_responses$toxicity_confidence,
@@ -74,15 +85,6 @@ generate_intelligent_recommendation <- function(user_responses) {
   }
 
   # --- Operational Constraints ---
-  if (!is.null(user_responses$trial_priorities)) {
-    domain_scores[["Operational Constraints"]] <- domain_scores[["Operational Constraints"]] +
-      switch(user_responses$trial_priorities,
-             "Getting started quickly with simple rules" = c(CRM = 0, BOIN = 1, "3+3" = 3),
-             "Finding the best dose efficiently" = c(CRM = 3, BOIN = 2, "3+3" = 0),
-             "Balance of both" = c(CRM = 1, BOIN = 3, "3+3" = 1),
-             c(CRM = 0, BOIN = 0, "3+3" = 0))
-  }
-
   if (!is.null(user_responses$time_budget_availability)) {
     domain_scores[["Operational Constraints"]] <- domain_scores[["Operational Constraints"]] +
       switch(user_responses$time_budget_availability,
@@ -93,14 +95,6 @@ generate_intelligent_recommendation <- function(user_responses) {
   }
 
   # --- Study Population ---
-  if (!is.null(user_responses$max_sample_size)) {
-    domain_scores[["Study Population"]] <- domain_scores[["Study Population"]] +
-      switch(user_responses$max_sample_size,
-             "x > ?" = c(CRM = 3, BOIN = 1, "3+3" = 0),
-             "x < ?" = c(CRM = 1, BOIN = 1, "3+3" = 1),
-             c(CRM = 0, BOIN = 0, "3+3" = 0))
-  }
-
   if (!is.null(user_responses$cohort_size)) {
     domain_scores[["Study Population"]] <- domain_scores[["Study Population"]] +
       switch(user_responses$cohort_size,
