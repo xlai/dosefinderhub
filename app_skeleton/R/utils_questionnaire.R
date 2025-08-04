@@ -95,14 +95,7 @@ generate_intelligent_recommendation <- function(user_responses) {
   }
 
   # --- Study Population ---
-  if (!is.null(user_responses$cohort_size)) {
-    domain_scores[["Study Population"]] <- domain_scores[["Study Population"]] +
-      switch(user_responses$cohort_size,
-             "Small cohorts (1-2 patients)" = c(CRM = 2, BOIN = 2, "3+3" = 1),
-             "Standard cohorts (3 patients)" = c(CRM = 1, BOIN = 2, "3+3" = 3),
-             "Flexible cohort sizes" = c(CRM = 3, BOIN = 1, "3+3" = 0),
-             c(CRM = 0, BOIN = 0, "3+3" = 0))
-  }
+  ###need to add cohort size and maximum sample size
 
   # --- Infrastructure Capabilities ---
   if (!is.null(user_responses$statistical_support)) {
@@ -190,6 +183,7 @@ generate_rationale <- function(user_responses, top_method, scores) {
   
   rationale_parts <- c(rationale_parts, method_intro)
   reasons <- c()
+  flag_message <- NULL
 
   # --- Performance Metrics ---
   if (!is.null(user_responses$toxicity_confidence)) {
@@ -236,14 +230,27 @@ generate_rationale <- function(user_responses, top_method, scores) {
 
   # --- Infrastructure Capabilities ---
   if (!is.null(user_responses$statistical_support)) {
-    reasons <- c(reasons, switch(user_responses$statistical_support,
-      "Yes experienced with complex modeling" = if (top_method == "CRM") "your statistical expertise enables effective use of CRM's adaptive modeling",
-      "Yes but prefer simpler approaches" = if (top_method == "BOIN") "BOIN provides statistical rigor without excessive complexity",
-      "Limited statistical support" = if (top_method == "3+3") "the 3+3 design requires minimal statistical expertise to implement",
-      NULL))
+  stat_support <- user_responses$statistical_support
+  
+  if (stat_support == "Yes experienced with complex modeling" && top_method == "CRM") {
+    reasons <- c(reasons, "your statistical expertise enables effective use of CRM's adaptive modeling")
+  } else if (stat_support == "Yes but prefer simpler approaches" && top_method == "BOIN") {
+    reasons <- c(reasons, "BOIN provides statistical rigor without excessive complexity")
+  } else if (stat_support == "Limited statistical support" && top_method == "3+3") {
+    reasons <- c(reasons, "the 3+3 design requires minimal statistical expertise to implement")
   }
 
-  # Combine reasons
+  if (stat_support == "Limited statistical support") {
+    flag_message <- "Your answer to the question about statistical support heavily influenced the outcome of this recommendation, in favour of 3+3. Consider consulting a statistician to gain the benefits of the other trial designs."
+  }
+}
+
+if (!is.null(flag_message)) {
+  flag_message <- paste("\n\n⚠️ ", flag_message)
+}
+
+
+# Combine reasons
   if (length(reasons) > 0) {
     reason_text <- paste(reasons[!is.null(reasons)], collapse = ", and ")
     rationale_parts <- c(rationale_parts, reason_text)
@@ -253,28 +260,19 @@ generate_rationale <- function(user_responses, top_method, scores) {
   method_desc <- switch(top_method,
     "CRM" = "CRM continuously updates dose-toxicity estimates using Bayesian methods, making it highly efficient but requiring more statistical expertise.",
     "BOIN" = "BOIN uses pre-specified decision boundaries that balance efficiency with transparency, making it suitable for many regulatory contexts.",
-    "3+3" = "The 3+3 design follows simple escalation rules (treat 3, escalate if 0/3 toxicities), making it the most straightforward to implement."
+    "3+3" = "The 3+3 design follows simple escalation rules (treat 3, escalate if 0/3 toxicities), making it the most straightforward to implement"
   )
-
-  # Adding to flag if statistical support is limited
- stat_support_flag <- !is.null(user_responses$statistical_support) &&
-                     user_responses$statistical_support == "Limited statistical support"
- flag_message <- if (stat_support_flag) {
-  "\n\n⚠️ You selected 'Limited statistical support'. This had a strong influence on the recommendation, favoring simpler designs like 3+3. Consider acquiring more statistical support for a potentially more accurate and flexible recommendation."
-  } else {
-  ""
- }
 
   # Add caveat if scores are close
   max_score <- max(scores)
   second_score <- sort(scores, decreasing = TRUE)[2]
-  caveat <- if (max_score - second_score <= 0.5) {
-    sprintf("\n\nNote: The scores are quite close (difference of %.2f), so %s could also be a reasonable choice depending on your specific context.",
+  caveat <- if (max_score - second_score <= 0.25) {
+    sprintf("\n\nNote: The scores are quite close (difference of %.2f), so %s could also be a reasonable choice depending on your specific context",
             max_score - second_score, names(sort(scores, decreasing = TRUE))[2])
   } else {
     ""
   }
 
-  full_rationale <- paste(c(rationale_parts, method_desc, caveat), collapse = ". ")
+  full_rationale <- paste(c(rationale_parts, method_desc, flag_message, caveat), collapse = ". ")
   return(full_rationale)
 }
