@@ -56,7 +56,8 @@ sim_ui <- function(id) {
                       radioButtons(ns("display_plots"),"How would you like to display the simulation results?",
                       choices = c("By Model", "By Scenario", "No Comparison"), selected = "No Comparison", inline = TRUE)
             )
-          )
+          ),
+          plotOutput(ns("plots"))
           )
         )
       ),
@@ -178,7 +179,8 @@ ns <- session$ns
   #print(n_scen)
   combined_list <- vector("list", n_scen) # initialising for use later
   title_list <- vector("list", n_scen) # initialising for use later
-
+  plot_list <- vector("list", n_scen) # initialising for use later
+  
    # Metric - putting it outside of the for loop so only one list is created.
   selected_metric <- cbind(
   selected_mtd <- {"% times dose was selected as MTD" %in% input$metric_selection_input},
@@ -203,20 +205,26 @@ ns <- session$ns
       colnames(tpt_modified_tab$mean_length)<- ""
       colnames(tpt_modified_tab$mean_overdose) <- ""
 
-      } else {tpt_modified_tab <- NULL}
+      tpt_for_plots <- data_for_plotting(tpt_sim, shared$ttl())
+      } else {tpt_modified_tab <- NULL
+      tpt_for_plots <- NULL}
 
   if ("CRM" %in% input$simulation_design_selection_input)
       {
       crm_sim <- sim_crm(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skeleton_crm(), shared$prior_var_crm(), shared$skip_esc_crm(), shared$skip_deesc_crm(), shared$stop_tox_x_crm(), shared$stop_tox_y_crm(), shared$stop_n_mtd_crm())
       crm_modified_tab <- crm_sim[-c(3,5,7)]
+      crm_modified_plot <- tpt_sim[-c(4,6,8)]
 
       crm_modified_tab$mean_accuracy <- as.data.frame(crm_modified_tab$mean_accuracy, row.names = "Mean Accuracy", col.names = FALSE)
       crm_modified_tab$mean_overdose <- as.data.frame(crm_modified_tab$mean_overdose, row.names = "Mean Overdose", col.names = FALSE)
       crm_modified_tab$mean_length <- as.data.frame(crm_modified_tab$mean_length, row.names = "Mean Trial Length", col.names = FALSE)
       colnames(crm_modified_tab$mean_accuracy) <- ""
       colnames(crm_modified_tab$mean_length)<- ""
-  colnames(crm_modified_tab$mean_overdose) <- ""
-      } else {crm_modified_tab <- NULL}
+      colnames(crm_modified_tab$mean_overdose) <- ""
+
+      crm_for_plots <- data_for_plotting(crm_sim, shared$ttl())
+      } else {crm_modified_tab <- NULL
+      crm_for_plots <- NULL}
 
    if ("BOIN" %in% input$simulation_design_selection_input)
       { #print(unlist(used_true_dlts[j, ]))
@@ -230,19 +238,28 @@ ns <- session$ns
       colnames(boin_modified_tab$mean_length)<- ""
       colnames(boin_modified_tab$mean_overdose) <- ""
 
-      } else {boin_modified_tab <- NULL}
+      boin_for_plots <- data_for_plotting(boin_sim, shared$ttl())
+      } else {boin_modified_tab <- NULL
+      boin_for_plots <- NULL}
 
-  # Giving Titles to Single Value Ouputs
+  # Giving Titles to Single Value Outputs
 
   tpt_to_display <- tpt_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
   crm_to_display <- crm_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
-  boin_to_display <- boin_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
+  boin_to_display <- boin_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display 
 
   tpt_title <- as.character(rep("3+3 Simulation for Scenario ", 5))
   crm_title <- as.character(rep("CRM Simulation for Scenario ", 5))
   boin_title <- as.character(rep("BOIN Simulation for Scenario ", 5))
   scenario_number <- as.character(rep(j, 5))
   metric_names <- as.character(c(" - % Times Dose Was Selected as MTD", "- % Treated at Each Dose",  " - Mean Accuracy", " - Mean Overdose", " - Mean Trial Length"))
+
+  sim_list <- vector("list", 5) # initialising for use later
+
+  # Organising plot lists by metric
+  for (k in 1:5) {
+    sim_list[[k]] <- list(tpt_for_plots[[k]], crm_for_plots[[k]], boin_for_plots[[k]])
+  }
 
   if ("3+3" %in% input$simulation_design_selection_input) {
   full_tpt_titles <- paste(as.character(tpt_title), as.character(scenario_number), as.character(metric_names))
@@ -268,9 +285,11 @@ ns <- session$ns
   combined_list[[j]]  <- cbind(tpt_data_frames, crm_data_frames, boin_data_frames)
   cbind_titles <- cbind(used_tpt_titles, used_crm_titles, used_boin_titles)
   title_list[[j]] <- unname(unlist(cbind_titles))
+  plot_list[[j]] <- sim_list
 
   } # for loop end
 
+## Tables
   combined_data_frames <- do.call(c, combined_list) 
   #print(combined_data_frames)
   combined_titles <- do.call(c, title_list) 
@@ -305,6 +324,37 @@ ns <- session$ns
   tables_and_titles <- renderUI({ generate_tables_ui })
   output$tables1 <- tables_and_titles
   output$tables2 <- tables_and_titles
+
+  ## Plots
+  # Focusing on "by model" for now, where all models are selected
+  graphs <- vector("list", 5) # initialising for use later
+
+  if ("By Model" %in% input$display_plots) {
+   for (j in 1:n_scen) {
+    data <- plot_list[[j]]   #plot_list[[j]][[k]] = Scenario j, Metric k.
+
+    for (k in 1:5) {
+      met <- data[[k]]
+      print(met)
+      
+      if(is.null(met)) 
+      { next } else if (!is.null(met[[1]]$selection) | !is.null(met[[2]]$selection) | !is.null(met[[1]]$selection)) {
+      graphs[[k]] <- plot_bar(met, Dose, selection, title = "% Times Dose Was Selected as MTD", y_title = "% Times Dose Was Selected as MTD", col = "blue") # Using blue for MTD
+      } else {
+        graphs[[k]] <- NULL
+      }
+    }
+   }
+
+   plot_graph <- renderPlot({
+     lapply(graphs, function(graph) {
+       if (!is.null(graph)) {
+         print(graph)
+       }
+     })
+   })
+    output$plots <- plot_graph
+  } else {output$plots <- NULL} # For now.
 
   } # else (after for loop)
   } # else (before for loop)

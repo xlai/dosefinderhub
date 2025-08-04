@@ -561,7 +561,6 @@ plot_bar <- function(data, category, value, title, y_title, col) {
   })
 
   combined_data <- do.call(rbind, named_data)
-  print(combined_data)
 
   plot <- ggplot(combined_data, aes(x = {{category}}, y = {{value}}, fill = Model, color = highlight)) +
      geom_bar(stat = "identity", position = position_dodge()) +
