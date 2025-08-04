@@ -110,7 +110,7 @@ generate_intelligent_recommendation <- function(user_responses) {
       switch(user_responses$statistical_support,
              "Yes experienced with complex modeling" = c(CRM = 3, BOIN = 1, "3+3" = 0),
              "Yes but prefer simpler approaches" = c(CRM = 1, BOIN = 3, "3+3" = 1),
-             "Limited statistical support" = c(CRM = 0, BOIN = 1, "3+3" = 8),
+             "Limited statistical support" = c(CRM = 0, BOIN = 1, "3+3" = 15),
              c(CRM = 0, BOIN = 0, "3+3" = 0))
   }
 
