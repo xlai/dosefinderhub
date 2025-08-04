@@ -8,3 +8,4 @@ Y,6,radioButtons,toxicity_confidence,How confident are you about which doses mig
 Y,7,radioButtons,trial_priorities,What's more important for your trial?,categorical,"choices=Getting started quickly with simple rules,Finding the best dose efficiently,Balance of both",
 Y,8,radioButtons,statistical_support,Do you have access to a statistician experienced with dose-finding designs?,categorical,"choices=Yes experienced with complex modeling,Yes but prefer simpler approaches,Limited statistical support",
 Y,9,radioButtons,decision_transparency,How important is it to have pre-specified transparent decision rules?,categorical,"choices=Very important (regulatory/reproducibility),Flexible adaptation preferred,Simple fixed rules fine",
+Y,10,radioButtons,yes_no,Yes or no?,categorical,"choices=Yes,No",

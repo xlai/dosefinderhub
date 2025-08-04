@@ -28,40 +28,139 @@ parse_params <- function(params_str) {
 #' Generate questions UI (your existing function)
 #' @param current_question Single row data frame containing question info
 #' @return Shiny input UI element
-generate_questions_UI <- function(current_question) {
-  params <- parse_params(current_question$params)
-
-  switch(current_question$q_type,
-         radioButtons = shiny::radioButtons(
-           inputId = current_question$q_variable,
-           label = current_question$q_text,
-           choices = strsplit(params[["choices"]], ",")[[1]],
-           width = "500"
-         ),
-         numeric = shiny::numericInput(
-           inputId = current_question$q_variable,
-           label = current_question$q_text,
-           min = as.numeric(params[["min"]]),
-           value = 0,
-           width = "500"
-         ),
-         slider = shiny::sliderInput(
-           inputId = current_question$q_variable,
-           label = current_question$q_text,
-           min = as.numeric(params[["min"]]),
-           max = as.numeric(params[["max"]]),
-           value = as.numeric(params[["min"]]),
-           width = "500"
-         ),
-         text = shiny::textInput(
-           inputId = current_question$q_variable,
-           label = current_question$q_text,
-           placeholder = "e.g. 0.05, 0.15, 0.3, 0.7",
-           value = "", 
-           width = "500"
-         )
+generate_intelligent_recommendation <- function(user_responses) {
+  
+  # Define domain weights
+  domain_weights <- list(
+    "Performance Metrics" = 0.30,
+    "Operational Constraints" = 0.25,
+    "Study Population" = 0.20,
+    "Infrastructure Capabilities" = 0.25
   )
+  
+  # Initialize domain-wise score containers
+  domain_scores <- list(
+    "Performance Metrics" = c(CRM = 0, BOIN = 0, "3+3" = 0),
+    "Operational Constraints" = c(CRM = 0, BOIN = 0, "3+3" = 0),
+    "Study Population" = c(CRM = 0, BOIN = 0, "3+3" = 0),
+    "Infrastructure Capabilities" = c(CRM = 0, BOIN = 0, "3+3" = 0)
+  )
+
+  # --- Performance Metrics ---
+  if (!is.null(user_responses$toxicity_confidence)) {
+    domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] +
+      switch(user_responses$toxicity_confidence,
+             "Very confident (good historical data)" = c(CRM = 3, BOIN = 1, "3+3" = 0),
+             "Somewhat confident" = c(CRM = 1, BOIN = 3, "3+3" = 1),
+             "Not confident/limited data" = c(CRM = 0, BOIN = 1, "3+3" = 3),
+             c(CRM = 0, BOIN = 0, "3+3" = 0))
+  }
+
+  if (!is.null(user_responses$dlt_accuracy)) {
+    domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] +
+      switch(user_responses$dlt_accuracy,
+             "As much as possible" = c(CRM = 1, BOIN = 1, "3+3" = 0),
+             "Other things are the priority" = c(CRM = 1, BOIN = 1, "3+3" = 1),
+             c(CRM = 0, BOIN = 0, "3+3" = 0))
+  }
+
+  if (!is.null(user_responses$decision_transparency)) {
+    domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] +
+      switch(user_responses$decision_transparency,
+             "Very important (regulatory/reproducibility)" = c(CRM = 0, BOIN = 3, "3+3" = 1),
+             "Flexible adaptation preferred" = c(CRM = 3, BOIN = 1, "3+3" = 0),
+             "Simple fixed rules fine" = c(CRM = 0, BOIN = 1, "3+3" = 3),
+             c(CRM = 0, BOIN = 0, "3+3" = 0))
+  }
+
+  # --- Operational Constraints ---
+  if (!is.null(user_responses$trial_priorities)) {
+    domain_scores[["Operational Constraints"]] <- domain_scores[["Operational Constraints"]] +
+      switch(user_responses$trial_priorities,
+             "Getting started quickly with simple rules" = c(CRM = 0, BOIN = 1, "3+3" = 3),
+             "Finding the best dose efficiently" = c(CRM = 3, BOIN = 2, "3+3" = 0),
+             "Balance of both" = c(CRM = 1, BOIN = 3, "3+3" = 1),
+             c(CRM = 0, BOIN = 0, "3+3" = 0))
+  }
+
+  if (!is.null(user_responses$time_budget_availability)) {
+    domain_scores[["Operational Constraints"]] <- domain_scores[["Operational Constraints"]] +
+      switch(user_responses$time_budget_availability,
+             "Not limited by time/budget" = c(CRM = 2, BOIN = 2, "3+3" = 1),
+             "Some availability in time/budget" = c(CRM = 1, BOIN = 2, "3+3" = 2),
+             "Limited by time/budget" = c(CRM = 0, BOIN = 0, "3+3" = 3),
+             c(CRM = 0, BOIN = 0, "3+3" = 0))
+  }
+
+  # --- Study Population ---
+  if (!is.null(user_responses$max_sample_size)) {
+    domain_scores[["Study Population"]] <- domain_scores[["Study Population"]] +
+      switch(user_responses$max_sample_size,
+             "x > ?" = c(CRM = 3, BOIN = 1, "3+3" = 0),
+             "x < ?" = c(CRM = 1, BOIN = 1, "3+3" = 1),
+             c(CRM = 0, BOIN = 0, "3+3" = 0))
+  }
+
+  if (!is.null(user_responses$cohort_size)) {
+    domain_scores[["Study Population"]] <- domain_scores[["Study Population"]] +
+      switch(user_responses$cohort_size,
+             "Small cohorts (1-2 patients)" = c(CRM = 2, BOIN = 2, "3+3" = 1),
+             "Standard cohorts (3 patients)" = c(CRM = 1, BOIN = 2, "3+3" = 3),
+             "Flexible cohort sizes" = c(CRM = 3, BOIN = 1, "3+3" = 0),
+             c(CRM = 0, BOIN = 0, "3+3" = 0))
+  }
+
+  # --- Infrastructure Capabilities ---
+  if (!is.null(user_responses$statistical_support)) {
+    domain_scores[["Infrastructure Capabilities"]] <- domain_scores[["Infrastructure Capabilities"]] +
+      switch(user_responses$statistical_support,
+             "Yes experienced with complex modeling" = c(CRM = 3, BOIN = 1, "3+3" = 0),
+             "Yes but prefer simpler approaches" = c(CRM = 1, BOIN = 3, "3+3" = 1),
+             "Limited statistical support" = c(CRM = 0, BOIN = 1, "3+3" = 8),
+             c(CRM = 0, BOIN = 0, "3+3" = 0))
+  }
+
+  # Apply domain weights
+  weighted_scores <- Reduce(`+`, lapply(names(domain_scores), function(domain) {
+    domain_scores[[domain]] * domain_weights[[domain]]
+  }))
+
+  # Determine top scoring model
+  ranked_methods <- names(sort(weighted_scores, decreasing = TRUE))
+  max_score <- weighted_scores[ranked_methods[1]]
+  second_score <- weighted_scores[ranked_methods[2]]
+  score_gap <- max_score - second_score
+
+  confidence <- if (score_gap >= 3) "High" else if (score_gap >= 2) "Medium" else "Low"
+
+  # Suitability logic
+  suitability_model <- if (!is.null(user_responses$statistical_support) &&
+                           user_responses$statistical_support == "Limited statistical support") {
+    "3+3"
+  } else {
+    ranked_methods[1]
+  }
+
+  # Generate rationale
+  rationale <- generate_rationale(user_responses, ranked_methods[1], weighted_scores)
+
+  # Recommendation text
+  recommendation_text <- sprintf(
+    "Top-scoring model: %s (score: %.2f)\nMost suitable model: %s\n\nConfidence: %s\n\n%s",
+    ranked_methods[1], weighted_scores[ranked_methods[1]],
+    suitability_model, confidence, rationale
+  )
+
+  return(list(
+    ranked_methods = ranked_methods,
+    scores = weighted_scores,
+    confidence = confidence,
+    suitability_model = suitability_model,
+    rationale = rationale,
+    recommendation_text = recommendation_text
+  ))
 }
+
 
 #' Generate recommendation (your existing function)
 #' @param x Numeric score for recommendation
