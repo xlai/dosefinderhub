@@ -580,7 +580,7 @@ plot_bar <- function(data, category, value, title, y_title, col) {
     return(plot)
 }}
 
-plot_dist <- function(data, category, mean, title, x_title, col) {
+plot_dist <- function(data, category, mean_vector, title, x_title, col) {
   valid_data <- Filter(Negate(is.null), data)
 
   model <- c("3+3", "CRM", "BOIN")
@@ -588,12 +588,8 @@ plot_dist <- function(data, category, mean, title, x_title, col) {
 
   # scenario <- c("Scenario 1", "Scenario 2", "Scenario 3") # For later when "by scenario" is implemented
 
-  # Isolating the models we have:
-  for (j in 1:3) {
-    if (is.null(data[[j]])) {
-        updated_model <- updated_model[-j] 
-    }
-  }
+  updated_model <- updated_model[!sapply(data, is.null)] # Isolating the models we have
+  mean <- mean_vector[!sapply(data, is.null)] # Isolating the means for the models we have
 
   if (length(valid_data) == 0) {
     return(NULL)
@@ -610,7 +606,7 @@ plot_dist <- function(data, category, mean, title, x_title, col) {
 
   plot <- ggplot(combined_data, aes(x = {{category}}, fill = Model)) +
      geom_histogram(binwidth = 1, position = position_dodge(), color = "black") +
-     geom_vline(aes(xintercept = mean), color = col, linetype = "dashed") +
+     geom_vline(data = data.frame(mean), aes(xintercept = mean), color = col, linetype = "dashed") +
      labs(title = title, x = x_title, y = "Frequency") +
     theme_minimal()
 

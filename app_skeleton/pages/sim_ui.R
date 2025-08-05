@@ -180,6 +180,9 @@ ns <- session$ns
   combined_list <- vector("list", n_scen) # initialising for use later
   title_list <- vector("list", n_scen) # initialising for use later
   plot_list <- vector("list", n_scen) # initialising for use later
+  mean_accuracy <- vector("list", n_scen) # initialising for use later
+  mean_overdose <- vector("list", n_scen) # initialising for use later
+  mean_length <- vector("list", n_scen) # initialising for use later
   
    # Metric - putting it outside of the for loop so only one list is created.
   selected_metric <- cbind(
@@ -205,9 +208,17 @@ ns <- session$ns
       colnames(tpt_modified_tab$mean_length)<- ""
       colnames(tpt_modified_tab$mean_overdose) <- ""
 
+      tpt_mean_accuracy <- tpt_sim$mean_accuracy
+      tpt_mean_overdose <- tpt_sim$mean_overdose
+      tpt_mean_length <- tpt_sim$mean_length
+
       tpt_for_plots <- data_for_plotting(tpt_sim, shared$ttl())
       } else {tpt_modified_tab <- NULL
-      tpt_for_plots <- NULL}
+      tpt_for_plots <- NULL
+      tpt_mean_accuracy <- NULL
+      tpt_mean_overdose <- NULL
+      tpt_mean_length <- NULL
+      }
 
   if ("CRM" %in% input$simulation_design_selection_input)
       {
@@ -222,9 +233,16 @@ ns <- session$ns
       colnames(crm_modified_tab$mean_length)<- ""
       colnames(crm_modified_tab$mean_overdose) <- ""
 
+      crm_mean_accuracy <- crm_sim$mean_accuracy 
+      crm_mean_overdose <- crm_sim$mean_overdose
+      crm_mean_length <- crm_sim$mean_length
+
       crm_for_plots <- data_for_plotting(crm_sim, shared$ttl())
       } else {crm_modified_tab <- NULL
-      crm_for_plots <- NULL}
+      crm_for_plots <- NULL
+      crm_mean_accuracy <- NULL
+      crm_mean_overdose <- NULL
+      crm_mean_length <- NULL}
 
    if ("BOIN" %in% input$simulation_design_selection_input)
       { #print(unlist(used_true_dlts[j, ]))
@@ -238,9 +256,17 @@ ns <- session$ns
       colnames(boin_modified_tab$mean_length)<- ""
       colnames(boin_modified_tab$mean_overdose) <- ""
 
+      boin_mean_accuracy <- boin_sim$mean_accuracy
+      boin_mean_overdose <- boin_sim$mean_overdose
+      boin_mean_length <- boin_sim$mean_length
+
       boin_for_plots <- data_for_plotting(boin_sim, shared$ttl())
       } else {boin_modified_tab <- NULL
-      boin_for_plots <- NULL}
+      boin_for_plots <- NULL
+      boin_mean_accuracy <- NULL
+      boin_mean_overdose <- NULL
+      boin_mean_length <- NULL
+      }
 
   # Giving Titles to Single Value Outputs
 
@@ -287,6 +313,9 @@ ns <- session$ns
   title_list[[j]] <- unname(unlist(cbind_titles))
   plot_list[[j]] <- sim_list
 
+  mean_accuracy[[j]] <- c(tpt_mean_accuracy, crm_mean_accuracy, boin_mean_accuracy)
+  mean_overdose[[j]] <- c(tpt_mean_overdose, crm_mean_overdose, boin_mean_overdose)
+  mean_length[[j]] <- c(tpt_mean_length, crm_mean_length, boin_mean_length)
   } # for loop end
 
 ## Tables
@@ -332,6 +361,9 @@ ns <- session$ns
   if ("By Model" %in% input$display_plots) {
    for (j in 1:n_scen) {
     data <- plot_list[[j]]   #plot_list[[j]][[k]] = Scenario j, Metric k.
+    ma <- mean_accuracy[[j]]
+    mo <- mean_overdose[[j]]
+    ml <- mean_length[[j]]
 
     for (k in 1:5) {
       met <- data[[k]]
@@ -343,11 +375,11 @@ ns <- session$ns
       } else if (!is.null(met[[1]]$treatment) | !is.null(met[[2]]$treatment) | !is.null(met[[3]]$treatment)) {
       graphs[[5*(j-1) + k]] <- plot_bar(met, Dose_Level, treatment, title = "% Treated at Dose", y_title = "% Treated at Dose", col = "blue") # Using blue for MTD
       } else if (!is.null(met[[1]]$accuracy) | !is.null(met[[2]]$accuracy) | !is.null(met[[3]]$accuracy)) {
-      graphs[[5*(j-1) + k]] <- plot_dist(met, accuracy, 1.2, title = "Distribution of Accuracy", x_title = "Accuracy", col = "blue") # Using blue for mean
+      graphs[[5*(j-1) + k]] <- plot_dist(met, accuracy, ma, title = "Distribution of Accuracy", x_title = "Accuracy", col = "blue") # Using blue for mean
       } else if (!is.null(met[[1]]$overdose) | !is.null(met[[2]]$overdose) | !is.null(met[[3]]$overdose)) {
-      graphs[[5*(j-1) + k]] <- plot_dist(met, overdose, 5, title = "Distribution of Overdoses", x_title = "Overdose", col = "blue") # Using blue for mean
+      graphs[[5*(j-1) + k]] <- plot_dist(met, overdose, mo, title = "Distribution of Overdoses", x_title = "Overdose", col = "blue") # Using blue for mean
       } else if (!is.null(met[[1]]$length) | !is.null(met[[2]]$length) | !is.null(met[[3]]$length)) {
-      graphs[[5*(j-1) + k]] <- plot_dist(met, length, 20, title = "Distribution of Trial Duration", x_title = "Trial Duration", col = "blue") # Using blue for mean
+      graphs[[5*(j-1) + k]] <- plot_dist(met, length, ml, title = "Distribution of Trial Duration", x_title = "Trial Duration", col = "blue") # Using blue for mean
       } else {
         graphs[[5*(j-1) + k]] <- NULL
       } # Using fixed values for means for now
