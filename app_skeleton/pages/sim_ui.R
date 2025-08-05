@@ -335,7 +335,6 @@ ns <- session$ns
 
     for (k in 1:5) {
       met <- data[[k]]
-      print(selected_metric[k])
 
       if(is.null(met)) 
       { next } else if (selected_metric[k] == FALSE) { next

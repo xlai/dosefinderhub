@@ -540,18 +540,14 @@ data_for_plotting <- function(sim, ttl) {
 
 plot_bar <- function(data, category, value, title, y_title, col) {
   valid_data <- Filter(Negate(is.null), data)
-
+  
   model <- c("3+3", "CRM", "BOIN")
   updated_model <- model
 
   # scenario <- c("Scenario 1", "Scenario 2", "Scenario 3") # For later when "by scenario" is implemented
 
   # Isolating the models we have:
-  for (j in 1:3) {
-    if (is.null(data[[j]])) {
-        updated_model <- updated_model[-j] 
-    }
-  }
+  updated_model <- updated_model[!sapply(data, is.null)]
 
   if (length(valid_data) == 0) {
     return(NULL)
