@@ -589,7 +589,10 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col) {
   # scenario <- c("Scenario 1", "Scenario 2", "Scenario 3") # For later when "by scenario" is implemented
 
   updated_model <- updated_model[!sapply(data, is.null)] # Isolating the models we have
-  mean <- mean_vector[!sapply(data, is.null)] # Isolating the means for the models we have
+  Mean <- mean_vector[!sapply(data, is.null)] # Isolating the means for the models we have
+
+  mean <- data.frame(Mean)
+  mean$model <- updated_model
 
   if (length(valid_data) == 0) {
     return(NULL)
@@ -606,8 +609,8 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col) {
 
   plot <- ggplot(combined_data, aes(x = {{category}}, fill = Model)) +
      geom_histogram(binwidth = 1, position = position_dodge(), color = "black") +
-     geom_vline(data = data.frame(mean), aes(xintercept = mean), color = col, linetype = "dashed") +
-     labs(title = title, x = x_title, y = "Frequency") +
+     geom_vline(data = mean, aes(xintercept = Mean, color = model), linetype = "dashed") +
+     labs(title = title, x = x_title, y = "Frequency", color = "Mean Values - Model") +
     theme_minimal()
 
     return(plot)
