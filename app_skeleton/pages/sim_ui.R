@@ -335,10 +335,11 @@ ns <- session$ns
 
     for (k in 1:5) {
       met <- data[[k]]
-      #print(met)
+      print(selected_metric[k])
 
       if(is.null(met)) 
-      { next } else if (!is.null(met[[1]]$selection) | !is.null(met[[2]]$selection) | !is.null(met[[3]]$selection)) {
+      { next } else if (selected_metric[k] == FALSE) { next
+      } else if (!is.null(met[[1]]$selection) | !is.null(met[[2]]$selection) | !is.null(met[[3]]$selection)) {
       graphs[[5*(j-1) + k]] <- plot_bar(met, Dose, selection, title = "% Times Dose Was Selected as MTD", y_title = "% Times Dose Was Selected as MTD", col = "blue") # Using blue for MTD
       } else if (!is.null(met[[1]]$treatment) | !is.null(met[[2]]$treatment) | !is.null(met[[3]]$treatment)) {
       graphs[[5*(j-1) + k]] <- plot_bar(met, Dose_Level, treatment, title = "% Treated at Dose", y_title = "% Treated at Dose", col = "blue") # Using blue for MTD
