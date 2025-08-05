@@ -4,6 +4,7 @@ library(ggplot2)
 library(here)
 library(magrittr)
 library(escalation)
+library(rlang)
 
 #DUMMY DATA MANIPULATION
 here::i_am("app/modules/trial_design/ui.R")
@@ -398,7 +399,7 @@ rownames(selection_tab) <- c("% of Simulations that Chose Dose as MTD", "True To
 #selection_tab
 # coerce into treatment table
 
-treatedpct_df <- data.frame(treatedpct)
+treatedpct_df <- data.frame(treatedpct*100)
 
 treatment_tab <- rbind(t(treatedpct_df), true_dlt_ss)
 

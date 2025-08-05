@@ -57,7 +57,7 @@ sim_ui <- function(id) {
                       choices = c("By Model", "By Scenario", "No Comparison"), selected = "No Comparison", inline = TRUE)
             )
           ),
-          plotOutput(ns("plots"))
+          uiOutput(ns("generate_graphs_ui"))
           )
         )
       ),
@@ -335,25 +335,46 @@ ns <- session$ns
 
     for (k in 1:5) {
       met <- data[[k]]
-      print(met)
-      
+
       if(is.null(met)) 
-      { next } else if (!is.null(met[[1]]$selection) | !is.null(met[[2]]$selection) | !is.null(met[[1]]$selection)) {
+      { next } else if (!is.null(met[[1]]$selection) | !is.null(met[[2]]$selection) | !is.null(met[[3]]$selection)) {
       graphs[[k]] <- plot_bar(met, Dose, selection, title = "% Times Dose Was Selected as MTD", y_title = "% Times Dose Was Selected as MTD", col = "blue") # Using blue for MTD
-      } else {
+      } else if (!is.null(met[[1]]$treatment) | !is.null(met[[2]]$treatment) | !is.null(met[[3]]$treatment)) {
+      graphs[[k]] <- plot_bar(met, Dose_Level, treatment, title = "% Treated at Dose", y_title = "% Treated at Dose", col = "blue") # Using blue for MTD
+      }
+      else {
         graphs[[k]] <- NULL
       }
     }
    }
 
-   plot_graph <- renderPlot({
-     lapply(graphs, function(graph) {
-       if (!is.null(graph)) {
-         print(graph)
-       }
-     })
-   })
-    output$plots <- plot_graph
+  print(graphs)
+  #output$plot1 <- renderPlot(filtered_graphs[[1]])
+  #output$plot2 <- renderPlot(graphs[[2]])
+  #output$plot3 <- renderPlot(graphs[[3]])
+  # Removing NULL values from the graphs list
+  filtered_graphs <- Filter(Negate(is.null), graphs)
+
+  output$generate_graphs_ui <- renderUI({
+    lapply(seq_along(filtered_graphs), function(i) {
+      plotOutput(ns(paste0("plot_", i)), height = "400px")
+    })
+  })
+
+  # Rendering each graph
+  lapply(seq_along(filtered_graphs), function(i) {
+
+    output[[paste0("plot_", i)]] <- renderPlot({
+      filtered_graphs[[i]]
+    })
+  })
+
+#    output[[ns(paste0("plot_", graph_name))]] <- renderPlot({
+ #     filtered_graphs[[graph_name]]
+  #  })
+  #})
+
+
   } else {output$plots <- NULL} # For now.
 
   } # else (after for loop)
