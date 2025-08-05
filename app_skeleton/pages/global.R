@@ -529,9 +529,12 @@ data_for_plotting <- function(sim, ttl) {
   output <- list(
     data_selection = data_selection,
     data_treatment = data_treatment,
-    accuracy = data.frame(sim$dist_accuracy),
-    overdose = data.frame(sim$dist_overdose),
-    length = data.frame(sim$dist_length)
+    accuracy = data.frame(accuracy = sim$dist_accuracy),
+    #mean_accuracy = as.numeric(sim$mean_accuracy),
+    overdose = data.frame(overdose = sim$dist_overdose),
+    #mean_overdose = as.numeric(sim$mean_overdose),
+    length = data.frame(length = sim$dist_length)
+    #mean_length = as.numeric(sim$mean_length)
   )
 }
 
@@ -581,7 +584,42 @@ plot_bar <- function(data, category, value, title, y_title, col) {
     return(plot)
 }}
 
+plot_dist <- function(data, category, mean, title, x_title, col) {
+  valid_data <- Filter(Negate(is.null), data)
 
+  model <- c("3+3", "CRM", "BOIN")
+  updated_model <- model
+
+  # scenario <- c("Scenario 1", "Scenario 2", "Scenario 3") # For later when "by scenario" is implemented
+
+  # Isolating the models we have:
+  for (j in 1:3) {
+    if (is.null(data[[j]])) {
+        updated_model <- updated_model[-j] 
+    }
+  }
+
+  if (length(valid_data) == 0) {
+    return(NULL)
+  } else {
+  
+  named_data <- lapply(seq_along(valid_data), function(i) {
+    df <- valid_data[[i]]
+    df$Model <- paste0(updated_model[i])
+    return(df)
+
+  })
+
+  combined_data <- do.call(rbind, named_data)
+
+  plot <- ggplot(combined_data, aes(x = {{category}}, fill = Model)) +
+     geom_histogram(binwidth = 1, position = position_dodge(), color = "black") +
+     geom_vline(aes(xintercept = mean), color = col, linetype = "dashed") +
+     labs(title = title, x = x_title, y = "Frequency") +
+    theme_minimal()
+
+    return(plot)
+}}
 
 ### PLOTS - To return to later.
 #par(mfrow = c(1,3))
