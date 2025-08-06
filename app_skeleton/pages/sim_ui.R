@@ -171,11 +171,21 @@ ns <- session$ns
     scen2 <- {"Scenario 2" %in% input$scen_output_input},
     scen3 <- {"Scenario 3" %in% input$scen_output_input}
   )
+
+  model <- c("3+3", "CRM", "BOIN")
+    selected_models <- c(("3+3" %in% input$simulation_design_selection_input),
+                        ("CRM" %in% input$simulation_design_selection_input),
+                        ("BOIN" %in% input$simulation_design_selection_input))
+    n_models <- sum(selected_models)
+
+    #print(selected_models)
+    #print(model[!sapply(selected_models, identical, FALSE)])
+
   #print(selected_scenarios)
   #print(true_dlts())
   used_true_dlts <- true_dlts()[selected_scenarios, ] # Scenarios are rows!
   #print(used_true_dlts)
-  n_scen <- nrow(used_true_dlts)
+  n_scen <- sum(selected_scenarios)
   #print(n_scen)
   combined_list <- vector("list", n_scen) # initialising for use later
   title_list <- vector("list", n_scen) # initialising for use later
@@ -202,7 +212,6 @@ ns <- session$ns
       { #print(unlist(used_true_dlts[j, ]))
         tpt_sim <- sim_tpt(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skip_tpt(), 12345)
        tpt_modified_tab <- tpt_sim[-c(3,5,7)]
-       tpt_modified_plot <- tpt_sim[-c(4,6,8)]
 
       tpt_modified_tab$mean_accuracy <- as.data.frame(tpt_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
       tpt_modified_tab$mean_overdose <- as.data.frame(tpt_modified_tab$mean_overdose, row.names = "Mean Overdose")
@@ -217,7 +226,7 @@ ns <- session$ns
 
       tpt_for_plots <- data_for_plotting(tpt_sim, shared$ttl())
       } else {tpt_modified_tab <- NULL
-      tpt_for_plots <- NULL
+      tpt_for_plots <- rep(list(NULL), 5)
       tpt_mean_accuracy <- NULL
       tpt_mean_overdose <- NULL
       tpt_mean_length <- NULL
@@ -227,7 +236,7 @@ ns <- session$ns
       {
       crm_sim <- sim_crm(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skeleton_crm(), shared$prior_var_crm(), shared$skip_esc_crm(), shared$skip_deesc_crm(), shared$stop_tox_x_crm(), shared$stop_tox_y_crm(), shared$stop_n_mtd_crm())
       crm_modified_tab <- crm_sim[-c(3,5,7)]
-      crm_modified_plot <- tpt_sim[-c(4,6,8)]
+  
 
       crm_modified_tab$mean_accuracy <- as.data.frame(crm_modified_tab$mean_accuracy, row.names = "Mean Accuracy", col.names = FALSE)
       crm_modified_tab$mean_overdose <- as.data.frame(crm_modified_tab$mean_overdose, row.names = "Mean Overdose", col.names = FALSE)
@@ -242,7 +251,7 @@ ns <- session$ns
 
       crm_for_plots <- data_for_plotting(crm_sim, shared$ttl())
       } else {crm_modified_tab <- NULL
-      crm_for_plots <- NULL
+      crm_for_plots <- rep(list(NULL), 5)
       crm_mean_accuracy <- NULL
       crm_mean_overdose <- NULL
       crm_mean_length <- NULL}
@@ -265,7 +274,7 @@ ns <- session$ns
 
       boin_for_plots <- data_for_plotting(boin_sim, shared$ttl())
       } else {boin_modified_tab <- NULL
-      boin_for_plots <- NULL
+      boin_for_plots <- rep(list(NULL), 5)
       boin_mean_accuracy <- NULL
       boin_mean_overdose <- NULL
       boin_mean_length <- NULL
@@ -363,18 +372,43 @@ ns <- session$ns
 
   ## Plots
   # Focusing on "by scenario"
+  # Adding NULLs where necessary
+
+  plot_tpt_full <- vector("list", length = 3)
+  plot_crm_full <- vector("list", length = 3)
+  plot_boin_full <- vector("list", length = 3)
+
+   y <- 1
+   z <- 1
+   while(y < 4) {
+    if (selected_scenarios[y] == TRUE) {
+      plot_tpt_full[[y]] <- plot_tpt[[z]]
+      plot_crm_full[[y]] <- plot_crm[[z]]
+      plot_boin_full[[y]] <- plot_boin[[z]]
+      y <- y+1
+      z <- z+1
+    } else {
+      plot_tpt_full[[y]] <- rep(list(NULL), 5)
+      plot_crm_full[[y]] <- rep(list(NULL), 5)
+      plot_boin_full[[y]] <- rep(list(NULL), 5)
+      y <- y+1
+      z <- z
+    }
+  }
+
   # Combining data for plotting
  
-  tpt_by_scenario <- plot_by_scenario(plot_tpt, n_scen)
-  crm_by_scenario <- plot_by_scenario(plot_crm, n_scen)
-  boin_by_scenario <- plot_by_scenario(plot_boin, n_scen)
+  tpt_by_scenario <- plot_by_scenario(plot_tpt_full)
+  crm_by_scenario <- plot_by_scenario(plot_crm_full)
+  boin_by_scenario <- plot_by_scenario(plot_boin_full)
 
   plot_list_by_scenario <- list(tpt_by_scenario, crm_by_scenario, boin_by_scenario)
-
+  
   # Focusing on "by model" 
-  graphs <- vector("list", 5*n_scen) # initialising for use later
 
   if ("By Model" %in% input$display_plots) {
+  graphs <- vector("list", 5*n_scen) # initialising for use later
+
    for (j in 1:n_scen) {
     data <- plot_list[[j]]   #plot_list[[j]][[k]] = Scenario j, Metric k.
     ma <- mean_accuracy[[j]]
@@ -383,19 +417,19 @@ ns <- session$ns
 
     for (k in 1:5) {
       met <- data[[k]]
-
+      
       if(is.null(met)) 
       { next } else if (selected_metric[k] == FALSE) { next
       } else if (!is.null(met[[1]]$selection) | !is.null(met[[2]]$selection) | !is.null(met[[3]]$selection)) {
-      graphs[[5*(j-1) + k]] <- plot_bar(met, Dose, selection, title = paste("% Times Dose Was Selected as MTD for Scenario", j), y_title = "% Times Dose Was Selected as MTD", col = "blue", model_picked = 1, scenarios = selected_scenarios) # Using blue for MTD
+      graphs[[5*(j-1) + k]] <- plot_bar(met, Dose, selection, title = paste("% Times Dose Was Selected as MTD for Scenario", j), y_title = "% Times Dose Was Selected as MTD", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for MTD
       } else if (!is.null(met[[1]]$treatment) | !is.null(met[[2]]$treatment) | !is.null(met[[3]]$treatment)) {
-      graphs[[5*(j-1) + k]] <- plot_bar(met, Dose_Level, treatment, title = paste("% Treated at Dose for Scenario", j), y_title = "% Treated at Dose", col = "blue", model_picked = 1, scenarios = selected_scenarios) # Using blue for MTD
+      graphs[[5*(j-1) + k]] <- plot_bar(met, Dose_Level, treatment, title = paste("% Treated at Dose for Scenario", j), y_title = "% Treated at Dose", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for MTD
       } else if (!is.null(met[[1]]$accuracy) | !is.null(met[[2]]$accuracy) | !is.null(met[[3]]$accuracy)) {
-      graphs[[5*(j-1) + k]] <- plot_dist(met, accuracy, ma, title = paste("Distribution of Accuracy for Scenario", j), x_title = "Accuracy", col = "blue", model_picked = 1, scenarios = selected_scenarios) # Using blue for mean
+      graphs[[5*(j-1) + k]] <- plot_dist(met, accuracy, ma, title = paste("Distribution of Accuracy for Scenario", j), x_title = "Accuracy", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
       } else if (!is.null(met[[1]]$overdose) | !is.null(met[[2]]$overdose) | !is.null(met[[3]]$overdose)) {
-      graphs[[5*(j-1) + k]] <- plot_dist(met, overdose, mo, title = paste("Distribution of Overdoses for Scenario", j), x_title = "Overdose", col = "blue", model_picked = 1, scenarios = selected_scenarios) # Using blue for mean
+      graphs[[5*(j-1) + k]] <- plot_dist(met, overdose, mo, title = paste("Distribution of Overdoses for Scenario", j), x_title = "Overdose", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
       } else if (!is.null(met[[1]]$length) | !is.null(met[[2]]$length) | !is.null(met[[3]]$length)) {
-      graphs[[5*(j-1) + k]] <- plot_dist(met, length, ml, title = paste("Distribution of Trial Duration for Scenario", j), x_title = "Trial Duration", col = "blue", model_picked = 1, scenarios = selected_scenarios) # Using blue for mean
+      graphs[[5*(j-1) + k]] <- plot_dist(met, length, ml, title = paste("Distribution of Trial Duration for Scenario", j), x_title = "Trial Duration", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
       } else {
         graphs[[5*(j-1) + k]] <- NULL
       } # Using fixed values for means for now
@@ -420,29 +454,42 @@ ns <- session$ns
   })
 
   } else if ("By Scenario" %in% input$display_plots) {
-   for (j in 1:n_scen) {
-    data <- plot_list_by_scenario[[j]]   
+    updated_model <- model[!sapply(selected_models, identical, FALSE)] 
+
+    graphs <- vector("list", 5*n_models) # initialising for use later
+
+    used_plots <- plot_list_by_scenario[!sapply(selected_models, identical, FALSE)] 
+
+#print(n_models)
+#print(n_scen)
+   for (j in 1:n_models) {
+    #print(j)
+    data <- used_plots[[j]] 
+    #print(length(data))
+    #print(length(graphs))
+    #print(str(plot_list_by_scenario))  
     ma <- 1
     mo <- 1.5
     ml <- 20
 
     for (k in 1:5) {
+      #print(k)
       met <- data[[k]]
-
+      #print(met)
       if(is.null(met)) 
       { next } else if (selected_metric[k] == FALSE) { next
       } else if (!is.null(met[[1]]$selection) | !is.null(met[[2]]$selection) | !is.null(met[[3]]$selection)) {
-      graphs[[5*(j-1) + k]] <- plot_bar(met, Dose, selection, title = paste("% Times Dose Was Selected as MTD for Model", j), y_title = "% Times Dose Was Selected as MTD", col = "blue", model_picked = 2, scenarios = selected_scenarios) # Using blue for MTD
+      graphs[[5*(j-1) + k]] <- plot_bar(met, Dose, selection, title = paste("% Times Dose Was Selected as MTD for", updated_model[j]), y_title = "% Times Dose Was Selected as MTD", col = "blue", model_picked = 2, models = selected_models, scenarios = selected_scenarios) # Using blue for MTD
       } else if (!is.null(met[[1]]$treatment) | !is.null(met[[2]]$treatment) | !is.null(met[[3]]$treatment)) {
-      graphs[[5*(j-1) + k]] <- plot_bar(met, Dose_Level, treatment, title = paste("% Treated at Dose for Model", j), y_title = "% Treated at Dose", col = "blue", model_picked = FALSE, scenarios = selected_scenarios) # Using blue for MTD
+      graphs[[5*(j-1) + k]] <- plot_bar(met, Dose_Level, treatment, title = paste("% Treated at Dose for", updated_model[j]), y_title = "% Treated at Dose", col = "blue", model_picked = FALSE, models = selected_models, scenarios = selected_scenarios) # Using blue for MTD
       } else if (!is.null(met[[1]]$accuracy) | !is.null(met[[2]]$accuracy) | !is.null(met[[3]]$accuracy)) {
-      graphs[[5*(j-1) + k]] <- plot_dist(met, accuracy, ma, title = paste("Distribution of Accuracy for Model", j), x_title = "Accuracy", col = "blue", model_picked = FALSE, scenarios = selected_scenarios) # Using blue for mean
+      graphs[[5*(j-1) + k]] <- plot_dist(met, accuracy, ma, title = paste("Distribution of Accuracy for", updated_model[j]), x_title = "Accuracy", col = "blue", model_picked = FALSE, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
       } else if (!is.null(met[[1]]$overdose) | !is.null(met[[2]]$overdose) | !is.null(met[[3]]$overdose)) {
-      graphs[[5*(j-1) + k]] <- plot_dist(met, overdose, mo, title = paste("Distribution of Overdoses for Model", j), x_title = "Overdose", col = "blue", model_picked = FALSE, scenarios = selected_scenarios) # Using blue for mean
+      graphs[[5*(j-1) + k]] <- plot_dist(met, overdose, mo, title = paste("Distribution of Overdoses for", updated_model[j]), x_title = "Overdose", col = "blue", model_picked = FALSE, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
       } else if (!is.null(met[[1]]$length) | !is.null(met[[2]]$length) | !is.null(met[[3]]$length)) {
-      graphs[[5*(j-1) + k]] <- plot_dist(met, length, ml, title = paste("Distribution of Trial Duration for Model", j), x_title = "Trial Duration", col = "blue", model_picked = FALSE, scenarios = selected_scenarios) # Using blue for mean
+      graphs[[5*(j-1) + k]] <- plot_dist(met, length, ml, title = paste("Distribution of Trial Duration for", updated_model[j]), x_title = "Trial Duration", col = "blue", model_picked = FALSE, models = selected_models,  scenarios = selected_scenarios) # Using blue for mean
       } else {
-        graphs[[5*(j-1) + k]] <- NULL
+        graphs[[5*(j-1) + k]] <- NULL 
       } # Using fixed values for means for now
     }
    }

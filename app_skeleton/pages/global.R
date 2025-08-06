@@ -538,17 +538,14 @@ data_for_plotting <- function(sim, ttl) {
   )
 }
 
-plot_bar <- function(data, category, value, title, y_title, col, model_picked, scenarios) {
+plot_bar <- function(data, category, value, title, y_title, col, model_picked, models, scenarios) {
   valid_data <- Filter(Negate(is.null), data)
   
   model <- c("3+3", "CRM", "BOIN")
-  updated_model <- model
+  updated_model <- model[!sapply(models, identical, FALSE)]
 
   scenario <- c("Scenario 1", "Scenario 2", "Scenario 3") # For later when "by scenario" is implemented
   updated_scenarios <- scenario[!sapply(scenarios, identical, FALSE)]
-
-  # Isolating the models we have:
-  updated_model <- updated_model[!sapply(data, is.null)]
 
   if (length(valid_data) == 0) {
     return(NULL)
@@ -587,22 +584,23 @@ plot_bar <- function(data, category, value, title, y_title, col, model_picked, s
     return(plot)
 }} # end of plot_bar function
 
-plot_dist <- function(data, category, mean_vector, title, x_title, col, model_picked, scenarios) {
+plot_dist <- function(data, category, mean_vector, title, x_title, col, model_picked, models, scenarios) {
   
   valid_data <- Filter(Negate(is.null), data)
 
   model <- c("3+3", "CRM", "BOIN")
-  updated_model <- model
+  updated_model <- model[!sapply(models, identical, FALSE)]
 
   scenario <- c("Scenario 1", "Scenario 2", "Scenario 3") # For later when "by scenario" is implemented
   updated_scenarios <- scenario[!sapply(scenarios, identical, FALSE)]
 
-  updated_model <- updated_model[!sapply(data, is.null)] # Isolating the models we have
-  Mean <- mean_vector[!sapply(data, is.null)] # Isolating the means for the models we have
 
-  mean <- data.frame(Mean)
-  mean$model <- updated_model
-  mean$scenarios <- updated_scenarios
+  #Mean <- mean_vector[!sapply(data, is.null)] # Isolating the means for the models we have
+
+  #mean <- data.frame(Mean)
+  #mean$model <- updated_model
+  #mean$scenarios <- updated_scenarios
+  #### Commenting out for now - will fix in next commit
 
   if (length(valid_data) == 0) {
     return(NULL)
@@ -626,27 +624,35 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
 
   plot <- ggplot(combined_data, aes(x = {{category}}, fill = fill_col)) +
      geom_histogram(binwidth = 1, position = position_dodge(), color = "black") +
-     geom_vline(data = mean, aes(xintercept = Mean, color = model), linetype = "dashed") +
+     #geom_vline(data = mean, aes(xintercept = 1, color = model), linetype = "dashed") + # Mean fixed for now
      labs(title = title, x = x_title, y = "Frequency", color = "Mean Values - Model") +
     theme_minimal()
 
     return(plot)
 }}
 
- plot_by_scenario <- function(list1, n_scen) {
-  filtered_list <- Filter(Negate(is.null), list1)
-
-  if (is.null(filtered_list) || length(filtered_list) == 0) {
-    return(NULL)
-  } else {
+ plot_by_scenario <- function(list1) {
   list2 <- vector("list", length = 5)
 
-  for (i in 1:n_scen) {
+  for (j in 1:5) {
+   list2[[j]] <- vector("list", length = 3)
+  }
+ 
+  for (i in 1:3) {
     for (j in 1:5) {
+    if (is.null(list1[[i]][[j]])) {
+      list2[[j]][[i]] <- list(NULL)
+    } else {
     list2[[j]][[i]] <- list1[[i]][[j]]
-  }
-  }
-  return(list2) }
+  } } }
+
+print(names(list1))
+print(length(list1))
+print(length(list1[[1]]))
+print(length(list2))
+print(length(list2[[1]]))
+
+  return(list2)
 }
 
 
@@ -674,5 +680,3 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
 # dose level
 # cohort size
 # number in the cohort that had DLT
-
-
