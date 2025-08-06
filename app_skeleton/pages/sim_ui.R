@@ -403,12 +403,22 @@ ns <- session$ns
   boin_by_scenario <- plot_by_scenario(plot_boin_full)
 
   plot_list_by_scenario <- list(tpt_by_scenario, crm_by_scenario, boin_by_scenario)
-  
+
+  mean_for_scen <- function(mean) {
+  mean_scen <- lapply(seq_along(mean[[1]]), function(j) sapply(mean, `[`, j))
+  return(mean_scen)
+  }
+
+  mean_acc_scen <- mean_for_scen(mean_accuracy)
+  mean_ov_scen <- mean_for_scen(mean_overdose)
+  mean_len_scen <- mean_for_scen(mean_length)
+
   # Focusing on "by model" 
 
   if ("By Model" %in% input$display_plots) {
   graphs <- vector("list", 5*n_scen) # initialising for use later
 
+  #print(mean_overdose)
    for (j in 1:n_scen) {
     data <- plot_list[[j]]   #plot_list[[j]][[k]] = Scenario j, Metric k.
     ma <- mean_accuracy[[j]]
@@ -417,7 +427,7 @@ ns <- session$ns
 
     for (k in 1:5) {
       met <- data[[k]]
-      
+
       if(is.null(met)) 
       { next } else if (selected_metric[k] == FALSE) { next
       } else if (!is.null(met[[1]]$selection) | !is.null(met[[2]]$selection) | !is.null(met[[3]]$selection)) {
@@ -468,9 +478,10 @@ ns <- session$ns
     #print(length(data))
     #print(length(graphs))
     #print(str(plot_list_by_scenario))  
-    ma <- 1
-    mo <- 1.5
-    ml <- 20
+    ma <- mean_acc_scen[[j]]
+    mo <- mean_ov_scen[[j]]
+    #print(mo)
+    ml <- mean_len_scen[[j]]
 
     for (k in 1:5) {
       #print(k)

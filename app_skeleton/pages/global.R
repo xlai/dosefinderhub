@@ -593,14 +593,13 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
 
   scenario <- c("Scenario 1", "Scenario 2", "Scenario 3") # For later when "by scenario" is implemented
   updated_scenarios <- scenario[!sapply(scenarios, identical, FALSE)]
+  
+  Mean <- mean_vector
 
-
-  #Mean <- mean_vector[!sapply(data, is.null)] # Isolating the means for the models we have
-
-  #mean <- data.frame(Mean)
-  #mean$model <- updated_model
-  #mean$scenarios <- updated_scenarios
-  #### Commenting out for now - will fix in next commit
+  mean <- data.frame(Mean)
+  #print(mean)
+  
+  
 
   if (length(valid_data) == 0) {
     return(NULL)
@@ -617,14 +616,20 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
   combined_data <- do.call(rbind, named_data)
 
    if (model_picked == 1) {
+    mean$model <- updated_model
+ 
     fill_col <- combined_data$Model
+    colour <- mean$model
   } else {
+     mean$scenarios <- updated_scenarios
+
     fill_col <- combined_data$Scenario
+    colour <- mean$scenarios
   }
 
   plot <- ggplot(combined_data, aes(x = {{category}}, fill = fill_col)) +
      geom_histogram(binwidth = 1, position = position_dodge(), color = "black") +
-     #geom_vline(data = mean, aes(xintercept = 1, color = model), linetype = "dashed") + # Mean fixed for now
+     geom_vline(data = mean, aes(xintercept = Mean, color = colour), linetype = "dashed") + # Mean fixed for now
      labs(title = title, x = x_title, y = "Frequency", color = "Mean Values - Model") +
     theme_minimal()
 
@@ -646,11 +651,11 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
     list2[[j]][[i]] <- list1[[i]][[j]]
   } } }
 
-print(names(list1))
-print(length(list1))
-print(length(list1[[1]]))
-print(length(list2))
-print(length(list2[[1]]))
+#print(names(list1))
+#print(length(list1))
+#print(length(list1[[1]]))
+#print(length(list2))
+#print(length(list2[[1]]))
 
   return(list2)
 }
