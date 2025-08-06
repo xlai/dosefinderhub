@@ -180,6 +180,9 @@ ns <- session$ns
   combined_list <- vector("list", n_scen) # initialising for use later
   title_list <- vector("list", n_scen) # initialising for use later
   plot_list <- vector("list", n_scen) # initialising for use later
+  plot_tpt <- vector("list", n_scen) # initialising for use later
+  plot_crm <- vector("list", n_scen) # initialising for use later
+  plot_boin <- vector("list", n_scen) # initialising for use later
   mean_accuracy <- vector("list", n_scen) # initialising for use later
   mean_overdose <- vector("list", n_scen) # initialising for use later
   mean_length <- vector("list", n_scen) # initialising for use later
@@ -313,6 +316,10 @@ ns <- session$ns
   title_list[[j]] <- unname(unlist(cbind_titles))
   plot_list[[j]] <- sim_list
 
+  plot_tpt[[j]] <- tpt_for_plots
+  plot_crm[[j]] <- crm_for_plots
+  plot_boin[[j]] <- boin_for_plots
+
   mean_accuracy[[j]] <- c(tpt_mean_accuracy, crm_mean_accuracy, boin_mean_accuracy)
   mean_overdose[[j]] <- c(tpt_mean_overdose, crm_mean_overdose, boin_mean_overdose)
   mean_length[[j]] <- c(tpt_mean_length, crm_mean_length, boin_mean_length)
@@ -355,7 +362,16 @@ ns <- session$ns
   output$tables2 <- tables_and_titles
 
   ## Plots
-  # Focusing on "by model" for now, where all models are selected
+  # Focusing on "by scenario"
+  # Combining data for plotting
+ 
+  tpt_by_scenario <- plot_by_scenario(plot_tpt, n_scen)
+  crm_by_scenario <- plot_by_scenario(plot_crm, n_scen)
+  boin_by_scenario <- plot_by_scenario(plot_boin, n_scen)
+
+  plot_list_by_scenario <- list(tpt_by_scenario, crm_by_scenario, boin_by_scenario)
+
+  # Focusing on "by model" 
   graphs <- vector("list", 5*n_scen) # initialising for use later
 
   if ("By Model" %in% input$display_plots) {
@@ -403,7 +419,54 @@ ns <- session$ns
     })
   })
 
+  } else if ("By Scenario" %in% input$display_plots) {
+   for (j in 1:n_scen) {
+    data <- plot_list_by_scenario[[j]]   
+    ma <- 1
+    mo <- 1.5
+    ml <- 20
+
+    for (k in 1:5) {
+      met <- data[[k]]
+
+      if(is.null(met)) 
+      { next } else if (selected_metric[k] == FALSE) { next
+      } else if (!is.null(met[[1]]$selection) | !is.null(met[[2]]$selection) | !is.null(met[[3]]$selection)) {
+      graphs[[5*(j-1) + k]] <- plot_bar(met, Dose, selection, title = paste("% Times Dose Was Selected as MTD for Model", j), y_title = "% Times Dose Was Selected as MTD", col = "blue", model_picked = 2, scenarios = selected_scenarios) # Using blue for MTD
+      } else if (!is.null(met[[1]]$treatment) | !is.null(met[[2]]$treatment) | !is.null(met[[3]]$treatment)) {
+      graphs[[5*(j-1) + k]] <- plot_bar(met, Dose_Level, treatment, title = paste("% Treated at Dose for Model", j), y_title = "% Treated at Dose", col = "blue", model_picked = FALSE, scenarios = selected_scenarios) # Using blue for MTD
+      } else if (!is.null(met[[1]]$accuracy) | !is.null(met[[2]]$accuracy) | !is.null(met[[3]]$accuracy)) {
+      graphs[[5*(j-1) + k]] <- plot_dist(met, accuracy, ma, title = paste("Distribution of Accuracy for Model", j), x_title = "Accuracy", col = "blue", model_picked = FALSE, scenarios = selected_scenarios) # Using blue for mean
+      } else if (!is.null(met[[1]]$overdose) | !is.null(met[[2]]$overdose) | !is.null(met[[3]]$overdose)) {
+      graphs[[5*(j-1) + k]] <- plot_dist(met, overdose, mo, title = paste("Distribution of Overdoses for Model", j), x_title = "Overdose", col = "blue", model_picked = FALSE, scenarios = selected_scenarios) # Using blue for mean
+      } else if (!is.null(met[[1]]$length) | !is.null(met[[2]]$length) | !is.null(met[[3]]$length)) {
+      graphs[[5*(j-1) + k]] <- plot_dist(met, length, ml, title = paste("Distribution of Trial Duration for Model", j), x_title = "Trial Duration", col = "blue", model_picked = FALSE, scenarios = selected_scenarios) # Using blue for mean
+      } else {
+        graphs[[5*(j-1) + k]] <- NULL
+      } # Using fixed values for means for now
+    }
+   }
+
+  # Removing NULL values from the graphs list
+  filtered_graphs <- Filter(Negate(is.null), graphs)
+
+  output$generate_graphs_ui <- renderUI({
+    lapply(seq_along(filtered_graphs), function(i) {
+      plotOutput(ns(paste0("plot_", i)), height = "400px")
+    })
+  })
+
+  # Rendering each graph
+  lapply(seq_along(filtered_graphs), function(i) {
+
+    output[[paste0("plot_", i)]] <- renderPlot({
+      filtered_graphs[[i]]
+    })
+  })
+
   } else {output$generate_graphs_ui <- NULL} # For now.
+
+  
 
   } # else (after for loop)
   } # else (before for loop)

@@ -538,13 +538,14 @@ data_for_plotting <- function(sim, ttl) {
   )
 }
 
-plot_bar <- function(data, category, value, title, y_title, col) {
+plot_bar <- function(data, category, value, title, y_title, col, model_picked, scenarios) {
   valid_data <- Filter(Negate(is.null), data)
   
   model <- c("3+3", "CRM", "BOIN")
   updated_model <- model
 
-  # scenario <- c("Scenario 1", "Scenario 2", "Scenario 3") # For later when "by scenario" is implemented
+  scenario <- c("Scenario 1", "Scenario 2", "Scenario 3") # For later when "by scenario" is implemented
+  updated_scenarios <- scenario[!sapply(scenarios, identical, FALSE)]
 
   # Isolating the models we have:
   updated_model <- updated_model[!sapply(data, is.null)]
@@ -556,13 +557,19 @@ plot_bar <- function(data, category, value, title, y_title, col) {
   named_data <- lapply(seq_along(valid_data), function(i) {
     df <- valid_data[[i]]
     df$Model <- paste0(updated_model[i])
+    df$Scenario <- paste0(updated_scenarios[i])
     return(df)
-
   })
 
   combined_data <- do.call(rbind, named_data)
 
-  plot <- ggplot(combined_data, aes(x = {{category}}, y = {{value}}, fill = Model, color = highlight)) +
+  if (model_picked == 1) {
+    fill_col <- combined_data$Model
+  } else {
+    fill_col <- combined_data$Scenario
+  }
+
+  plot <- ggplot(combined_data, aes(x = {{category}}, y = {{value}}, fill = fill_col, color = highlight)) +
      geom_bar(stat = "identity", position = position_dodge()) +
      scale_color_manual(values=c("MTD" = col, "Other" = NULL)) +
      labs(title = title, x = "Dose Level", y = y_title, color = "Is the Dose the True MTD?") +
@@ -578,21 +585,24 @@ plot_bar <- function(data, category, value, title, y_title, col) {
     #labs(color = "Is the Dose the True MTD?")
 
     return(plot)
-}}
+}} # end of plot_bar function
 
-plot_dist <- function(data, category, mean_vector, title, x_title, col) {
+plot_dist <- function(data, category, mean_vector, title, x_title, col, model_picked, scenarios) {
+  
   valid_data <- Filter(Negate(is.null), data)
 
   model <- c("3+3", "CRM", "BOIN")
   updated_model <- model
 
-  # scenario <- c("Scenario 1", "Scenario 2", "Scenario 3") # For later when "by scenario" is implemented
+  scenario <- c("Scenario 1", "Scenario 2", "Scenario 3") # For later when "by scenario" is implemented
+  updated_scenarios <- scenario[!sapply(scenarios, identical, FALSE)]
 
   updated_model <- updated_model[!sapply(data, is.null)] # Isolating the models we have
   Mean <- mean_vector[!sapply(data, is.null)] # Isolating the means for the models we have
 
   mean <- data.frame(Mean)
   mean$model <- updated_model
+  mean$scenarios <- updated_scenarios
 
   if (length(valid_data) == 0) {
     return(NULL)
@@ -601,13 +611,20 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col) {
   named_data <- lapply(seq_along(valid_data), function(i) {
     df <- valid_data[[i]]
     df$Model <- paste0(updated_model[i])
+    df$Scenario <- paste0(updated_scenarios[i])
     return(df)
 
   })
 
   combined_data <- do.call(rbind, named_data)
 
-  plot <- ggplot(combined_data, aes(x = {{category}}, fill = Model)) +
+   if (model_picked == 1) {
+    fill_col <- combined_data$Model
+  } else {
+    fill_col <- combined_data$Scenario
+  }
+
+  plot <- ggplot(combined_data, aes(x = {{category}}, fill = fill_col)) +
      geom_histogram(binwidth = 1, position = position_dodge(), color = "black") +
      geom_vline(data = mean, aes(xintercept = Mean, color = model), linetype = "dashed") +
      labs(title = title, x = x_title, y = "Frequency", color = "Mean Values - Model") +
@@ -615,6 +632,23 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col) {
 
     return(plot)
 }}
+
+ plot_by_scenario <- function(list1, n_scen) {
+  filtered_list <- Filter(Negate(is.null), list1)
+
+  if (is.null(filtered_list) || length(filtered_list) == 0) {
+    return(NULL)
+  } else {
+  list2 <- vector("list", length = 5)
+
+  for (i in 1:n_scen) {
+    for (j in 1:5) {
+    list2[[j]][[i]] <- list1[[i]][[j]]
+  }
+  }
+  return(list2) }
+}
+
 
 ### PLOTS - To return to later.
 #par(mfrow = c(1,3))

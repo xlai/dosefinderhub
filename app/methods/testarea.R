@@ -250,3 +250,10 @@ datasets <- list(tpt_participant = tpt_sim$treated_tab,
 
   output$scen_sim_output <- lappy(list(filtered_datasets, renderDT()))
   })
+
+
+  ########################### Example Simulation Outputs to Test other Functions ##############################
+
+  tpt_sim <- sim_tpt(5, 1/3, 50, 1, 15, c(0.05, 0.15, 1/3, 0.5, 0.8), TRUE, 12345)
+  crm_sim <- sim_crm(5, 1/3, 50, 1, 15, c(0.05, 0.15, 1/3, 0.5, 0.8), c(0.08,0.20,0.35,0.6,0.9), 0.8, FALSE, TRUE, 0.1, 0.7, 25)
+  boin_sim <- sim_boin(5, 1/3, 50, 1, 15, c(0.05, 0.15, 1/3, 0.5, 0.8), 4, 25, 1.4/3, 0.6/3, TRUE, 10)
