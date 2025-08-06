@@ -387,15 +387,15 @@ ns <- session$ns
       if(is.null(met)) 
       { next } else if (selected_metric[k] == FALSE) { next
       } else if (!is.null(met[[1]]$selection) | !is.null(met[[2]]$selection) | !is.null(met[[3]]$selection)) {
-      graphs[[5*(j-1) + k]] <- plot_bar(met, Dose, selection, title = paste("% Times Dose Was Selected as MTD for Scenario", j), y_title = "% Times Dose Was Selected as MTD", col = "blue") # Using blue for MTD
+      graphs[[5*(j-1) + k]] <- plot_bar(met, Dose, selection, title = paste("% Times Dose Was Selected as MTD for Scenario", j), y_title = "% Times Dose Was Selected as MTD", col = "blue", model_picked = 1, scenarios = selected_scenarios) # Using blue for MTD
       } else if (!is.null(met[[1]]$treatment) | !is.null(met[[2]]$treatment) | !is.null(met[[3]]$treatment)) {
-      graphs[[5*(j-1) + k]] <- plot_bar(met, Dose_Level, treatment, title = paste("% Treated at Dose for Scenario", j), y_title = "% Treated at Dose", col = "blue") # Using blue for MTD
+      graphs[[5*(j-1) + k]] <- plot_bar(met, Dose_Level, treatment, title = paste("% Treated at Dose for Scenario", j), y_title = "% Treated at Dose", col = "blue", model_picked = 1, scenarios = selected_scenarios) # Using blue for MTD
       } else if (!is.null(met[[1]]$accuracy) | !is.null(met[[2]]$accuracy) | !is.null(met[[3]]$accuracy)) {
-      graphs[[5*(j-1) + k]] <- plot_dist(met, accuracy, ma, title = paste("Distribution of Accuracy for Scenario", j), x_title = "Accuracy", col = "blue") # Using blue for mean
+      graphs[[5*(j-1) + k]] <- plot_dist(met, accuracy, ma, title = paste("Distribution of Accuracy for Scenario", j), x_title = "Accuracy", col = "blue", model_picked = 1, scenarios = selected_scenarios) # Using blue for mean
       } else if (!is.null(met[[1]]$overdose) | !is.null(met[[2]]$overdose) | !is.null(met[[3]]$overdose)) {
-      graphs[[5*(j-1) + k]] <- plot_dist(met, overdose, mo, title = paste("Distribution of Overdoses for Scenario", j), x_title = "Overdose", col = "blue") # Using blue for mean
+      graphs[[5*(j-1) + k]] <- plot_dist(met, overdose, mo, title = paste("Distribution of Overdoses for Scenario", j), x_title = "Overdose", col = "blue", model_picked = 1, scenarios = selected_scenarios) # Using blue for mean
       } else if (!is.null(met[[1]]$length) | !is.null(met[[2]]$length) | !is.null(met[[3]]$length)) {
-      graphs[[5*(j-1) + k]] <- plot_dist(met, length, ml, title = paste("Distribution of Trial Duration for Scenario", j), x_title = "Trial Duration", col = "blue") # Using blue for mean
+      graphs[[5*(j-1) + k]] <- plot_dist(met, length, ml, title = paste("Distribution of Trial Duration for Scenario", j), x_title = "Trial Duration", col = "blue", model_picked = 1, scenarios = selected_scenarios) # Using blue for mean
       } else {
         graphs[[5*(j-1) + k]] <- NULL
       } # Using fixed values for means for now
