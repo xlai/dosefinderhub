@@ -43,7 +43,7 @@ server <- function(input, output, session){
     questionnaire_results <- mod_questionnaire_server("questionnaire", shared, session, move_data = move_data)
     trial_design_server("trial_design", shared, move_data = move_data)
     sim_server("simulation", shared)
-    con_server("conduct", shared)
+    con_server("conduct")
 
       observe({
     if (!is.null(questionnaire_results) && 

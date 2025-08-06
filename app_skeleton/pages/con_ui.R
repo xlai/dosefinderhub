@@ -33,9 +33,11 @@ con_ui <- function(id) {
         full_screen = TRUE,
         card_header("Results"),
         card_body(
+            plotly_widget),
+        card_body(
           tagList(
-            plotly_widget,
-            DTOutput(ns("manual_table_results"))
+            DTOutput(ns("manual_table_results")),
+            actionButton(ns("add_cohort"), "Add Cohort")
           )
         )
       ),
@@ -43,10 +45,9 @@ con_ui <- function(id) {
         full_screen = TRUE,
         card_header("Overview"),
         card_body(
-          tagList(
-            plotly_widget,
+            plotly_widget),
+        card_body(
             DTOutput(ns("manual_table_overview"))
-          )
         )
       )
     ),
@@ -57,9 +58,10 @@ con_ui <- function(id) {
         choices = c("CRM", "3+3", "Other"),
         inline = FALSE
       ),
-      fileInput(ns("file_upload"), "Upload Previous Responses:", accept = c(".csv", ".rds")),
-      downloadButton(ns("save_button"), "Save Responses"),
-      actionButton(ns("trial_design_share"), "Use Trial Design Input")
+    actionButton(ns("update_design"), "Update Design"),
+    fileInput(ns("file_upload"), "Upload Previous Responses:", accept = c(".csv", ".rds")),
+    downloadButton(ns("save_button"), "Save Responses"),
+    actionButton(ns("trial_design_share"), "Use Trial Design Input")
     )
   )
 }
