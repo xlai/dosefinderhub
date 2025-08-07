@@ -521,7 +521,40 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
     return(plot)
 }}
 
-########################### Functions to Format Data for Plotting By Scenario ###########################
+########################### Functions to Format Data for Plotting###########################
+ data_for_plotting <- function(sim, ttl) {
+  true_dlts <- sim$treatment_tab[2,] # True DLTs from treatment table
+  best_dose <- max(true_dlts[true_dlts <= ttl])
+  mtd <- match(best_dose, true_dlts)
+
+  selection <- as.vector(sim$selection_tab[1,])
+  treatment <- as.vector(sim$treatment_tab[1,])
+  Dose_Level <- seq(1, length(treatment))
+  no_dose <- "No Dose"
+  Dose <- c(no_dose, Dose_Level)
+
+ # % selected as MTD and % Treaed at each dose as a bar plot
+  data_selection <- as.data.frame(selection)
+  data_selection$Dose <- factor(Dose, levels = c(no_dose, as.character(Dose_Level)))
+  data_selection$selection <- selection
+  data_treatment <- as.data.frame(cbind(Dose_Level, treatment))
+
+  # Highlighting the MTD
+  data_selection$highlight <- ifelse(data_selection$Dose == mtd, "MTD", "Other")
+  data_treatment$highlight <- ifelse(Dose_Level == mtd, "MTD", "Other")
+  
+  output <- list(
+    data_selection = data_selection,
+    data_treatment = data_treatment,
+    accuracy = data.frame(accuracy = sim$dist_accuracy),
+    #mean_accuracy = as.numeric(sim$mean_accuracy),
+    overdose = data.frame(overdose = sim$dist_overdose),
+    #mean_overdose = as.numeric(sim$mean_overdose),
+    length = data.frame(length = sim$dist_length)
+    #mean_length = as.numeric(sim$mean_length)
+  )
+}
+ 
  plot_by_scenario <- function(list1) { # Might be worth rewriting this to look more like mean_for_scen in future
   list2 <- vector("list", length = 5)
 
