@@ -554,22 +554,39 @@ plot_bar <- function(data, category, value, title, y_title, col, model_picked, m
   named_data <- lapply(seq_along(valid_data), function(i) {
     df <- valid_data[[i]]
     df$Model <- paste0(updated_model[i])
-    df$Scenario <- paste0(updated_scenarios[i])
+
+    updated_scenarios_2 <- vector()
+
+    y <- 1
+    z <- 1
+    while (y < 4) {
+    if (scenarios[[y]] == FALSE) {
+      updated_scenarios_2[y] <- "Not selected"
+    } else {
+      updated_scenarios_2[y] <- paste0(updated_scenarios[z])
+      z <- z+1
+    }
+    y <- y + 1
+    }
+
+    df$Scenario <- paste0(updated_scenarios_2[i])
     return(df)
   })
 
   combined_data <- do.call(rbind, named_data)
-
+  
   if (model_picked == 1) {
     fill_col <- combined_data$Model
+    fill_title <- "Model"
   } else {
     fill_col <- combined_data$Scenario
+    fill_title <- "Scenario"
   }
 
   plot <- ggplot(combined_data, aes(x = {{category}}, y = {{value}}, fill = fill_col, color = highlight)) +
      geom_bar(stat = "identity", position = position_dodge()) +
      scale_color_manual(values=c("MTD" = col, "Other" = NULL)) +
-     labs(title = title, x = "Dose Level", y = y_title, color = "Is the Dose the True MTD?") +
+     labs(title = title, x = "Dose Level", y = y_title, color = "Is the Dose the True MTD?", fill = fill_title) +
     theme_minimal()
 
   #plot <- ggplot(combined_data, aes(x = category, y = value, color = highlight)) +
@@ -593,7 +610,7 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
 
   scenario <- c("Scenario 1", "Scenario 2", "Scenario 3") # For later when "by scenario" is implemented
   updated_scenarios <- scenario[!sapply(scenarios, identical, FALSE)]
-  
+
   Mean <- mean_vector
 
   mean <- data.frame(Mean)
@@ -608,11 +625,25 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
   named_data <- lapply(seq_along(valid_data), function(i) {
     df <- valid_data[[i]]
     df$Model <- paste0(updated_model[i])
-    df$Scenario <- paste0(updated_scenarios[i])
+
+    updated_scenarios_2 <- vector()
+
+    y <- 1
+    z <- 1
+    while (y < 4) {
+    if (scenarios[[y]] == FALSE) {
+      updated_scenarios_2[y] <- "Not selected"
+    } else {
+      updated_scenarios_2[y] <- paste0(updated_scenarios[z])
+      z <- z+1
+    }
+    y <- y + 1
+    }
+
+    df$Scenario <- paste0(updated_scenarios_2[i])
     return(df)
-
   })
-
+  
   combined_data <- do.call(rbind, named_data)
 
    if (model_picked == 1) {
@@ -620,17 +651,19 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
  
     fill_col <- combined_data$Model
     colour <- mean$model
+    fill_title <- "Model"
   } else {
      mean$scenarios <- updated_scenarios
 
     fill_col <- combined_data$Scenario
     colour <- mean$scenarios
+    fill_title <- "Scenario"
   }
 
   plot <- ggplot(combined_data, aes(x = {{category}}, fill = fill_col)) +
      geom_histogram(binwidth = 1, position = position_dodge(), color = "black") +
      geom_vline(data = mean, aes(xintercept = Mean, color = colour), linetype = "dashed") + # Mean fixed for now
-     labs(title = title, x = x_title, y = "Frequency", color = "Mean Values - Model") +
+     labs(title = title, x = x_title, y = "Frequency", color = "Mean Values", fill = fill_title) +
     theme_minimal()
 
     return(plot)
