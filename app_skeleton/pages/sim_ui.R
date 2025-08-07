@@ -17,7 +17,6 @@ sim_ui <- function(id) {
   )
 
   test_df_table <- DT::DTOutput(ns("test_df")) # The reactive table for the true DLT probabilities
-  # The 'Refresh Dimensions' button doesn't work, so the table changes dimensions when the number of scenarios changes.
 
   # Running the tab itself
   fluidPage(
@@ -358,55 +357,13 @@ ns <- session$ns
   output$tables1 <- tables_and_titles
   output$tables2 <- tables_and_titles
 
-  ## Plots
-  # Focusing on "by scenario"
-  # Adding NULLs where necessary
-
-  plot_tpt_full <- vector("list", length = 3)
-  plot_crm_full <- vector("list", length = 3)
-  plot_boin_full <- vector("list", length = 3)
-
-   y <- 1
-   z <- 1
-   while(y < 4) {
-    if (selected_scenarios[y] == TRUE) {
-      plot_tpt_full[[y]] <- plot_tpt[[z]]
-      plot_crm_full[[y]] <- plot_crm[[z]]
-      plot_boin_full[[y]] <- plot_boin[[z]]
-      y <- y+1
-      z <- z+1
-    } else {
-      plot_tpt_full[[y]] <- rep(list(NULL), 5)
-      plot_crm_full[[y]] <- rep(list(NULL), 5)
-      plot_boin_full[[y]] <- rep(list(NULL), 5)
-      y <- y+1
-      z <- z
-    }
-  }
-
-  # Combining data for plotting
- 
-  tpt_by_scenario <- plot_by_scenario(plot_tpt_full)
-  crm_by_scenario <- plot_by_scenario(plot_crm_full)
-  boin_by_scenario <- plot_by_scenario(plot_boin_full)
-
-  plot_list_by_scenario <- list(tpt_by_scenario, crm_by_scenario, boin_by_scenario)
-
-  mean_for_scen <- function(mean) {
-  mean_scen <- lapply(seq_along(mean[[1]]), function(j) sapply(mean, `[`, j))
-  return(mean_scen)
-  }
-
-  mean_acc_scen <- mean_for_scen(mean_accuracy)
-  mean_ov_scen <- mean_for_scen(mean_overdose)
-  mean_len_scen <- mean_for_scen(mean_length)
+  ########################## Plots #####################################
 
   # Focusing on "by model" 
 
   if ("By Model" %in% input$display_plots) {
   graphs <- vector("list", 5*n_scen) # initialising for use later
 
-  #print(mean_overdose)
    for (j in 1:n_scen) {
     data <- plot_list[[j]]   #plot_list[[j]][[k]] = Scenario j, Metric k.
     ma <- mean_accuracy[[j]]
@@ -452,6 +409,43 @@ ns <- session$ns
   })
 
   } else if ("By Scenario" %in% input$display_plots) {
+    # Focusing on "by scenario"
+  # Adding NULLs where necessary
+
+  plot_tpt_full <- vector("list", length = 3)
+  plot_crm_full <- vector("list", length = 3)
+  plot_boin_full <- vector("list", length = 3)
+
+   y <- 1
+   z <- 1
+   while(y < 4) {
+    if (selected_scenarios[y] == TRUE) {
+      plot_tpt_full[[y]] <- plot_tpt[[z]]
+      plot_crm_full[[y]] <- plot_crm[[z]]
+      plot_boin_full[[y]] <- plot_boin[[z]]
+      y <- y+1
+      z <- z+1
+    } else {
+      plot_tpt_full[[y]] <- rep(list(NULL), 5)
+      plot_crm_full[[y]] <- rep(list(NULL), 5)
+      plot_boin_full[[y]] <- rep(list(NULL), 5)
+      y <- y+1
+      z <- z
+    }
+  }
+
+  # Combining data for plotting
+ 
+  tpt_by_scenario <- plot_by_scenario(plot_tpt_full)
+  crm_by_scenario <- plot_by_scenario(plot_crm_full)
+  boin_by_scenario <- plot_by_scenario(plot_boin_full)
+
+  plot_list_by_scenario <- list(tpt_by_scenario, crm_by_scenario, boin_by_scenario)
+
+  mean_acc_scen <- mean_for_scen(mean_accuracy)
+  mean_ov_scen <- mean_for_scen(mean_overdose)
+  mean_len_scen <- mean_for_scen(mean_length)
+
     updated_model <- model[!sapply(selected_models, identical, FALSE)] 
 
     graphs <- vector("list", 5*n_models) # initialising for use later

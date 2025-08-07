@@ -521,8 +521,8 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
     return(plot)
 }}
 
-########################### Function to Format Data for Plotting By Scenario ###########################
- plot_by_scenario <- function(list1) {
+########################### Functions to Format Data for Plotting By Scenario ###########################
+ plot_by_scenario <- function(list1) { # Might be worth rewriting this to look more like mean_for_scen in future
   list2 <- vector("list", length = 5)
 
   for (j in 1:5) {
@@ -540,5 +540,7 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
   return(list2)
 }
 
-
-
+  mean_for_scen <- function(mean) {
+  mean_scen <- lapply(seq_along(mean[[1]]), function(j) sapply(mean, `[`, j))
+  return(mean_scen)
+  }
