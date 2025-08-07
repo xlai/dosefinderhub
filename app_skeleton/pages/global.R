@@ -5,6 +5,7 @@ library(here)
 library(magrittr)
 library(escalation)
 library(rlang)
+library(ggpattern)
 
 #DUMMY DATA MANIPULATION
 here::i_am("app/modules/trial_design/ui.R")
@@ -583,11 +584,24 @@ plot_bar <- function(data, category, value, title, y_title, col, model_picked, m
     fill_title <- "Scenario"
   }
 
-  plot <- ggplot(combined_data, aes(x = {{category}}, y = {{value}}, fill = fill_col, color = highlight)) +
-     geom_bar(stat = "identity", position = position_dodge()) +
-     scale_color_manual(values=c("MTD" = col, "Other" = NULL)) +
-     labs(title = title, x = "Dose Level", y = y_title, color = "Is the Dose the True MTD?", fill = fill_title) +
-    theme_minimal()
+ plot <- ggplot(combined_data, aes(x = {{category}}, y = {{value}}, fill = fill_col, pattern = highlight)) +
+  geom_bar_pattern(
+    stat = "identity",
+    position = position_dodge(),
+    pattern_density = 0.2,
+    pattern_spacing = 0.05,
+    pattern_fill = "white",
+    color = "black"
+  ) +
+  scale_pattern_manual(values = c("MTD" = "crosshatch", "Other" = "none")) +
+  labs(
+    title = title,
+    x = "Dose Level",
+    y = y_title,
+    pattern = "Is the Dose Level the True MTD?",
+    fill = fill_title
+  ) +
+  theme_minimal()
 
   #plot <- ggplot(combined_data, aes(x = category, y = value, color = highlight)) +
    # geom_bar(stat = "identity", position = position_dodge(), fill = col1) +
