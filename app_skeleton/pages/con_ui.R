@@ -22,6 +22,7 @@ con_ui <- function(id) {
         full_screen = TRUE,
         card_header("Results"),
         card_body(
+          actionButton(ns("add_cohort"), "Add Cohort"),
           DTOutput(ns("editable_table"))
         )
       ),
@@ -86,6 +87,24 @@ con_server <- function(id) {
 
       conduct_reactive_table_data(updated_data)
     })
+
+    observeEvent(input$add_cohort, {
+      data <- conduct_reactive_table_data()
+      current_cohorts <- if (nrow(data) == 0) 0 else max(data$No.Cohort)
+      new_cohort_number <- current_cohorts + 1
+
+      new_rows <- data.frame(
+        No.Cohort = rep(new_cohort_number, shared$cohort),
+        Dose_Level = rep(shared$dose_level + 1, shared$cohort),
+        DLT = rep(FALSE, shared$cohort),
+        stringsAsFactors = FALSE
+      )
+
+     shared$dose_level <- shared$dose_level + 1
+      updated_data <- rbind(data, new_rows)
+      conduct_reactive_table_data(updated_data)
+    }) 
+
 
     output$editable_table <- renderDT({
       datatable(
