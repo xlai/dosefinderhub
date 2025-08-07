@@ -2,14 +2,15 @@ library(shiny)
 library(bslib)
 library(DT)
 
-# Simulated shared values (replace will replace with actual shared object in app context)
+# Simulated shared values (replace with actual shared object in app context)
 shared <- reactiveValues(
-  dose_level = 0,     # Number of doses
-  cohort = 3,       # Cohort size
+  dose_level = 0,     # Number of additional cohorts added
+  cohort = 3,         # Cohort size
   ttl = NULL,
-  max_size = NULL,
+  max_size = 12,      # Initial sample size
   start_dose = NULL
 )
+
 # ---------------- UI MODULE ----------------
 con_ui <- function(id) {
   ns <- NS(id)
@@ -22,7 +23,11 @@ con_ui <- function(id) {
         full_screen = TRUE,
         card_header("Results"),
         card_body(
-          actionButton(ns("add_cohort"), "Add Cohort"),
+          div(
+            style = "display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;",
+            actionButton(ns("add_cohort"), "Add Cohort"),
+            actionButton(ns("remove_cohort"), "Remove Cohort")
+          ),
           DTOutput(ns("editable_table"))
         )
       ),
@@ -50,7 +55,6 @@ con_ui <- function(id) {
   )
 }
 
-
 # ---------------- SERVER MODULE ----------------
 con_server <- function(id) {
   moduleServer(id, function(input, output, session) {
@@ -65,9 +69,11 @@ con_server <- function(id) {
       )
     )
 
+    # Initial table generation based on max_size
     observe({
-      req(shared$dose_level, shared$cohort)
-      total_patients <- shared$dose_level * shared$cohort
+      req(shared$max_size, shared$cohort)
+      initial_cohorts <- ceiling(shared$max_size / shared$cohort)
+      total_patients <- initial_cohorts * shared$cohort
 
       current_data <- conduct_reactive_table_data()
       current_rows <- nrow(current_data)
@@ -75,19 +81,17 @@ con_server <- function(id) {
 
       if (rows_to_add > 0) {
         new_rows <- data.frame(
-          No.Cohort = rep(1:shared$dose_level, each = shared$cohort)[1:total_patients],
-          Dose_Level = rep(1:shared$dose_level, each = shared$cohort)[1:total_patients],
+          No.Cohort = rep(1:initial_cohorts, each = shared$cohort)[1:total_patients],
+          Dose_Level = rep(1:initial_cohorts, each = shared$cohort)[1:total_patients],
           DLT = rep(FALSE, rows_to_add),
           stringsAsFactors = FALSE
         )
         updated_data <- rbind(current_data, new_rows)
-      } else {
-        updated_data <- head(current_data, total_patients)
+        conduct_reactive_table_data(updated_data)
       }
-
-      conduct_reactive_table_data(updated_data)
     })
 
+    # Add cohort button logic
     observeEvent(input$add_cohort, {
       data <- conduct_reactive_table_data()
       current_cohorts <- if (nrow(data) == 0) 0 else max(data$No.Cohort)
@@ -95,49 +99,56 @@ con_server <- function(id) {
 
       new_rows <- data.frame(
         No.Cohort = rep(new_cohort_number, shared$cohort),
-        Dose_Level = rep(shared$dose_level + 1, shared$cohort),
+        Dose_Level = rep(new_cohort_number, shared$cohort),
         DLT = rep(FALSE, shared$cohort),
         stringsAsFactors = FALSE
       )
 
-     shared$dose_level <- shared$dose_level + 1
+      shared$dose_level <- shared$dose_level + 1
       updated_data <- rbind(data, new_rows)
       conduct_reactive_table_data(updated_data)
-    }) 
-
-
-    output$editable_table <- renderDT({
-      datatable(
-        conduct_reactive_table_data(),
-        editable = list(target = "cell", disable = list(columns = c(0))),
-        rownames = FALSE,
-        options = list(
-          columnDefs = list(
-            list(className = 'dt-center', targets = "_all")
-          )
-        )
-      )
-    }, server = TRUE)
-
-
-    observeEvent(input$editable_table_cell_edit, {
-     info <- input$editable_table_cell_edit
-     data <- conduct_reactive_table_data()
-     col_name <- colnames(data)[info$col + 1]
-
-     if (col_name == "Dose_Level") {
-     # Get the cohort number for the edited row
-     cohort_number <- data$No.Cohort[info$row]
-     new_value <- as.logical(info$value)
-
-     # Update dose level for all patients in the same cohort
-     data$Dose_Level[data$No.Cohort == cohort_number] <- new_value
-     } else {
-     data[info$row, col_name] <- info$value
-     }
-     conduct_reactive_table_data(data)
     })
 
+    # Remove cohort button logic
+    observeEvent(input$remove_cohort, {
+      data <- conduct_reactive_table_data()
+      if (nrow(data) == 0) return()
+
+      last_cohort <- max(data$No.Cohort)
+      updated_data <- data[data$No.Cohort != last_cohort, ]
+      shared$dose_level <- max(shared$dose_level - 1, 0)
+      conduct_reactive_table_data(updated_data)
+    })
+
+    output$editable_table <- renderDT({
+    datatable(
+    conduct_reactive_table_data(),
+    editable = list(target = "cell", disable = list(columns = c(0))),
+    rownames = FALSE,
+    options = list(
+      pageLength = 10,       # Default to 10 entries
+      stateSave = TRUE,      # Preserve user settings like page length
+      columnDefs = list(
+        list(className = 'dt-center', targets = "_all")
+      )
+    )
+    )
+    }, server = TRUE)
+
+    observeEvent(input$editable_table_cell_edit, {
+      info <- input$editable_table_cell_edit
+      data <- conduct_reactive_table_data()
+      col_name <- colnames(data)[info$col + 1]
+
+      if (col_name == "Dose_Level") {
+        cohort_number <- data$No.Cohort[info$row]
+        new_value <- as.numeric(info$value)
+        data$Dose_Level[data$No.Cohort == cohort_number] <- new_value
+      } else {
+        data[info$row, col_name] <- info$value
+      }
+      conduct_reactive_table_data(data)
+    })
 
     observeEvent(input$generate_plot, {
       output$dose_plot <- renderPlot({
@@ -148,7 +159,7 @@ con_server <- function(id) {
         data$Cohort_Position <- ave(data$No.Cohort, data$No.Cohort, FUN = seq_along)
         data$X <- data$No.Cohort + (data$Cohort_Position - 2) * 0.2
         colors <- ifelse(data$DLT, "red", "green")
-        ylim <- c(0.5, shared$dose_level + 0.5)
+        ylim <- c(0.5, max(data$Dose_Level) + 0.5)
 
         plot(
           x = data$X,
