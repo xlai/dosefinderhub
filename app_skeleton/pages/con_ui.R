@@ -2,16 +2,15 @@ library(shiny)
 library(bslib)
 library(DT)
 
-# Simulated shared values (replace with your actual shared object in app context)
+# Simulated shared values (replace will replace with actual shared object in app context)
 shared <- reactiveValues(
-  n_dosess = 5,     # Number of doses
+  dose_level = 0,     # Number of doses
   cohort = 3,       # Cohort size
   ttl = NULL,
   max_size = NULL,
   start_dose = NULL
 )
-
-
+# ---------------- UI MODULE ----------------
 con_ui <- function(id) {
   ns <- NS(id)
   page_sidebar(
@@ -61,14 +60,13 @@ con_server <- function(id) {
         No.Cohort = integer(0),
         Dose_Level = numeric(0),
         DLT = logical(0),
-        Posterior_DLT = numeric(0),
         stringsAsFactors = FALSE
       )
     )
 
     observe({
-      req(shared$n_dosess, shared$cohort)
-      total_patients <- shared$n_dosess * shared$cohort
+      req(shared$dose_level, shared$cohort)
+      total_patients <- shared$dose_level * shared$cohort
 
       current_data <- conduct_reactive_table_data()
       current_rows <- nrow(current_data)
@@ -76,8 +74,8 @@ con_server <- function(id) {
 
       if (rows_to_add > 0) {
         new_rows <- data.frame(
-          No.Cohort = rep(1:shared$n_dosess, each = shared$cohort)[1:total_patients],
-          Dose_Level = rep(1:shared$n_dosess, length.out = total_patients),
+          No.Cohort = rep(1:shared$dose_level, each = shared$cohort)[1:total_patients],
+          Dose_Level = rep(1:shared$dose_level, each = shared$cohort)[1:total_patients],
           DLT = rep(FALSE, rows_to_add),
           stringsAsFactors = FALSE
         )
@@ -92,7 +90,7 @@ con_server <- function(id) {
     output$editable_table <- renderDT({
       datatable(
         conduct_reactive_table_data(),
-        editable = list(target = "cell", disable = list(columns = c(0, 1, 3))),
+        editable = list(target = "cell", disable = list(columns = c(0))),
         rownames = FALSE,
         options = list(
           columnDefs = list(
@@ -102,19 +100,25 @@ con_server <- function(id) {
       )
     }, server = TRUE)
 
+
     observeEvent(input$editable_table_cell_edit, {
-      info <- input$editable_table_cell_edit
-      data <- conduct_reactive_table_data()
-      col_name <- colnames(data)[info$col + 1]
+     info <- input$editable_table_cell_edit
+     data <- conduct_reactive_table_data()
+     col_name <- colnames(data)[info$col + 1]
 
-      if (col_name == "DLT") {
-        data[info$row, col_name] <- as.logical(info$value)
-      } else {
-        data[info$row, col_name] <- info$value
-      }
+     if (col_name == "Dose_Level") {
+     # Get the cohort number for the edited row
+     cohort_number <- data$No.Cohort[info$row]
+     new_value <- as.logical(info$value)
 
-      conduct_reactive_table_data(data)
+     # Update dose level for all patients in the same cohort
+     data$Dose_Level[data$No.Cohort == cohort_number] <- new_value
+     } else {
+     data[info$row, col_name] <- info$value
+     }
+     conduct_reactive_table_data(data)
     })
+
 
     observeEvent(input$generate_plot, {
       output$dose_plot <- renderPlot({
@@ -125,7 +129,7 @@ con_server <- function(id) {
         data$Cohort_Position <- ave(data$No.Cohort, data$No.Cohort, FUN = seq_along)
         data$X <- data$No.Cohort + (data$Cohort_Position - 2) * 0.2
         colors <- ifelse(data$DLT, "red", "green")
-        ylim <- c(0.5, shared$n_dosess + 0.5)
+        ylim <- c(0.5, shared$dose_level + 0.5)
 
         plot(
           x = data$X,
@@ -135,7 +139,7 @@ con_server <- function(id) {
           cex = 2,
           xlab = "Cohort",
           ylab = "Dose Level",
-          main = "Dose Level per Patient Grouped by Cohort",
+          main = "Cohort Grouped Patient Dose Level with DLT's",
           xaxt = "n",
           ylim = ylim
         )
