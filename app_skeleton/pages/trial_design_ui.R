@@ -87,8 +87,8 @@ stop_n_mtd_boin <- numericInput(ns("stop_n_mtd_boin"), "What is the minimum numb
 ttl_multiple_phi_1 <- numericInput(ns("ttl_multiple_phi_1"), "What is the highest multiple of the target toxicity level such that dose escalation should be made?", min = 0, max = 1, value = 0.6)
 ttl_multiple_phi_2 <- numericInput(ns("ttl_multiple_phi_2"), "What is the lowest multiple of the target toxicity level such that dose de-escalation should be made?", min = 0, max = 1, value = 1.4)
 
-direct_phi_1 <- numericInput(ns("direct_phi_1"), "What is the highest toxicity probability below the target toxicity level such that dose escalation should be made?", min = 0, max = 1, value = 0.2)
-direct_phi_2 <- numericInput(ns("direct_phi_2"), "What is the lowest toxicity probability above the target toxicity level such that dose de-escalation should be made?", min = 0, max = 1, value = 0.3)
+direct_phi_1 <- numericInput(ns("direct_phi_1"), "What is the highest toxicity probability below the target toxicity level such that dose escalation should be made?", min = 0, max = 1, value = 0.18)
+direct_phi_2 <- numericInput(ns("direct_phi_2"), "What is the lowest toxicity probability above the target toxicity level such that dose de-escalation should be made?", min = 0, max = 1, value = 0.42)
 
 direct_lambda_e <- numericInput(ns("direct_lambda_e"), "What is the escalation boundary, lambda_e?", min = 0, value = 0.9)
 direct_lambda_d <- numericInput(ns("direct_lambda_d"), "What is the de-escalation boundary, lambda_d?", min = 0, value = 0.1)
@@ -103,8 +103,8 @@ boin_ui_inputs_multiple_ttl <- tagList(
   hr(),
   actionButton(ns("boin_generate_boundaries"), "Generate Escalation Boundaries"),
   hr(),
-  textOutput(paste("lambda_e = ", ns("boin_output_lambda_e"))),
-  textOutput(paste("lambda_d = ", ns("boin_output_lambda_d")))
+  textOutput(ns("boin_output_lambda_e")),
+  textOutput(ns("boin_output_lambda_d"))
 )
 
 boin_ui_inputs_direct_tox_prob <- tagList(
@@ -115,10 +115,10 @@ boin_ui_inputs_direct_tox_prob <- tagList(
   direct_phi_1,
   direct_phi_2,
   hr(),
-  actionButton(ns("boin_generate_boundaries"), "Generate Escalation Boundaries"),
+  actionButton(ns("boin_generate_boundaries_dir"), "Generate Escalation Boundaries"),
   hr(),
-  textOutput(paste("lambda_e = ", ns("boin_output_lambda_e"))),
-  textOutput(paste("lambda_d = ", ns("boin_output_lambda_d")))
+  textOutput(ns("boin_output_lambda_e_dir")),
+  textOutput(ns("boin_output_lambda_d_dir"))
 )
 
 boin_ui_inputs_direct_boundaries <- tagList(
@@ -127,13 +127,7 @@ boin_ui_inputs_direct_boundaries <- tagList(
   stop_n_mtd_boin,
   hr(),
   direct_lambda_e,
-  direct_lambda_d,
-  hr(),
-  actionButton(ns("boin_generate_probabilites"), "Generate Escalation Probabilities"),
-  hr(),
-  textOutput(paste("phi_1 = ", ns("boin_output_lambda_e"))),
-  textOutput(paste("phi_2 = ", ns("boin_output_lambda_d")))
-)
+  direct_lambda_d)
 
 boin_input_choice <- radioButtons("boin_input_choice", "How Would You Like to Input the BOIN Escalation Boundaries?",
 choices = c("Enter the toxicity probability threshold as a multiple of the target toxicity level" = 1, 
@@ -327,8 +321,40 @@ trial_design_server <- function(id, shared) {
   shared$boin_stopping_rule <- reactive({as.logical(input$boin_stopping_rule)})
   shared$boin_cohorts <- reactive({as.numeric(input$boin_cohorts)})
   shared$stop_n_mtd_boin <- reactive({as.numeric(input$stop_n_mtd_boin)})
-  shared$phi_1 <- reactive({as.numeric(input$ttl_multiple_phi_1) * shared$ttl()})
-  shared$phi_2 <- reactive({as.numeric(input$ttl_multiple_phi_2)* shared$ttl()})
+  
+  shared$phi_1 <- 0.18
+  shared$phi_2 <- 0.42
+
+  observeEvent(input$phi_1_multiple, {
+    shared$phi_1 <- as.numeric(input$phi_1_multiple) * shared$ttl()
+  })
+  observeEvent(input$phi_2_multiple, {
+    shared$phi_2 <- as.numeric(input$phi_2_multiple) * shared$ttl()
+  })
+  observeEvent(input$direct_phi_1, {
+    shared$phi_1 <- as.numeric(input$direct_phi_1)
+  })
+  observeEvent(input$direct_phi_2, {
+    shared$phi_2 <- as.numeric(input$direct_phi_2)
+  })
+
+  observeEvent(input$boin_generate_boundaries, {
+   lambda <- BOIN::get.boundary(target = shared$ttl(), ncohort = shared$boin_cohorts(), 
+                                 cohortsize =  shared$cohort_size(), n.earlystop = shared$stop_n_mtd_boin(), 
+                                 p.saf = shared$phi_1, p.tox = shared$phi_2, 0.95, FALSE, 0.05)
+
+    output$boin_output_lambda_e <- renderText({ paste("lambda_e = ", lambda$lambda_e) })
+    output$boin_output_lambda_d <- renderText({ paste("lambda_d = ", lambda$lambda_d) })
+  })
+  observeEvent(input$boin_generate_boundaries_dir, {
+   lambda <- BOIN::get.boundary(target = shared$ttl(), ncohort = shared$boin_cohorts(), 
+                                 cohortsize =  shared$cohort_size(), n.earlystop = shared$stop_n_mtd_boin(), 
+                                 p.saf = shared$phi_1, p.tox = shared$phi_2, 0.95, FALSE, 0.05)
+
+    output$boin_output_lambda_e_dir <- renderText({ paste("lambda_e = ", lambda$lambda_e) })
+    output$boin_output_lambda_d_dir <- renderText({ paste("lambda_d = ", lambda$lambda_d) })
+  })
+
 
   ############################ Validation Checks and Warning Messages ##############################
   validation_state <- reactiveValues(

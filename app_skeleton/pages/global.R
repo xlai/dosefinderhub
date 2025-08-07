@@ -6,6 +6,7 @@ library(magrittr)
 library(escalation)
 library(rlang)
 library(ggpattern)
+library(BOIN)
 
 #DUMMY DATA MANIPULATION
 here::i_am("app/modules/trial_design/ui.R")
