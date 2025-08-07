@@ -1,6 +1,3 @@
-#library(shiny)
-#library(shiny.semantic)
-
 sim_ui <- function(id) {
   ns <- NS(id)
 
@@ -10,7 +7,7 @@ sim_ui <- function(id) {
 
   n_sims_warning_text <- textOutput(ns("n_sims_warning"))
   n_scenarios_warning_text <- textOutput(ns("n_scenarios_warning"))
-    #table_output <- DT::DTOutput(ns("table_output")) # This is to test the table output used for the simulations tab.
+  #table_output <- DT::DTOutput(ns("table_output")) # This is to test the table output used for the simulations tab.
   simulation_inputs <- tagList(
     n_sims_input,
     n_sims_warning_text,
@@ -128,7 +125,7 @@ ns <- session$ns
   })
   
   output$test_df <- renderDT({
-    datatable(reactive_df(), editable = TRUE, rownames = FALSE) #, scrollX = TRUE, scrollX="250px", paging = FALSE
+    datatable(reactive_df(), editable = TRUE, rownames = FALSE) 
   })
   
   # Observe the cell edits in the datatable
@@ -138,7 +135,6 @@ ns <- session$ns
     modified_data <- reactive_df()
     modified_data[info$row, info$col + 1] <- DT::coerceValue(info$value, modified_data[info$row, info$col]) # +1 is here to counterract the movement of edited data.
     reactive_df(modified_data)
-    #print(str(reactive_df()))
   })
 
   true_dlts <- reactive({
@@ -163,7 +159,6 @@ ns <- session$ns
  # Simulation outputs
 
   observeEvent(input$run_simulation, {
-
     # Adding in Scenarios. I am going to cap the possible number of Scenarios to 3 (this can be changed later).
 
   scenarios <- c("Scenario 1", "Scenario 2", "Scenario 3") 
@@ -180,15 +175,10 @@ ns <- session$ns
                         ("BOIN" %in% input$simulation_design_selection_input))
     n_models <- sum(selected_models)
 
-    #print(selected_models)
-    #print(model[!sapply(selected_models, identical, FALSE)])
-
-  #print(selected_scenarios)
-  #print(true_dlts())
   used_true_dlts <- true_dlts()[selected_scenarios, ] # Scenarios are rows!
-  #print(used_true_dlts)
+  
   n_scen <- sum(selected_scenarios)
-  #print(n_scen)
+ 
   combined_list <- vector("list", n_scen) # initialising for use later
   title_list <- vector("list", n_scen) # initialising for use later
   plot_list <- vector("list", n_scen) # initialising for use later
@@ -206,13 +196,12 @@ ns <- session$ns
   selected_accuracy <- {"Accuracy" %in% input$metric_selection_input},
   selected_overdose <- {"Overdosing" %in% input$metric_selection_input},
   selected_duration <- {"Duration" %in% input$metric_selection_input})
-  #print(selected_metric)
+ 
   if (n_scen == 0) {tables_ui <- NULL} else { for (j in 1:n_scen) {
 
   # Design - only running simulations that are necessary to save time.
   if ("3+3" %in% input$simulation_design_selection_input)
-      { #print(unlist(used_true_dlts[j, ]))
-        tpt_sim <- sim_tpt(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skip_tpt(), 12345)
+      { tpt_sim <- sim_tpt(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skip_tpt(), 12345)
        tpt_modified_tab <- tpt_sim[-c(3,5,7)]
 
       tpt_modified_tab$mean_accuracy <- as.data.frame(tpt_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
@@ -235,8 +224,7 @@ ns <- session$ns
       }
 
   if ("CRM" %in% input$simulation_design_selection_input)
-      {
-      crm_sim <- sim_crm(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skeleton_crm(), shared$prior_var_crm(), shared$skip_esc_crm(), shared$skip_deesc_crm(), shared$stop_tox_x_crm(), shared$stop_tox_y_crm(), shared$stop_n_mtd_crm())
+      { crm_sim <- sim_crm(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skeleton_crm(), shared$prior_var_crm(), shared$skip_esc_crm(), shared$skip_deesc_crm(), shared$stop_tox_x_crm(), shared$stop_tox_y_crm(), shared$stop_n_mtd_crm())
       crm_modified_tab <- crm_sim[-c(3,5,7)]
   
 
@@ -259,8 +247,7 @@ ns <- session$ns
       crm_mean_length <- NULL}
 
    if ("BOIN" %in% input$simulation_design_selection_input)
-      { #print(unlist(used_true_dlts[j, ]))
-       boin_sim <- sim_boin(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$boin_cohorts(), shared$stop_n_mtd_boin(), shared$phi_2(), shared$phi_1(), TRUE, 10) # testing with hard-coded values for now
+      { boin_sim <- sim_boin(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$boin_cohorts(), shared$stop_n_mtd_boin(), shared$phi_2(), shared$phi_1(), TRUE, 10) # testing with hard-coded values for now
        boin_modified_tab <- boin_sim[-c(3,5,7)]
 
       boin_modified_tab$mean_accuracy <- as.data.frame(boin_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
@@ -338,18 +325,17 @@ ns <- session$ns
 
 ## Tables
   combined_data_frames <- do.call(c, combined_list) 
-  #print(combined_data_frames)
   combined_titles <- do.call(c, title_list) 
-  #print(combined_titles)
+
   
   n_data_frames <- length(combined_data_frames)
-  #print(n_data_frames)
+ 
   # Using generic table names to render the UI with all the tables in it.
   if (n_data_frames == 0) {generate_tables_ui <- NULL  # The case where nothing is entered
   } else {
   table_names <- c(paste(rep("Table", n_data_frames), as.list(as.character(1:n_data_frames)), sep = " "))
   names(combined_data_frames) <- table_names
-  #print(table_names)
+
   ## Using the names of the tables to render a UI with all the tables in it.
   generate_tables_ui <- renderUI({
     lapply(names(combined_data_frames), function(table_name) {
@@ -472,24 +458,16 @@ ns <- session$ns
 
     used_plots <- plot_list_by_scenario[!sapply(selected_models, identical, FALSE)] 
 
-#print(n_models)
-#print(n_scen)
    for (j in 1:n_models) {
-    #print(j)
     data <- used_plots[[j]] 
   
-    #print(length(data))
-    #print(length(graphs))
-    #print(str(plot_list_by_scenario))  
     ma <- mean_acc_scen[[j]]
     mo <- mean_ov_scen[[j]]
-    #print(mo)
     ml <- mean_len_scen[[j]]
 
     for (k in 1:5) {
-      #print(k)
       met <- data[[k]]
-      #print(met)
+      
       if(is.null(met)) 
       { next } else if (selected_metric[k] == FALSE) { next
       } else if (!is.null(met[[1]]$selection) | !is.null(met[[2]]$selection) | !is.null(met[[3]]$selection)) {
@@ -526,8 +504,6 @@ ns <- session$ns
   })
 
   } else {output$generate_graphs_ui <- NULL} # For now.
-
-  
 
   } # else (after for loop)
   } # else (before for loop)
