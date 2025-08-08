@@ -360,6 +360,7 @@ ns <- session$ns
   ########################## Plots #####################################
 
   # Focusing on "by model" 
+  metric_no_accuracy <- selected_metric[-3] # Removing accuracy from the list of selected metrics
 
   if ("By Model" %in% input$display_plots) {
   graphs <- vector("list", 4*n_scen) # initialising for use later
@@ -373,7 +374,7 @@ ns <- session$ns
       met <- data[[k]]
 
       if(is.null(met)) 
-      { next } else if (selected_metric[k] == FALSE) { next
+      { next } else if (metric_no_accuracy[k] == FALSE) { next
       } else if (!is.null(met[[1]]$selection) | !is.null(met[[2]]$selection) | !is.null(met[[3]]$selection)) {
       graphs[[4*(j-1) + k]] <- plot_bar(met, Dose, selection, title = paste("% Times Dose Was Selected as MTD for", updated_scenarios[[j]]), y_title = "% Times Dose Was Selected as MTD", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for MTD
       } else if (!is.null(met[[1]]$treatment) | !is.null(met[[2]]$treatment) | !is.null(met[[3]]$treatment)) {
@@ -455,11 +456,11 @@ ns <- session$ns
     mo <- mean_ov_scen[[j]]
     ml <- mean_len_scen[[j]]
 
-    for (k in 1:5) {
+    for (k in 1:4) {
       met <- data[[k]]
       
       if(is.null(met)) 
-      { next } else if (selected_metric[k] == FALSE) { next
+      { next } else if (metric_no_accuracy[k] == FALSE) { next
       } else if (!is.null(met[[1]]$selection) | !is.null(met[[2]]$selection) | !is.null(met[[3]]$selection)) {
       graphs[[4*(j-1) + k]] <- plot_bar(met, Dose, selection, title = paste("% Times Dose Was Selected as MTD for", updated_model[j]), y_title = "% Times Dose Was Selected as MTD", col = "blue", model_picked = 2, models = selected_models, scenarios = selected_scenarios) # Using blue for MTD
       } else if (!is.null(met[[1]]$treatment) | !is.null(met[[2]]$treatment) | !is.null(met[[3]]$treatment)) {

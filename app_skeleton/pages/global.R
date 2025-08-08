@@ -511,9 +511,9 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
   }
 
   plot <- ggplot(combined_data, aes(x = {{category}}, fill = fill_col)) +
-     geom_histogram(binwidth = 1, position = position_dodge(), color = "black") +
-     geom_vline(data = mean, aes(xintercept = Mean, color = colour), linetype = "dashed") + # Mean fixed for now
-     labs(title = title, x = x_title, y = "Frequency", color = "Mean Values", fill = fill_title) +
+     geom_density(alpha=0.3) +
+     geom_vline(data = mean, aes(xintercept = Mean, color = colour), linetype = "dashed") + 
+     labs(title = title, x = x_title, y = "Density", color = "Mean Values", fill = fill_title) +
     theme_minimal()
 
     return(plot)
