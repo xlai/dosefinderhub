@@ -560,7 +560,7 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
   }
  
   for (i in 1:3) {
-    for (j in 1:5) {
+    for (j in 1:4) {
     if (is.null(list1[[i]][[j]])) {
       list2[[j]][[i]] <- list(NULL)
     } else {
