@@ -38,11 +38,7 @@ sim_ui <- function(id) {
           nav_panel(
             "Simulation Output - Tables",
             h3("Simulation Output - Tables"),
-            p("Below are two cards containing the same table outputs. Scroll within each card to see tables side by side."),
-            layout_column_wrap( 
-            card(height = 400, card_header("Comparison Card 1"), uiOutput(ns("tables1"))),
-            card(height = 400, card_header("Comparison Card 2"), uiOutput(ns("tables2")))
-            )
+            uiOutput(ns("tables_ui"))
           ),
           nav_panel("Simulation Output - Plots",
           h3("Simulation Output - Plots"),
@@ -353,8 +349,10 @@ ns <- session$ns
   }) 
 
   tables_and_titles <- renderUI({ generate_tables_ui })
-  output$tables1 <- tables_and_titles
-  output$tables2 <- tables_and_titles
+
+  if ("Individually" %in% input$comparative_view) {
+    output$tables_ui <- tables_and_titles
+  } else {output$tables_ui <- NULL}
 
   ########################## Plots #####################################
 
