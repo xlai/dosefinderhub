@@ -21,7 +21,7 @@ sim_ui <- function(id) {
   # Running the tab itself
   fluidPage(
   page_sidebar(
-      div(
+      div( 
         navset_tab(
           nav_panel(
             "Simulation Inputs", 
@@ -46,13 +46,6 @@ sim_ui <- function(id) {
           ),
           nav_panel("Simulation Output - Plots",
           h3("Simulation Output - Plots"),
-          card(
-            card_header("How do you want to Compare Results?"),
-            card_body(
-                      radioButtons(ns("display_plots"),"How would you like to display the simulation results?",
-                      choices = c("By Model", "By Scenario"), selected = "By Model", inline = TRUE)
-            )
-          ),
           uiOutput(ns("generate_graphs_ui"))
           )
         )
@@ -76,7 +69,13 @@ sim_ui <- function(id) {
           "Overdosing"),
         multiple = TRUE,
         list(plugins = list('remove_button'))),
-      
+
+        tags$hr(), # Separator line
+  
+        radioButtons(ns("comparative_view") , "How would you like to view the simulation results?",
+          choices = c("Individually", "Comparatively"), selected = "Comparatively", inline = TRUE),
+    
+
       #selectizeInput("visual_selection_input", "Select type of output",
         #choices = c("Table", "Plot"),
         #multiple = TRUE,
@@ -362,7 +361,7 @@ ns <- session$ns
   # Focusing on "by model" 
   metric_no_accuracy <- selected_metric[-3] # Removing accuracy from the list of selected metrics
 
-  if ("By Model" %in% input$display_plots) {
+  if ("Individually" %in% input$comparative_view) {
   graphs <- vector("list", 4*n_scen) # initialising for use later
 
    for (j in 1:n_scen) {
@@ -406,7 +405,7 @@ ns <- session$ns
     })
   })
 
-  } else if ("By Scenario" %in% input$display_plots) {
+  } else if ("Comparatively" %in% input$comparative_view) {
     # Focusing on "by scenario"
   # Adding NULLs where necessary
 
