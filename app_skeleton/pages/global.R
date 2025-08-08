@@ -183,7 +183,6 @@ mean_length$tpt <- mean(dist_length$tpt)
 output <- list(
     selection_tab = selection_tab$tpt, # % Times dose was selected as MTD
     treatment_tab = treatment_tab$tpt, # % Treated at each dose
-    dist_accuracy = dist_accuracy$tpt, # Distribution of accuracy
     mean_accuracy = mean_accuracy$tpt, # Mean accuracy
     dist_overdose = dist_overdose$tpt, # Distribution of overdose
     mean_overdose = mean_overdose$tpt, # Mean overdose
@@ -294,7 +293,6 @@ mean_length$crm <- mean(dist_length$crm)
 output <- list(
     selection_tab = selection_tab$crm, # % Times dose was selected as MTD
     treatment_tab = treatment_tab$crm, # % Treated at each dose
-    dist_accuracy = dist_accuracy$crm, # Distribution of accuracy
     mean_accuracy = mean_accuracy$crm, # Mean accuracy
     dist_overdose = dist_overdose$crm, # Distribution of overdose
     mean_overdose = mean_overdose$crm, # Mean overdose
@@ -377,7 +375,6 @@ mean_length <- mean(dist_length)
 output <- list(
     selection_tab = selection_tab, # % Times dose was selected as MTD
     treatment_tab = treatment_tab, # % Treated at each dose
-    dist_accuracy = dist_accuracy, # Distribution of accuracy
     mean_accuracy = mean_accuracy, # Mean accuracy
     dist_overdose = dist_overdose, # Distribution of overdose
     mean_overdose = mean_overdose, # Mean overdose
@@ -547,7 +544,6 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
   output <- list(
     data_selection = data_selection,
     data_treatment = data_treatment,
-    accuracy = data.frame(accuracy = sim$dist_accuracy),
     #mean_accuracy = as.numeric(sim$mean_accuracy),
     overdose = data.frame(overdose = sim$dist_overdose),
     #mean_overdose = as.numeric(sim$mean_overdose),
