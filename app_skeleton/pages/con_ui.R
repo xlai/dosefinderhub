@@ -69,68 +69,59 @@ con_server <- function(id) {
       )
     )
 
-    # Initial table generation based on max_size
+    # Initial table generation based on shared$max_size and shared$cohort
     observe({
       req(shared$max_size, shared$cohort)
       initial_cohorts <- ceiling(shared$max_size / shared$cohort)
       total_patients <- initial_cohorts * shared$cohort
 
-      current_data <- conduct_reactive_table_data()
-      current_rows <- nrow(current_data)
-      rows_to_add <- total_patients - current_rows
-
-      if (rows_to_add > 0) {
-        new_rows <- data.frame(
-          No.Cohort = rep(1:initial_cohorts, each = shared$cohort)[1:total_patients],
-          Dose_Level = rep(1:initial_cohorts, each = shared$cohort)[1:total_patients],
-          DLT = rep(FALSE, rows_to_add),
-          stringsAsFactors = FALSE
-        )
-        updated_data <- rbind(current_data, new_rows)
-        conduct_reactive_table_data(updated_data)
-      }
+      new_rows <- data.frame(
+        No.Cohort = rep(1:initial_cohorts, each = shared$cohort)[1:total_patients],
+        Dose_Level = rep(1:initial_cohorts, each = shared$cohort)[1:total_patients],
+        DLT = rep(FALSE, total_patients),
+        stringsAsFactors = FALSE
+      )
+      conduct_reactive_table_data(new_rows)
     })
 
-    # Add cohort button logic
+    # Add cohort button logic: always adds 3 patients
     observeEvent(input$add_cohort, {
       data <- conduct_reactive_table_data()
       current_cohorts <- if (nrow(data) == 0) 0 else max(data$No.Cohort)
       new_cohort_number <- current_cohorts + 1
 
       new_rows <- data.frame(
-        No.Cohort = rep(new_cohort_number, shared$cohort),
-        Dose_Level = rep(new_cohort_number, shared$cohort),
-        DLT = rep(FALSE, shared$cohort),
+        No.Cohort = rep(new_cohort_number, 3),
+        Dose_Level = rep(new_cohort_number, 3),
+        DLT = rep(FALSE, 3),
         stringsAsFactors = FALSE
       )
 
-      shared$dose_level <- shared$dose_level + 1
       updated_data <- rbind(data, new_rows)
       conduct_reactive_table_data(updated_data)
     })
 
-    # Remove cohort button logic
+    # Remove cohort button logic: removes last cohort, keeps at least 1 cohort
     observeEvent(input$remove_cohort, {
       data <- conduct_reactive_table_data()
-      if (nrow(data) == 0) return()
+      if (nrow(data) <= 3 || is.na(max(data$No.Cohort))) return()
 
       last_cohort <- max(data$No.Cohort)
       updated_data <- data[data$No.Cohort != last_cohort, ]
-      shared$dose_level <- max(shared$dose_level - 1, 0)
       conduct_reactive_table_data(updated_data)
     })
 
     output$editable_table <- renderDT({
-    datatable(
-    conduct_reactive_table_data(),
-    editable = list(target = "cell", disable = list(columns = c(0))),
-    rownames = FALSE,
-    options = list(
-      columnDefs = list(
-        list(className = 'dt-center', targets = "_all")
+      datatable(
+        conduct_reactive_table_data(),
+        editable = list(target = "cell", disable = list(columns = c(0))),
+        rownames = FALSE,
+        options = list(
+          columnDefs = list(
+            list(className = 'dt-center', targets = "_all")
+          )
+        )
       )
-    )
-    )
     }, server = TRUE)
 
     observeEvent(input$editable_table_cell_edit, {
