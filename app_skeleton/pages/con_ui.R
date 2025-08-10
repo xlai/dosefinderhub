@@ -23,11 +23,11 @@ con_ui <- function(id) {
         full_screen = TRUE,
         card_header("Results"),
         card_body(
-          div(
+          div(    
             style = "display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;",
             actionButton(ns("add_cohort"), "Add Cohort"),
             actionButton(ns("remove_cohort"), "Remove Cohort")
-          ),
+          ), 
           DTOutput(ns("editable_table"))
         )
       ),
@@ -126,8 +126,6 @@ con_server <- function(id) {
     editable = list(target = "cell", disable = list(columns = c(0))),
     rownames = FALSE,
     options = list(
-      pageLength = 10,       # Default to 10 entries
-      stateSave = TRUE,      # Preserve user settings like page length
       columnDefs = list(
         list(className = 'dt-center', targets = "_all")
       )
