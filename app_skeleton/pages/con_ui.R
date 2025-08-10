@@ -1,6 +1,7 @@
 library(shiny)
 library(bslib)
 library(DT)
+library(shinydashboard)
 
 # Simulated shared values (replace with actual shared object in app context)
 shared <- reactiveValues(
@@ -16,27 +17,39 @@ con_ui <- function(id) {
   ns <- NS(id)
   page_sidebar(
     layout_column_wrap(
-      width = 1/2,
+      width = 1,
       height = "auto",
       gap = "1rem",
-      card(
-        full_screen = TRUE,
-        card_header("Results"),
-        card_body(
-          div(    
-            style = "display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;",
-            actionButton(ns("add_cohort"), "Add Cohort"),
-            actionButton(ns("remove_cohort"), "Remove Cohort")
-          ), 
-          DTOutput(ns("editable_table"))
-        )
+
+      # Dashboard-style value boxes
+      fluidRow(
+        valueBoxOutput(ns("patient_count_box"), width = 4),
+        valueBoxOutput(ns("latest_dose_box"), width = 4)
       ),
-      card(
-        full_screen = TRUE,
-        card_header("Overview"),
-        card_body(
-          actionButton(ns("generate_plot"), "Generate Graph"),
-          plotOutput(ns("dose_plot"), height = "400px")
+
+      # Main cards
+      layout_column_wrap(
+        width = 1/2,
+        gap = "1rem",
+        card(
+          full_screen = TRUE,
+          card_header("Results"),
+          card_body(
+            div(
+              style = "display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;",
+              actionButton(ns("add_cohort"), "Add Cohort"),
+              actionButton(ns("remove_cohort"), "Remove Cohort")
+            ),
+            DTOutput(ns("editable_table"))
+          )
+        ),
+        card(
+          full_screen = TRUE,
+          card_header("Overview"),
+          card_body(
+            actionButton(ns("generate_plot"), "Generate Graph"),
+            plotOutput(ns("dose_plot"), height = "400px")
+          )
         )
       )
     ),
@@ -55,6 +68,7 @@ con_ui <- function(id) {
   )
 }
 
+
 # ---------------- SERVER MODULE ----------------
 con_server <- function(id) {
   moduleServer(id, function(input, output, session) {
@@ -69,7 +83,7 @@ con_server <- function(id) {
       )
     )
 
-    # Initial table generation based on shared$max_size and shared$cohort
+    # Initial table generation
     observe({
       req(shared$max_size, shared$cohort)
       initial_cohorts <- ceiling(shared$max_size / shared$cohort)
@@ -84,7 +98,7 @@ con_server <- function(id) {
       conduct_reactive_table_data(new_rows)
     })
 
-    # Add cohort button logic: always adds 3 patients
+    # Add cohort
     observeEvent(input$add_cohort, {
       data <- conduct_reactive_table_data()
       current_cohorts <- if (nrow(data) == 0) 0 else max(data$No.Cohort)
@@ -101,7 +115,7 @@ con_server <- function(id) {
       conduct_reactive_table_data(updated_data)
     })
 
-    # Remove cohort button logic: removes last cohort, keeps at least 1 cohort
+    # Remove cohort
     observeEvent(input$remove_cohort, {
       data <- conduct_reactive_table_data()
       if (nrow(data) <= 3 || is.na(max(data$No.Cohort))) return()
@@ -109,6 +123,28 @@ con_server <- function(id) {
       last_cohort <- max(data$No.Cohort)
       updated_data <- data[data$No.Cohort != last_cohort, ]
       conduct_reactive_table_data(updated_data)
+    })
+
+    # Value boxes
+    output$patient_count_box <- renderValueBox({
+      data <- conduct_reactive_table_data()
+      valueBox(
+        value = nrow(data),
+        subtitle = "Current Number of Patients",
+        icon = icon("users"),
+        color = "blue"
+      )
+    })
+
+    output$latest_dose_box <- renderValueBox({
+      data <- conduct_reactive_table_data()
+      latest_dose <- if (nrow(data) == 0) "N/A" else max(data$Dose_Level, na.rm = TRUE)
+      valueBox(
+        value = latest_dose,
+        subtitle = "Latest Dose Level",
+        icon = icon("flask"),
+        color = "green"
+      )
     })
 
     output$editable_table <- renderDT({
