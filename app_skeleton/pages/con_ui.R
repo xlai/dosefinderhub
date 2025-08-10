@@ -16,43 +16,7 @@ shared <- reactiveValues(
 con_ui <- function(id) {
   ns <- NS(id)
   page_sidebar(
-    layout_column_wrap(
-      width = 1,
-      height = "auto",
-      gap = "1rem",
-
-      # Dashboard-style value boxes
-      fluidRow(
-        valueBoxOutput(ns("patient_count_box"), width = 4),
-        valueBoxOutput(ns("latest_dose_box"), width = 4)
-      ),
-
-      # Main cards
-      layout_column_wrap(
-        width = 1/2,
-        gap = "1rem",
-        card(
-          full_screen = TRUE,
-          card_header("Results"),
-          card_body(
-            div(
-              style = "display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;",
-              actionButton(ns("add_cohort"), "Add Cohort"),
-              actionButton(ns("remove_cohort"), "Remove Cohort")
-            ),
-            DTOutput(ns("editable_table"))
-          )
-        ),
-        card(
-          full_screen = TRUE,
-          card_header("Overview"),
-          card_body(
-            actionButton(ns("generate_plot"), "Generate Graph"),
-            plotOutput(ns("dose_plot"), height = "400px")
-          )
-        )
-      )
-    ),
+    title = "Trial Conduct Dashboard",
     sidebar = sidebar(
       radioButtons(
         inputId = ns("choice"),
@@ -64,6 +28,42 @@ con_ui <- function(id) {
       fileInput(ns("file_upload"), "Upload Previous Responses:", accept = c(".csv", ".rds")),
       downloadButton(ns("con_save_button"), "Save Responses"),
       actionButton(ns("trial_design_share"), "Use Trial Design Input")
+    ),
+    layout_columns(
+      value_box(
+        title = "Current Number of Patients",
+        value = textOutput(ns("patient_count")),
+        showcase = bsicons::bs_icon("people-fill"),
+        theme_color = "primary"
+      ),
+      value_box(
+        title = "Latest Dose Level",
+        value = textOutput(ns("latest_dose")),
+        showcase = bsicons::bs_icon("capsule"),
+        theme_color = "success"
+      )
+    ),
+    layout_columns(
+      card(
+        full_screen = TRUE,
+        card_header("Results"),
+        card_body(
+          div(
+            style = "display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;",
+            actionButton(ns("add_cohort"), "Add Cohort"),
+            actionButton(ns("remove_cohort"), "Remove Cohort")
+          ),
+          DTOutput(ns("editable_table"))
+        )
+      ),
+      card(
+        full_screen = TRUE,
+        card_header("Overview"),
+        card_body(
+          actionButton(ns("generate_plot"), "Generate Graph"),
+          plotOutput(ns("dose_plot"), height = "400px")
+        )
+      )
     )
   )
 }
@@ -98,7 +98,7 @@ con_server <- function(id) {
       conduct_reactive_table_data(new_rows)
     })
 
-    # Add cohort
+    # Add cohort (3 patients)
     observeEvent(input$add_cohort, {
       data <- conduct_reactive_table_data()
       current_cohorts <- if (nrow(data) == 0) 0 else max(data$No.Cohort)
@@ -115,7 +115,7 @@ con_server <- function(id) {
       conduct_reactive_table_data(updated_data)
     })
 
-    # Remove cohort
+    # Remove cohort (keep at least 3 patients)
     observeEvent(input$remove_cohort, {
       data <- conduct_reactive_table_data()
       if (nrow(data) <= 3 || is.na(max(data$No.Cohort))) return()
@@ -125,28 +125,19 @@ con_server <- function(id) {
       conduct_reactive_table_data(updated_data)
     })
 
-    # Value boxes
-    output$patient_count_box <- renderValueBox({
+    # Value box outputs
+    output$patient_count <- renderText({
       data <- conduct_reactive_table_data()
-      valueBox(
-        value = nrow(data),
-        subtitle = "Current Number of Patients",
-        icon = icon("users"),
-        color = "blue"
-      )
+      paste(nrow(data))
     })
 
-    output$latest_dose_box <- renderValueBox({
+    output$latest_dose <- renderText({
       data <- conduct_reactive_table_data()
-      latest_dose <- if (nrow(data) == 0) "N/A" else max(data$Dose_Level, na.rm = TRUE)
-      valueBox(
-        value = latest_dose,
-        subtitle = "Latest Dose Level",
-        icon = icon("flask"),
-        color = "green"
-      )
+      if (nrow(data) == 0) return("N/A")
+      max(data$Dose_Level, na.rm = TRUE)
     })
 
+    # Editable table
     output$editable_table <- renderDT({
       datatable(
         conduct_reactive_table_data(),
@@ -160,6 +151,7 @@ con_server <- function(id) {
       )
     }, server = TRUE)
 
+    # Table cell edit
     observeEvent(input$editable_table_cell_edit, {
       info <- input$editable_table_cell_edit
       data <- conduct_reactive_table_data()
@@ -175,6 +167,7 @@ con_server <- function(id) {
       conduct_reactive_table_data(data)
     })
 
+    # Plot generation
     observeEvent(input$generate_plot, {
       output$dose_plot <- renderPlot({
         data <- conduct_reactive_table_data()
