@@ -140,7 +140,8 @@ choices = c("Enter the toxicity probability threshold as a multiple of the targe
 
 
   page_sidebar( 
-      
+      p("Prefer to control only the basic parameters? Click here."),
+      actionButton(ns("basic_mode"), "Basic Mode"),
    
    # General Trial Design Parameters
      layout_column_wrap(  
@@ -198,9 +199,11 @@ choices = c("Enter the toxicity probability threshold as a multiple of the targe
 
 trial_design_server <- function(id, shared) {
   moduleServer(id, function(input, output, session) {
+    ns <- session$ns
 
 ################## Questionnaire Inputs ##################    
-# Transfer logic removed - now handled in questionnaire modal navigation
+# Logic needs to be added from orgin/dev.
+
 
     #################################### From Configurations Tab Server #####################################
 
@@ -532,6 +535,53 @@ trial_design_server <- function(id, shared) {
 
   output$stop_tox_y_warning <- renderText({
     validation_state$stop_tox_y_val_warning %||% ""
+  })
+
+  ################################ Basic Mode ################################
+
+  observeEvent(input$basic_mode, {
+
+    n_doses <- shared$n_dosess()
+    ttl <- shared$ttl()
+    max_size <- shared$max_size()
+    start_dose <- shared$start_dose()
+    cohort <- shared$cohort_size()
+    
+    shiny::showModal(
+      modalDialog( 
+        title = "Trial Design - Basic Mode",
+        size = 'l',
+        easyClose = FALSE,
+        p("Please enter your desired parameters below and click Submit to return to the app."),
+        numericInput(ns("basic_n_doses_inputt"), "How many dose levels are being tested?", min = 1, value = n_doses, step = 1),
+        numericInput(ns("basic_ttl_inputt"), "What is the target toxicity level for this trial, as a decimal?", min = 0, max = 0.999, value = ttl, step = 0.01),
+        numericInput(ns("basic_max_size_inputt"), "What is the maximum sample size for this trial?", min = 1, value = max_size, step = 1),
+        numericInput(ns("basic_start_dose_inputt"), "What is the starting dose level?", min = 1, value = start_dose, step = 1),
+        numericInput(ns("basic_cohort_inputt"), "What size will the cohorts be?", min = 1, value = cohort, step = 1),
+        radioButtons(ns("basic_skip_esc_input"),"Would you like to be able to skip doses when escalating? (For CRM models only)",
+          choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE),
+        radioButtons(ns("basic_skip_deesc_input"),"Would you like to be able to skip doses when de-escalating? (For CRM and 3+3 models only)",
+          choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE),
+        footer = tagList(
+          modalButton("Cancel"),
+          actionButton(ns("submit_basic_mode"), "Submit")
+        )
+      )
+    )
+  })
+
+  observeEvent(input$submit_basic_mode, {
+    # Update shared variables with basic mode inputs
+    updateNumericInput(session, "n_doses_inputt", value = input$basic_n_doses_inputt)
+    updateNumericInput(session, "ttl_inputt", value = input$basic_ttl_inputt)
+    updateNumericInput(session, "max_size_inputt", value = input$basic_max_size_inputt)
+    updateNumericInput(session, "start_dose_inputt", value = input$basic_start_dose_inputt)
+    updateNumericInput(session, "cohort_inputt", value = input$basic_cohort_inputt)
+    updateRadioButtons(session, "skip_esc_crm_input", selected = input$basic_skip_esc_input)
+    updateRadioButtons(session, "skip_deesc_crm_input", selected = input$basic_skip_deesc_input)
+    updateRadioButtons(session, "skip_tpt_input", selected = input$basic_skip_deesc_input)
+
+    removeModal()
   })
 
 } # End of function within moduleServer
