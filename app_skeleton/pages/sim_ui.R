@@ -38,7 +38,15 @@ sim_ui <- function(id) {
           nav_panel(
             "Simulation Output - Tables",
             h3("Simulation Output - Tables"),
-            uiOutput(ns("tables_ui"))
+            tags$hr(),
+            uiOutput(ns("tables_ui")), # Individual view
+            textOutput(ns("titles1")),
+            tableOutput(ns("tables1")),
+            uiOutput(ns("buttons1")),
+            tags$hr(),
+            textOutput(ns("titles2")),
+            tableOutput(ns("tables2")),
+            uiOutput(ns("buttons2"))
           ),
           nav_panel("Simulation Output - Plots",
           h3("Simulation Output - Plots"),
@@ -151,6 +159,9 @@ ns <- session$ns
  ######################################### Simulation Outputs #########################################
  # Code copied directly from the trial_design tab's server code
  # Simulation outputs
+
+ sim_df <- reactiveVal(NULL) # initialising
+ sim_titles <- reactiveVal(NULL) # initialising
 
   observeEvent(input$run_simulation, {
     # Adding in Scenarios. I am going to cap the possible number of Scenarios to 3 (this can be changed later).
@@ -352,8 +363,40 @@ ns <- session$ns
 
   if ("Individually" %in% input$comparative_view) {
     output$tables_ui <- tables_and_titles
-  } else {output$tables_ui <- NULL}
 
+    output$tables1 <- NULL
+    output$tables2 <- NULL
+    output$buttons1 <- NULL
+    output$buttons2 <- NULL
+
+
+  } else {output$tables_ui <- NULL
+
+  output$titles1 <- renderText({combined_titles[[1]]})
+  output$titles2 <- renderText({combined_titles[[2]]})
+  output$tables1 <- renderTable({combined_data_frames[[1]]}, rownames = TRUE, colnames = TRUE)
+  output$tables2 <- renderTable({combined_data_frames[[2]]}, rownames = TRUE, colnames = TRUE)
+
+  output$buttons1 <- renderUI({
+    if (n_data_frames > 0) {
+      tagList(
+        actionButton(ns("prev1"), "Previous", class = "btn btn-secondary"),
+        actionButton(ns("next1"), "Next", class = "btn btn-secondary")
+      )
+    }
+  })
+  output$buttons2 <- renderUI({
+    if (n_data_frames > 1) {
+      tagList(
+        actionButton(ns("prev2"), "Previous", class = "btn btn-secondary"),
+        actionButton(ns("next2"), "Next", class = "btn btn-secondary")
+      )
+    }
+  })
+
+  sim_df <- sim_df(combined_data_frames) 
+  sim_titles <- sim_titles(combined_titles) # Updating the reactive values with the new data frames and titles
+  }
   ########################## Plots #####################################
 
   # Focusing on "by model" 
@@ -494,6 +537,59 @@ ns <- session$ns
   } # else (after for loop)
   } # else (before for loop)
   }) # observe function
+
+ current_table1 <- reactiveVal(1)
+ current_table2 <- reactiveVal(2)
+
+  observeEvent(input$hehe, {
+    # This is to test the combined df
+  })
+
+  observeEvent(input$next1, {
+    if (current_table1() < length(sim_df())) {
+      current_table1(current_table1() + 1)
+      output$tables1 <- renderTable({
+        sim_df()[[current_table1()]]
+      }, rownames = TRUE, colnames = TRUE)
+      output$titles1 <- renderText({
+        sim_titles()[[current_table1()]]
+      })
+    } 
+  })
+  observeEvent(input$prev1, {
+    if (current_table1() > 1) {
+      current_table1(current_table1() - 1)
+      output$tables1 <- renderTable({
+        sim_df()[[current_table1()]]
+      }, rownames = TRUE, colnames = TRUE)
+      output$titles1 <- renderText({
+        sim_titles()[[current_table1()]]
+      })
+    } 
+  })
+  observeEvent(input$next2, {
+    if (current_table2() < length(sim_df())) {
+      current_table2(current_table2() + 1)
+      output$tables2 <- renderTable({
+        sim_df()[[current_table2()]]
+      }, rownames = TRUE, colnames = TRUE)
+      output$titles2 <- renderText({
+        sim_titles()[[current_table2()]]
+      })
+    } 
+  })
+  observeEvent(input$prev2, {
+    if (current_table2() > 1) {
+      current_table2(current_table2() - 1)
+      output$tables2 <- renderTable({
+        sim_df()[[current_table2()]]
+      }, rownames = TRUE, colnames = TRUE)
+      output$titles2 <- renderText({
+        sim_titles()[[current_table2()]]
+      })
+    } 
+  })
+
 
   }) # End of moduleServer
 } # End of sever function
