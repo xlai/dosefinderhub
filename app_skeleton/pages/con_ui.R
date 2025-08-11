@@ -63,9 +63,14 @@ con_ui <- function(id) {
           actionButton(ns("generate_plot"), "Generate Graph"),
           plotOutput(ns("dose_plot"), height = "400px")
         )
-      )
+      ),
+      card(full_screen = TRUE,
+        card_header("Overview"),
+        card_body(
+          p("This card will appear when CRM is selected and 'Update Design' is clicked."),)
+        )
+      )  
     )
-  )
 }
 
 
@@ -74,6 +79,7 @@ con_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
+    # Reactive table data
     conduct_reactive_table_data <- reactiveVal(
       data.frame(
         No.Cohort = integer(0),
@@ -82,6 +88,9 @@ con_server <- function(id) {
         stringsAsFactors = FALSE
       )
     )
+
+    # Reactive flag to show CRM card
+    show_crm_card <- reactiveVal(FALSE)
 
     # Initial table generation
     observe({
@@ -98,7 +107,7 @@ con_server <- function(id) {
       conduct_reactive_table_data(new_rows)
     })
 
-    # Add cohort (3 patients)
+    # Add cohort
     observeEvent(input$add_cohort, {
       data <- conduct_reactive_table_data()
       current_cohorts <- if (nrow(data) == 0) 0 else max(data$No.Cohort)
@@ -115,7 +124,7 @@ con_server <- function(id) {
       conduct_reactive_table_data(updated_data)
     })
 
-    # Remove cohort (keep at least 3 patients)
+    # Remove cohort
     observeEvent(input$remove_cohort, {
       data <- conduct_reactive_table_data()
       if (nrow(data) <= 3 || is.na(max(data$No.Cohort))) return()
@@ -125,16 +134,29 @@ con_server <- function(id) {
       conduct_reactive_table_data(updated_data)
     })
 
-    # Value box outputs
-    output$patient_count <- renderText({
-      data <- conduct_reactive_table_data()
-      paste(nrow(data))
+    # Update design button logic
+    observeEvent(input$update_design, {
+      if (input$choice == "CRM") {
+        show_crm_card(TRUE)
+      } else {
+        show_crm_card(FALSE)
+      }
     })
 
-    output$latest_dose <- renderText({
+   output$latest_dose <- renderText({
+   data <- conduct_reactive_table_data()
+   if (nrow(data) == 0) return("N/A")
+   # Find the most recent cohort
+   latest_cohort <- max(data$No.Cohort, na.rm = TRUE)
+   # Get the dose level for that cohort
+   latest_dose <- unique(data$Dose_Level[data$No.Cohort == latest_cohort])
+   # If multiple dose levels exist for the cohort, show them all (there should be only one)
+   paste(latest_dose, collapse = ", ")
+   })
+
+    output$patient_count <- renderText({
       data <- conduct_reactive_table_data()
-      if (nrow(data) == 0) return("N/A")
-      max(data$Dose_Level, na.rm = TRUE)
+      nrow(data)
     })
 
     # Editable table
@@ -144,14 +166,16 @@ con_server <- function(id) {
         editable = list(target = "cell", disable = list(columns = c(0))),
         rownames = FALSE,
         options = list(
-          columnDefs = list(
+           pageLength = nrow(conduct_reactive_table_data()),  # Show all rows
+           dom = 'fti',  # Keep search box ('f'), table ('t'); remove pagination and length menu
+           columnDefs = list(
             list(className = 'dt-center', targets = "_all")
           )
         )
       )
     }, server = TRUE)
 
-    # Table cell edit
+    # Table cell edit logic — update entire cohort's dose level
     observeEvent(input$editable_table_cell_edit, {
       info <- input$editable_table_cell_edit
       data <- conduct_reactive_table_data()
@@ -161,9 +185,13 @@ con_server <- function(id) {
         cohort_number <- data$No.Cohort[info$row]
         new_value <- as.numeric(info$value)
         data$Dose_Level[data$No.Cohort == cohort_number] <- new_value
+      } else if (col_name == "DLT") {
+        new_value <- as.logical(info$value)
+        data[info$row, col_name] <- new_value
       } else {
         data[info$row, col_name] <- info$value
       }
+
       conduct_reactive_table_data(data)
     })
 
@@ -195,6 +223,25 @@ con_server <- function(id) {
         text(data$X, data$Dose_Level + 0.3, labels = paste0("P", data$Patient), cex = 0.8)
         legend("bottom", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19)
       })
+    })
+
+    # CRM card output
+    output$crm_card_ui <- renderUI({
+      if (!show_crm_card()) return(NULL)
+
+      card(
+        full_screen = TRUE,
+        card_header("CRM Design Details"),
+        card_body(
+          p("This card appears when CRM is selected and 'Update Design' is clicked."),
+          # Add CRM-specific UI elements here
+          verbatimTextOutput(ns("crm_info"))
+        )
+      )
+    })
+
+    output$crm_info <- renderText({
+      "CRM design logic and parameters would be shown here."
     })
   })
 }
