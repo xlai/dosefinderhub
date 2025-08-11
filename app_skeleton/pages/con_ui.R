@@ -232,21 +232,30 @@ con_server <- function(id, shared) {
         colors <- ifelse(data$DLT, "red", "green")
         ylim <- c(0.5, max(data$Dose_Level) + 0.5)
 
-        plot(
-          x = data$X,
-          y = data$Dose_Level,
-          col = colors,
-          pch = 19,
-          cex = 2,
-          xlab = "Cohort",
-          ylab = "Dose Level",
-          main = input$plot_title,
-          xaxt = "n",
-          ylim = ylim
-        )
-        axis(1, at = sort(unique(data$No.Cohort)), labels = sort(unique(data$No.Cohort)))
-        text(data$X, data$Dose_Level + 0.3, labels = paste0("P", data$Patient), cex = 0.8)
-        legend("bottom", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19)
+       # Set layout: 1 row, 2 columns (plot + legend)
+layout(matrix(c(1, 2), nrow = 1), widths = c(4, 1))  # 4:1 ratio
+
+# Plot area
+par(mar = c(5, 4, 4, 1))  # Normal margins
+plot(
+  x = data$X,
+  y = data$Dose_Level,
+  col = colors,
+  pch = 19,
+  cex = 2,
+  xlab = "Cohort",
+  ylab = "Dose Level",
+  main = input$plot_title,
+  xaxt = "n",
+  ylim = ylim
+)
+axis(1, at = sort(unique(data$No.Cohort)), labels = sort(unique(data$No.Cohort)))
+text(data$X, data$Dose_Level + 0.3, labels = paste0("P", data$Patient), cex = 0.8)
+
+# Legend area
+par(mar = c(0, 0, 0, 0))  # No margins
+plot.new()
+legend("center", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19, cex = 1.2, bty = "n")
       })
     })
 
@@ -265,7 +274,7 @@ con_server <- function(id, shared) {
       )
     })
 
-    # Rmd file generation
+    ################################### Rmd file generation #########################################################
     output$download_report <- downloadHandler(
       filename = function() {
         ext <- if (input$export_type == "PDF") ".pdf" else ".xlsx"
