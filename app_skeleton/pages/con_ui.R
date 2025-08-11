@@ -14,7 +14,7 @@ con_ui <- function(id) {
       radioButtons(
         inputId = ns("choice"),
         label = "Select which design to update during trial conduct:",
-        choices = c("3+3", "CRM", "Other"),
+        choices = c("3+3", "CRM", "BOIN"),
         inline = FALSE
       ),
       actionButton(ns("update_design"), "Update Design"),
@@ -68,7 +68,8 @@ con_ui <- function(id) {
         )
       )
       ),
-      uiOutput(ns("results_card_ui"))
+      uiOutput(ns("crm_results_card_ui")),
+      uiOutput(ns("boin_results_card_ui"))
   )
 }
 
@@ -147,11 +148,6 @@ con_server <- function(id, shared) {
       last_cohort <- max(data$Cohort_Number)
       updated_data <- data[data$Cohort_Number != last_cohort, ]
       conduct_reactive_table_data(updated_data)
-    })
-
-    # Update design button logic
-    observeEvent(input$update_design, {
-      show_crm_card(input$choice == "CRM")
     })
 
     output$latest_dose <- renderText({
@@ -261,10 +257,17 @@ con_server <- function(id, shared) {
     observeEvent(input$reset_title, {
       updateTextInput(session, "plot_title", value = "Cohort Grouped Patient Dose Level with DLT's")
     })
+    
+    # Update design button logic
+    observeEvent(input$update_design, {
+      show_crm_card(input$choice == "CRM")
+      show_boin_card(input$choice == "BOIN")
+    })
 
-    show_crm_card <- reactiveVal(FALSE)
+   ###### CRM results card logic ####
+   show_crm_card <- reactiveVal(FALSE)
 
-   output$results_card_ui <- renderUI({
+   output$crm_results_card_ui <- renderUI({
      if (!show_crm_card()) return(NULL)
      card(
        full_screen = TRUE,
@@ -288,6 +291,38 @@ con_server <- function(id, shared) {
       summary$CI_Upper <- round(summary$Posterior_DLT_Rate + runif(nrow(summary), 0.05, 0.15), 2)
       summary$CI_Lower <- round(summary$Posterior_DLT_Rate - runif(nrow(summary), 0.05, 0.1), 2)
       colnames(summary) <- c("Dose Level", "No. of DLTs", "Posterior DLT Rate", "CI Upper", "CI Lower")
+      # Set row names to Dose Level
+      rownames(summary) <- paste("Dose Level", summary$`Dose Level`)
+      summary
+    })
+
+    #### BOIN results card logic ####
+    show_boin_card <- reactiveVal(FALSE)
+
+    output$boin_results_card_ui <- renderUI({
+      if (!show_boin_card()) return(NULL)
+      card(
+        full_screen = TRUE,
+        card_header("BOIN Results"),
+        card_body(
+          p("This table summarizes DLTs and posterior estimates by dose level."),
+          h5("BOIN Summary Table"),
+          tableOutput(ns("boin_results_table"))
+        )
+      )
+    })
+    
+    output$boin_results_table <- renderTable({
+      data <- conduct_reactive_table_data()
+      if (nrow(data) == 0) return(NULL)
+      # Summarise DLTs by Dose Level
+      summary <- aggregate(DLT ~ Dose_Level, data = data, FUN = function(x) sum(x, na.rm = TRUE))
+      # placeholder BOIN stats ###FAKE NEED TO CHANGE
+      summary$Posterior_DLT_Rate <- round(runif(nrow(summary), 0.1, 0.5), 2)
+      summary$CI_Upper <- round(summary$Posterior_DLT_Rate + runif(nrow(summary), 0.05, 0.15), 2)
+      summary$CI_Lower <- round(summary$Posterior_DLT_Rate - runif(nrow(summary), 0.05, 0.1), 2)
+      summary$Desirability_Score <- round(runif(nrow(summary), 0, 1), 2)
+      colnames(summary) <- c("Dose Level", "No. of DLTs", "Posterior DLT Rate", "CI Upper", "CI Lower", "Desirability Score")
       # Set row names to Dose Level
       rownames(summary) <- paste("Dose Level", summary$`Dose Level`)
       summary
