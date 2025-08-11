@@ -114,7 +114,18 @@ ns <- session$ns
 
   observeEvent({input$refresh_table_input}, {
 
-  dimensions <- matrix(0, nrow = n_scenarios(), ncol = shared$n_dosess())
+  ex_scen_1 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), 0.05, shared$n_dosess(), 1)
+  ex_scen_2 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), 0.05, shared$n_dosess(), 2)
+  ex_scen_3 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), 0.05, shared$n_dosess(), 3)
+
+  if (n_scenarios() == 1) {
+    dimensions <- ex_scen_1
+  } else if (n_scenarios() == 2) {
+    dimensions <- rbind(ex_scen_1, ex_scen_2)
+  } else if (n_scenarios() == 3) {
+    dimensions <- rbind(ex_scen_1, ex_scen_2, ex_scen_3)
+  }
+
   colnames(dimensions) <- paste("d", 1:shared$n_dosess(), sep = "")
   dataframe <- data.frame(dimensions) # What was previously doses_table
 
