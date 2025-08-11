@@ -3,15 +3,6 @@ library(bslib)
 library(DT)
 library(shinydashboard)
 
-# Simulated shared values (replace with actual shared object in app context)
-shared <- reactiveValues(
-  dose_level = 0,     # Number of additional cohorts added
-  cohort = 3,         # Cohort size
-  ttl = NULL,
-  max_size = 12,      # Initial sample size
-  start_dose = NULL
-)
-
 # ---------------- UI MODULE ----------------
 con_ui <- function(id) {
   ns <- NS(id)
@@ -25,8 +16,7 @@ con_ui <- function(id) {
       ),
       actionButton(ns("update_design"), "Update Design"),
       fileInput(ns("file_upload"), "Upload Previous Responses:", accept = c(".csv", ".rds")),
-      downloadButton(ns("con_save_button"), "Save Responses"),
-      actionButton(ns("trial_design_share"), "Use Trial Design Input")
+      downloadButton(ns("con_save_button"), "Save Responses")
     ),
     layout_columns(
       value_box(
@@ -72,19 +62,13 @@ con_ui <- function(id) {
         )
       )
       ),
-      card(
-        full_screen = TRUE,
-        card_header("Results"),
-        card_body(
-          p("This card appears when CRM is selected and 'Update Design' is clicked.")
-        )
-      ) 
+      uiOutput(ns("results_card_ui"))
   )
 }
 
 
 # ---------------- SERVER MODULE ----------------
-con_server <- function(id) {
+con_server <- function(id, shared) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -97,9 +81,20 @@ con_server <- function(id) {
         stringsAsFactors = FALSE
       )
     )
-
+    
     # Reactive flag to show CRM card
     show_crm_card <- reactiveVal(FALSE)
+    
+    output$results_card_ui <- renderUI({
+      if (!show_crm_card()) return(NULL)
+      card(
+        full_screen = TRUE,
+        card_header("Results"),
+        card_body(
+          p("This card appears when CRM is selected and 'Update Design' is clicked.")
+        )
+      )
+    })
 
     # Initial table generation
     observe({
