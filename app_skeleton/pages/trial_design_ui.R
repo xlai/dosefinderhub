@@ -142,13 +142,14 @@ choices = c("Enter the toxicity probability threshold as a multiple of the targe
   page_sidebar( 
       p("Prefer to control only the basic parameters? Click here."),
       actionButton(ns("basic_mode"), "Basic Mode"),
-   
+      tags$hr(),
+      h3("Trial Design - Advanced Mode"),
    # General Trial Design Parameters
      layout_column_wrap(  
      card(full_screen = TRUE,
       card_header("General Trial Parameters"),
       card_body(
-       checkboxInput("display_input_all", "Display parameters", value = F),
+       checkboxInput("display_input_all", "Display parameters", value = FALSE),
        conditionalPanel(condition = "input.display_input_all==1", non_specific_ui_inputts)
      )
       )),
@@ -158,21 +159,21 @@ choices = c("Enter the toxicity probability threshold as a multiple of the targe
         card( full_screen = TRUE,
           card_header("CRM Parameters"),
           card_body(
-           checkboxInput("display_crm", "Display parameters", value = F),
+           checkboxInput("display_crm", "Display parameters", value = FALSE),
            conditionalPanel(condition = "input.display_crm==1", specific_ui_inputs_crm)
           )
         ),
         card(full_screen = TRUE,
           card_header("3+3 Parameters"),
           card_body(
-          checkboxInput("display_tpt", "Display parameters", value = F),
+          checkboxInput("display_tpt", "Display parameters", value = FALSE),
            conditionalPanel(condition = "input.display_tpt==1", skip_tpt_input)
           )
         ),
         card(full_screen = TRUE,
           card_header("BOIN Parameters"),
           card_body(
-            checkboxInput("display_boin", "Display parameters", value = F),
+            checkboxInput("display_boin", "Display parameters", value = FALSE),
            conditionalPanel(condition = "input.display_boin == 1", boin_input_choice, tags$hr()),
            conditionalPanel(condition = "input.display_boin == 1 && input.boin_input_choice == 1", boin_ui_inputs_multiple_ttl),
            conditionalPanel(condition = "input.display_boin == 1 && input.boin_input_choice == 2", boin_ui_inputs_direct_tox_prob),
@@ -550,7 +551,7 @@ trial_design_server <- function(id, shared) {
     shiny::showModal(
       modalDialog( 
         title = "Trial Design - Basic Mode",
-        size = 'l',
+        size = 'xl',
         easyClose = FALSE,
         p("Please enter your desired parameters below and click Submit to return to the app."),
         numericInput(ns("basic_n_doses_inputt"), "How many dose levels are being tested?", min = 1, value = n_doses, step = 1),
