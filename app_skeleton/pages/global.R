@@ -454,7 +454,7 @@ plot_bar <- function(data, category, value, title, y_title, col, model_picked, m
 
 
 ########################### Function to Format Data for Plot Simulation Histograms ###########################
-plot_dist <- function(data, category, mean_vector, title, x_title, col, model_picked, models, scenarios) {
+plot_dist <- function(data, category, median_vector, title, x_title, col, model_picked, models, scenarios) {
   
   valid_data <- Filter(Negate(is.null), data)
 
@@ -464,9 +464,9 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
   scenario <- c("Scenario 1", "Scenario 2", "Scenario 3") # For later when "by scenario" is implemented
   updated_scenarios <- scenario[!sapply(scenarios, identical, FALSE)]
 
-  Mean <- mean_vector
+  Median <- median_vector
 
-  mean <- data.frame(Mean)
+  median <- data.frame(Median)
 
   if (length(valid_data) == 0) {
     return(NULL)
@@ -497,23 +497,23 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
   combined_data <- do.call(rbind, named_data)
 
    if (model_picked == 1) {
-    mean$model <- updated_model
- 
+    median$model <- updated_model
+
     fill_col <- combined_data$Model
-    colour <- mean$model
+    colour <- median$model
     fill_title <- "Model"
   } else {
-     mean$scenarios <- updated_scenarios
+     median$scenarios <- updated_scenarios
 
     fill_col <- combined_data$Scenario
-    colour <- mean$scenarios
+    colour <- median$scenarios
     fill_title <- "Scenario"
   }
 
   plot <- ggplot(combined_data, aes(x = {{category}}, fill = fill_col)) +
      geom_density(alpha=0.3) +
-     geom_vline(data = mean, aes(xintercept = Mean, color = colour), linetype = "dashed") + 
-     labs(title = title, x = x_title, y = "Density", color = "Mean Values", fill = fill_title) +
+     geom_vline(data = median, aes(xintercept = Median, color = colour), linetype = "dashed") + 
+     labs(title = title, x = x_title, y = "Density", color = "Median Values", fill = fill_title) +
     theme_minimal()
 
     return(plot)
@@ -570,9 +570,9 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
   return(list2)
 }
 
-  mean_for_scen <- function(mean) {
-  mean_scen <- lapply(seq_along(mean[[1]]), function(j) sapply(mean, `[`, j))
-  return(mean_scen)
+  median_for_scen <- function(median) {
+  median_scen <- lapply(seq_along(median[[1]]), function(j) sapply(median, `[`, j))
+  return(median_scen)
   }
 
   ############### Functions to Output Example Scenarios ################

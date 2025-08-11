@@ -207,10 +207,10 @@ ns <- session$ns
   plot_tpt <- vector("list", n_scen) # initialising for use later
   plot_crm <- vector("list", n_scen) # initialising for use later
   plot_boin <- vector("list", n_scen) # initialising for use later
-  mean_accuracy <- vector("list", n_scen) # initialising for use later
-  mean_overdose <- vector("list", n_scen) # initialising for use later
-  mean_length <- vector("list", n_scen) # initialising for use later
-  
+  median_accuracy <- vector("list", n_scen) # initialising for use later
+  median_overdose <- vector("list", n_scen) # initialising for use later
+  median_length <- vector("list", n_scen) # initialising for use later
+
    # Metric - putting it outside of the for loop so only one list is created.
   selected_metric <- cbind(
   selected_mtd <- {"% times dose was selected as MTD" %in% input$metric_selection_input},
@@ -237,12 +237,17 @@ ns <- session$ns
       tpt_mean_overdose <- tpt_sim$mean_overdose
       tpt_mean_length <- tpt_sim$mean_length
 
+      tpt_median_overdose <- median(tpt_sim$dist_overdose)
+      tpt_median_length <- median(tpt_sim$dist_length)
+
       tpt_for_plots <- data_for_plotting(tpt_sim, shared$ttl())
       } else {tpt_modified_tab <- NULL
       tpt_for_plots <- rep(list(NULL), 5)
       tpt_mean_accuracy <- NULL
       tpt_mean_overdose <- NULL
       tpt_mean_length <- NULL
+      tpt_median_overdose <- NULL
+      tpt_median_length <- NULL
       }
 
   if ("CRM" %in% input$simulation_design_selection_input)
@@ -261,12 +266,18 @@ ns <- session$ns
       crm_mean_overdose <- crm_sim$mean_overdose
       crm_mean_length <- crm_sim$mean_length
 
+      crm_median_overdose <- median(crm_sim$dist_overdose)
+      crm_median_length <- median(crm_sim$dist_length)
+
       crm_for_plots <- data_for_plotting(crm_sim, shared$ttl())
       } else {crm_modified_tab <- NULL
       crm_for_plots <- rep(list(NULL), 5)
       crm_mean_accuracy <- NULL
       crm_mean_overdose <- NULL
-      crm_mean_length <- NULL}
+      crm_mean_length <- NULL
+      crm_median_overdose <- NULL
+      crm_median_length <- NULL
+      }
 
    if ("BOIN" %in% input$simulation_design_selection_input)
       { boin_sim <- sim_boin(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$boin_cohorts(), shared$stop_n_mtd_boin(), p_tox =  shared$phi_2, p_saf =  shared$phi_1, TRUE, 10) # testing with hard-coded values for now
@@ -283,12 +294,17 @@ ns <- session$ns
       boin_mean_overdose <- boin_sim$mean_overdose
       boin_mean_length <- boin_sim$mean_length
 
+      boin_median_overdose <- median(boin_sim$dist_overdose)
+      boin_median_length <- median(boin_sim$dist_length)
+
       boin_for_plots <- data_for_plotting(boin_sim, shared$ttl())
       } else {boin_modified_tab <- NULL
       boin_for_plots <- rep(list(NULL), 5)
       boin_mean_accuracy <- NULL
       boin_mean_overdose <- NULL
       boin_mean_length <- NULL
+      boin_median_overdose <- NULL
+      boin_median_length <- NULL
       }
 
   # Giving Titles to Single Value Outputs
@@ -340,9 +356,11 @@ ns <- session$ns
   plot_crm[[j]] <- crm_for_plots
   plot_boin[[j]] <- boin_for_plots
 
-  mean_accuracy[[j]] <- c(tpt_mean_accuracy, crm_mean_accuracy, boin_mean_accuracy)
-  mean_overdose[[j]] <- c(tpt_mean_overdose, crm_mean_overdose, boin_mean_overdose)
-  mean_length[[j]] <- c(tpt_mean_length, crm_mean_length, boin_mean_length)
+  #mean_accuracy[[j]] <- c(tpt_mean_accuracy, crm_mean_accuracy, boin_mean_accuracy)
+  #mean_overdose[[j]] <- c(tpt_mean_overdose, crm_mean_overdose, boin_mean_overdose)
+  #mean_length[[j]] <- c(tpt_mean_length, crm_mean_length, boin_mean_length)
+  median_overdose[[j]] <- c(tpt_median_overdose, crm_median_overdose, boin_median_overdose)
+  median_length[[j]] <- c(tpt_median_length, crm_median_length, boin_median_length)
   } # for loop end
 
 ## Tables
@@ -426,8 +444,8 @@ ns <- session$ns
 
    for (j in 1:n_scen) {
     data <- plot_list[[j]]   #plot_list[[j]][[k]] = Scenario j, Metric k.
-    mo <- mean_overdose[[j]]
-    ml <- mean_length[[j]]
+    mo <- median_overdose[[j]]
+    ml <- median_length[[j]]
 
     for (k in 1:4) {
       met <- data[[k]]
@@ -499,9 +517,8 @@ ns <- session$ns
 
   plot_list_by_scenario <- list(tpt_by_scenario, crm_by_scenario, boin_by_scenario)
 
-  mean_acc_scen <- mean_for_scen(mean_accuracy)
-  mean_ov_scen <- mean_for_scen(mean_overdose)
-  mean_len_scen <- mean_for_scen(mean_length)
+  median_ov_scen <- median_for_scen(median_overdose)
+  median_len_scen <- median_for_scen(median_length)
 
     updated_model <- model[!sapply(selected_models, identical, FALSE)] 
 
@@ -512,8 +529,8 @@ ns <- session$ns
    for (j in 1:n_models) {
     data <- used_plots[[j]] 
   
-    mo <- mean_ov_scen[[j]]
-    ml <- mean_len_scen[[j]]
+    mo <- median_ov_scen[[j]]
+    ml <- median_len_scen[[j]]
 
     for (k in 1:4) {
       met <- data[[k]]
