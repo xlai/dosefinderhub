@@ -361,9 +361,11 @@ ns <- session$ns
 
   tables_and_titles <- renderUI({ generate_tables_ui })
 
-  if ("Individually" %in% input$comparative_view) {
+  if ("Individually" %in% input$comparative_view | n_data_frames == 1) {
     output$tables_ui <- tables_and_titles
 
+    output$titles1 <- NULL
+    output$titles2 <- NULL
     output$tables1 <- NULL
     output$tables2 <- NULL
     output$buttons1 <- NULL
