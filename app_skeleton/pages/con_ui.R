@@ -2,6 +2,9 @@ library(shiny)
 library(bslib)
 library(DT)
 library(shinydashboard)
+#actionButton(ns("complete_table"), "Complete Table")
+#actionButton("complete_graph", "Complete Graph")
+#uiOutput("download_ui")  # This will conditionally show the download button
 
 # ---------------- UI MODULE ----------------
 con_ui <- function(id) {
@@ -16,7 +19,10 @@ con_ui <- function(id) {
       ),
       actionButton(ns("update_design"), "Update Design"),
       fileInput(ns("file_upload"), "Upload Previous Responses:", accept = c(".csv", ".rds")),
-      downloadButton(ns("con_save_button"), "Save Responses")
+      radioButtons(ns("export_type"), "Choose Export Format:",
+             choices = c("PDF", "Excel"),
+             inline = TRUE),
+     downloadButton(ns("download_report"), "Download Report")
     ),
     layout_columns(
       value_box(
@@ -84,7 +90,7 @@ con_server <- function(id, shared) {
     
     # Reactive flag to show CRM card
     show_crm_card <- reactiveVal(FALSE)
-    
+
     output$results_card_ui <- renderUI({
       if (!show_crm_card()) return(NULL)
       card(
@@ -290,5 +296,111 @@ con_server <- function(id, shared) {
     output$crm_info <- renderText({
       "CRM design logic and parameters would be shown here."
     })
+
+    ################################# .Rmd file generation######################################################
+    output$download_report <- downloadHandler(
+      filename = function() {
+      ext <- if (input$export_type == "PDF") ".pdf" else ".xlsx"
+      paste0("cohort_report_", Sys.Date(), ext)
+    },
+    content = function(file) {
+    data <- conduct_reactive_table_data()
+
+    if (input$export_type == "PDF") {
+      # Save plot
+      plot_path <- tempfile(fileext = ".png")
+      png(plot_path, width = 800, height = 600)
+      data$Patient <- seq_len(nrow(data))
+      data$Cohort_Position <- ave(data$No.Cohort, data$No.Cohort, FUN = seq_along)
+      data$X <- data$No.Cohort + (data$Cohort_Position - 2) * 0.2
+      colors <- ifelse(data$DLT, "red", "green")
+      ylim <- c(0.5, max(data$Dose_Level) + 0.5)
+
+      plot(
+        x = data$X,
+        y = data$Dose_Level,
+        col = colors,
+        pch = 19,
+        cex = 2,
+        xlab = "Cohort",
+        ylab = "Dose Level",
+        main = "Cohort Grouped Patient Dose Level with DLT's",
+        xaxt = "n",
+        ylim = ylim
+      )
+      axis(1, at = sort(unique(data$No.Cohort)), labels = sort(unique(data$No.Cohort)))
+      text(data$X, data$Dose_Level + 0.3, labels = paste0("P", data$Patient), cex = 0.8)
+      legend("bottom", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19)
+      dev.off()
+
+      # Create Rmd file
+      rmd_file <- tempfile(fileext = ".Rmd")
+      rmd_content <- c(
+        "---",
+        "title: \"Cohort Report\"",
+        "output: pdf_document",
+        "---",
+        "",
+        "## Patient Table",
+        "",
+        "```{r}",
+        "library(knitr)",
+        "library(dplyr)",
+        "data <- tibble::tibble(",
+        paste0("  No.Cohort = c(", paste(data$No.Cohort, collapse = ", "), "),"),
+        paste0("  Dose_Level = c(", paste(data$Dose_Level, collapse = ", "), "),"),
+        paste0("  DLT = c(", paste(as.character(data$DLT), collapse = ", "), ")"),
+        ")",
+        "kable(data)",
+        "```",
+        "",
+        "## Dose Plot",
+        "",
+        paste0("!")
+      )
+      writeLines(rmd_content, rmd_file)
+
+      # Render to PDF
+      rmarkdown::render(rmd_file, output_file = file, quiet = TRUE)
+
+     } else if (input$export_type == "Excel") {
+      # Save plot
+      plot_file <- tempfile(fileext = ".png")
+      png(plot_file, width = 800, height = 600)
+      data$Patient <- seq_len(nrow(data))
+      data$Cohort_Position <- ave(data$No.Cohort, data$No.Cohort, FUN = seq_along)
+      data$X <- data$No.Cohort + (data$Cohort_Position - 2) * 0.2
+      colors <- ifelse(data$DLT, "red", "green")
+      ylim <- c(0.5, max(data$Dose_Level) + 0.5)
+
+      plot(
+        x = data$X,
+        y = data$Dose_Level,
+        col = colors,
+        pch = 19,
+        cex = 2,
+        xlab = "Cohort",
+        ylab = "Dose Level",
+        main = "Cohort Grouped Patient Dose Level with DLT's",
+        xaxt = "n",
+        ylim = ylim
+      )
+      axis(1, at = sort(unique(data$No.Cohort)), labels = sort(unique(data$No.Cohort)))
+      text(data$X, data$Dose_Level + 0.3, labels = paste0("P", data$Patient), cex = 0.8)
+      legend("bottom", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19)
+      dev.off()
+
+      # Write Excel file
+      wb <- openxlsx::createWorkbook()
+      openxlsx::addWorksheet(wb, "Cohort Table")
+      openxlsx::writeData(wb, "Cohort Table", data)
+
+      openxlsx::addWorksheet(wb, "Dose Plot")
+      openxlsx::insertImage(wb, "Dose Plot", plot_file, startRow = 2, startCol = 2, width = 6, height = 6)
+
+      openxlsx::saveWorkbook(wb, file, overwrite = TRUE)
+     }
+    }
+    )
   })
 }
