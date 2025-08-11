@@ -66,8 +66,15 @@ con_ui <- function(id) {
           actionButton(ns("reset_title"), "Reset Title")
         )
       )
-      )  
-    )
+      ),
+      card(
+        full_screen = TRUE,
+        card_header("Results"),
+        card_body(
+          p("This card appears when CRM is selected and 'Update Design' is clicked.")
+        )
+      ) 
+  )
 }
 
 
