@@ -82,7 +82,7 @@ con_server <- function(id, shared) {
     conduct_reactive_table_data <- reactiveVal(
       data.frame(
         Patient_Number = integer(0),
-        No.Cohort = integer(0),
+        Cohort_Number = integer(0),
         Dose_Level = numeric(0),
         DLT = logical(0),
         stringsAsFactors = FALSE
@@ -97,7 +97,7 @@ con_server <- function(id, shared) {
 
       new_rows <- data.frame(
         Patient_Number = seq_len(total_patients),
-        No.Cohort = rep(1:initial_cohorts, each = shared$cohort)[1:total_patients],
+        Cohort_Number = rep(1:initial_cohorts, each = shared$cohort)[1:total_patients],
         Dose_Level = rep(1:initial_cohorts, each = shared$cohort)[1:total_patients],
         DLT = rep(FALSE, total_patients),
         stringsAsFactors = FALSE
@@ -108,14 +108,14 @@ con_server <- function(id, shared) {
     # Add cohort
     observeEvent(input$add_cohort, {
       data <- conduct_reactive_table_data()
-      current_cohorts <- if (nrow(data) == 0) 0 else max(data$No.Cohort)
+      current_cohorts <- if (nrow(data) == 0) 0 else max(data$Cohort_Number)
       new_cohort_number <- current_cohorts + 1
 
       if (nrow(data) == 0) {
         recommended_dose <- 1
       } else {
-        latest_cohort <- max(data$No.Cohort, na.rm = TRUE)
-        cohort_data <- data[data$No.Cohort == latest_cohort, ]
+        latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
+        cohort_data <- data[data$Cohort_Number == latest_cohort, ]
         current_dose <- unique(cohort_data$Dose_Level)
 
         if (length(current_dose) != 1 || is.na(current_dose)) {
@@ -130,7 +130,7 @@ con_server <- function(id, shared) {
       start_patient <- nrow(data) + 1
       new_rows <- data.frame(
         Patient_Number = seq(from = start_patient, length.out = 3),
-        No.Cohort = rep(new_cohort_number, 3),
+        Cohort_Number = rep(new_cohort_number, 3),
         Dose_Level = rep(recommended_dose, 3),
         DLT = rep(FALSE, 3),
         stringsAsFactors = FALSE
@@ -142,10 +142,10 @@ con_server <- function(id, shared) {
     # Remove cohort
     observeEvent(input$remove_cohort, {
       data <- conduct_reactive_table_data()
-      if (nrow(data) <= 3 || is.na(max(data$No.Cohort))) return()
+      if (nrow(data) <= 3 || is.na(max(data$Cohort_Number))) return()
 
-      last_cohort <- max(data$No.Cohort)
-      updated_data <- data[data$No.Cohort != last_cohort, ]
+      last_cohort <- max(data$Cohort_Number)
+      updated_data <- data[data$Cohort_Number != last_cohort, ]
       conduct_reactive_table_data(updated_data)
     })
 
@@ -157,16 +157,16 @@ con_server <- function(id, shared) {
     output$latest_dose <- renderText({
       data <- conduct_reactive_table_data()
       if (nrow(data) == 0) return("N/A")
-      latest_cohort <- max(data$No.Cohort, na.rm = TRUE)
-      latest_dose <- unique(data$Dose_Level[data$No.Cohort == latest_cohort])
+      latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
+      latest_dose <- unique(data$Dose_Level[data$Cohort_Number == latest_cohort])
       paste(latest_dose, collapse = ", ")
     })
 
     output$recommended_dose <- renderText({
       data <- conduct_reactive_table_data()
       if (nrow(data) == 0) return("N/A")
-      latest_cohort <- max(data$No.Cohort, na.rm = TRUE)
-      cohort_data <- data[data$No.Cohort == latest_cohort, ]
+      latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
+      cohort_data <- data[data$Cohort_Number == latest_cohort, ]
       current_dose <- unique(cohort_data$Dose_Level)
       if (length(current_dose) != 1 || is.na(current_dose)) return("N/A")
       if (any(cohort_data$DLT)) {
@@ -203,9 +203,9 @@ con_server <- function(id, shared) {
       col_name <- colnames(data)[info$col + 1]
 
       if (col_name == "Dose_Level") {
-        cohort_number <- data$No.Cohort[info$row]
+        cohort_number <- data$Cohort_Number[info$row]
         new_value <- as.numeric(info$value)
-        data$Dose_Level[data$No.Cohort == cohort_number] <- new_value
+        data$Dose_Level[data$Cohort_Number == cohort_number] <- new_value
       } else if (col_name == "DLT") {
         new_value <- as.logical(info$value)
         data[info$row, col_name] <- new_value
@@ -227,37 +227,36 @@ con_server <- function(id, shared) {
         if (nrow(data) == 0) return(NULL)
 
         data$Patient <- data$Patient_Number
-        data$Cohort_Position <- ave(data$No.Cohort, data$No.Cohort, FUN = seq_along)
-        data$X <- data$No.Cohort + (data$Cohort_Position - 2) * 0.2
+        data$Cohort_Position <- ave(data$Cohort_Number, data$Cohort_Number, FUN = seq_along)
+        data$X <- data$Cohort_Number + (data$Cohort_Position - 2) * 0.2
         colors <- ifelse(data$DLT, "red", "green")
         ylim <- c(0.5, max(data$Dose_Level) + 0.5)
 
        # Set layout: 1 row, 2 columns (plot + legend)
-layout(matrix(c(1, 2), nrow = 1), widths = c(4, 1))  # 4:1 ratio
+        layout(matrix(c(1, 2), nrow = 1), widths = c(4, 1))  # 4:1 ratio
 
-# Plot area
-par(mar = c(5, 4, 4, 1))  # Normal margins
-plot(
-  x = data$X,
-  y = data$Dose_Level,
-  col = colors,
-  pch = 19,
-  cex = 2,
-  xlab = "Cohort",
-  ylab = "Dose Level",
-  main = input$plot_title,
-  xaxt = "n",
-  ylim = ylim
-)
-axis(1, at = sort(unique(data$No.Cohort)), labels = sort(unique(data$No.Cohort)))
-text(data$X, data$Dose_Level + 0.3, labels = paste0("P", data$Patient), cex = 0.8)
-
-# Legend area
-par(mar = c(0, 0, 0, 0))  # No margins
-plot.new()
-legend("center", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19, cex = 1.2, bty = "n")
+        # Plot area
+       par(mar = c(5, 4, 4, 1))  # Normal margins
+       plot(
+          x = data$X,
+          y = data$Dose_Level,
+          col = colors,
+          pch = 19,
+          cex = 2,
+          xlab = "Cohort",
+          ylab = "Dose Level",
+          main = input$plot_title,
+          xaxt = "n",
+          ylim = ylim
+        )
+       axis(1, at = sort(unique(data$Cohort_Number)), labels = sort(unique(data$Cohort_Number)))
+       text(data$X, data$Dose_Level + 0.3, labels = paste0("P", data$Patient), cex = 0.8)
+       # Legend area
+       par(mar = c(0, 0, 0, 0))
+       plot.new()
+       legend("center", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19, cex = 1.2, bty = "n")
       })
-    })
+   })
 
     observeEvent(input$reset_title, {
       updateTextInput(session, "plot_title", value = "Cohort Grouped Patient Dose Level with DLT's")
@@ -265,13 +264,33 @@ legend("center", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19,
 
     show_crm_card <- reactiveVal(FALSE)
 
-    output$results_card_ui <- renderUI({
-      if (!show_crm_card()) return(NULL)
-      card(
-        full_screen = TRUE,
-        card_header("Results"),
-        card_body(p("This card appears when CRM is selected and 'Update Design' is clicked."))
+   output$results_card_ui <- renderUI({
+     if (!show_crm_card()) return(NULL)
+     card(
+       full_screen = TRUE,
+       card_header("CRM Results"),
+       card_body(
+         p("This table summarizes DLTs and posterior estimates by dose level."),
+         h5("CRM Summary Table"),
+         tableOutput(ns("crm_results_table"))
+        )
       )
+    })
+
+    
+    output$crm_results_table <- renderTable({
+      data <- conduct_reactive_table_data()
+      if (nrow(data) == 0) return(NULL)
+      # Summarise DLTs by Dose Level
+      summary <- aggregate(DLT ~ Dose_Level, data = data, FUN = function(x) sum(x, na.rm = TRUE))
+      # placeholder CRM stats ###FAKE NEED TO CHANGE
+      summary$Posterior_DLT_Rate <- round(runif(nrow(summary), 0.1, 0.5), 2)
+      summary$CI_Upper <- round(summary$Posterior_DLT_Rate + runif(nrow(summary), 0.05, 0.15), 2)
+      summary$CI_Lower <- round(summary$Posterior_DLT_Rate - runif(nrow(summary), 0.05, 0.1), 2)
+      colnames(summary) <- c("Dose Level", "No. of DLTs", "Posterior DLT Rate", "CI Upper", "CI Lower")
+      # Set row names to Dose Level
+      rownames(summary) <- paste("Dose Level", summary$`Dose Level`)
+      summary
     })
 
     ################################### Rmd file generation #########################################################
@@ -287,8 +306,8 @@ legend("center", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19,
         plot_file <- tempfile(fileext = ".png")
         png(plot_file, width = 800, height = 600)
         data$Patient <- data$Patient_Number
-        data$Cohort_Position <- ave(data$No.Cohort, data$No.Cohort, FUN = seq_along)
-        data$X <- data$No.Cohort + (data$Cohort_Position - 2) * 0.2
+        data$Cohort_Position <- ave(data$Cohort_Number, data$Cohort_Number, FUN = seq_along)
+        data$X <- data$Cohort_Number + (data$Cohort_Position - 2) * 0.2
         colors <- ifelse(data$DLT, "red", "green")
         ylim <- c(0.5, max(data$Dose_Level) + 0.5)
 
@@ -304,7 +323,7 @@ legend("center", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19,
           xaxt = "n",
           ylim = ylim
         )
-        axis(1, at = sort(unique(data$No.Cohort)), labels = sort(unique(data$No.Cohort)))
+        axis(1, at = sort(unique(data$Cohort_Number)), labels = sort(unique(data$Cohort_Number)))
         text(data$X, data$Dose_Level + 0.3, labels = paste0("P", data$Patient), cex = 0.8)
         legend("bottom", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19)
         dev.off()
@@ -324,7 +343,7 @@ legend("center", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19,
             "library(dplyr)",
             "data <- tibble::tibble(",
             paste0("  Patient_Number = c(", paste(data$Patient_Number, collapse = ", "), "),"),
-            paste0("  No.Cohort = c(", paste(data$No.Cohort, collapse = ", "), "),"),
+            paste0("  Cohort_Number = c(", paste(data$Cohort_Number, collapse = ", "), "),"),
             paste0("  Dose_Level = c(", paste(data$Dose_Level, collapse = ", "), "),"),
             paste0("  DLT = c(", paste(as.character(data$DLT), collapse = ", "), ")"),
             ")",
