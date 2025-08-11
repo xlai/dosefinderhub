@@ -16,7 +16,6 @@ shared <- reactiveValues(
 con_ui <- function(id) {
   ns <- NS(id)
   page_sidebar(
-    title = "Trial Conduct Dashboard",
     sidebar = sidebar(
       radioButtons(
         inputId = ns("choice"),
@@ -41,12 +40,18 @@ con_ui <- function(id) {
         value = textOutput(ns("latest_dose")),
         showcase = bsicons::bs_icon("capsule"),
         theme_color = "success"
+      ),
+      value_box(
+        title = "Recommended Next Dose Level",
+        value = textOutput(ns("recommended_dose")),
+        showcase = bsicons::bs_icon("arrow-up-circle"),
+        theme_color = "warning"
       )
     ),
     layout_columns(
       card(
         full_screen = TRUE,
-        card_header("Results"),
+        card_header("Data"),
         card_body(
           div(
             style = "display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;",
@@ -117,16 +122,31 @@ con_server <- function(id) {
       current_cohorts <- if (nrow(data) == 0) 0 else max(data$No.Cohort)
       new_cohort_number <- current_cohorts + 1
 
-      new_rows <- data.frame(
-        No.Cohort = rep(new_cohort_number, 3),
-        Dose_Level = rep(new_cohort_number, 3),
-        DLT = rep(FALSE, 3),
-        stringsAsFactors = FALSE
-      )
+      # Determine recommended dose level
+      if (nrow(data) == 0) {
+      recommended_dose <- 1  # Default starting dose
+      } else {
+      latest_cohort <- max(data$No.Cohort, na.rm = TRUE)
+      cohort_data <- data[data$No.Cohort == latest_cohort, ]
+      current_dose <- unique(cohort_data$Dose_Level)
 
-      updated_data <- rbind(data, new_rows)
-      conduct_reactive_table_data(updated_data)
+      if (length(current_dose) != 1 || is.na(current_dose)) {
+      recommended_dose <- 1
+     } else if (any(cohort_data$DLT)) {
+      recommended_dose <- max(current_dose - 1, 1)
+     } else {
+      recommended_dose <- current_dose + 1
+     }}
+     new_rows <- data.frame(
+       No.Cohort = rep(new_cohort_number, 3),
+       Dose_Level = rep(recommended_dose, 3),
+       DLT = rep(FALSE, 3),
+       stringsAsFactors = FALSE
+     )
+     updated_data <- rbind(data, new_rows)
+     conduct_reactive_table_data(updated_data)
     })
+
 
     # Remove cohort
     observeEvent(input$remove_cohort, {
@@ -158,6 +178,21 @@ con_server <- function(id) {
    paste(latest_dose, collapse = ", ")
    })
 
+   output$recommended_dose <- renderText({
+     data <- conduct_reactive_table_data()
+     if (nrow(data) == 0) return("N/A")
+     latest_cohort <- max(data$No.Cohort, na.rm = TRUE)
+     cohort_data <- data[data$No.Cohort == latest_cohort, ]
+     current_dose <- unique(cohort_data$Dose_Level)
+     if (length(current_dose) != 1 || is.na(current_dose)) return("N/A")
+     if (any(cohort_data$DLT)) {
+     recommended <- max(current_dose - 1, 1)  # Ensure dose doesn't go below 1
+     } else {
+     recommended <- current_dose + 1
+     }
+     recommended
+    })
+
     output$patient_count <- renderText({
       data <- conduct_reactive_table_data()
       nrow(data)
@@ -171,7 +206,7 @@ con_server <- function(id) {
         rownames = FALSE,
         options = list(
            pageLength = nrow(conduct_reactive_table_data()),  # Show all rows
-           dom = 'fti',  # Keep search box ('f'), table ('t'); remove pagination and length menu
+           dom = 'fti',  
            columnDefs = list(
             list(className = 'dt-center', targets = "_all")
           )
