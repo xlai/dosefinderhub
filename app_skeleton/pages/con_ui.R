@@ -21,7 +21,7 @@ con_ui <- function(id) {
       radioButtons(
         inputId = ns("choice"),
         label = "Select which design to update during trial conduct:",
-        choices = c("CRM", "3+3", "Other"),
+        choices = c("3+3", "CRM", "Other"),
         inline = FALSE
       ),
       actionButton(ns("update_design"), "Update Design"),
@@ -60,15 +60,12 @@ con_ui <- function(id) {
         full_screen = TRUE,
         card_header("Overview"),
         card_body(
+          textInput(ns("plot_title"), "Graph Title:", value = "Cohort Grouped Patient Dose Level with DLT's"),
           actionButton(ns("generate_plot"), "Generate Graph"),
-          plotOutput(ns("dose_plot"), height = "400px")
+          uiOutput(ns("dose_plot_ui")),
+          actionButton(ns("reset_title"), "Reset Title")
         )
-      ),
-      card(full_screen = TRUE,
-        card_header("Overview"),
-        card_body(
-          p("This card will appear when CRM is selected and 'Update Design' is clicked."),)
-        )
+      )
       )  
     )
 }
@@ -196,33 +193,46 @@ con_server <- function(id) {
     })
 
     # Plot generation
-    observeEvent(input$generate_plot, {
-      output$dose_plot <- renderPlot({
-        data <- conduct_reactive_table_data()
-        if (nrow(data) == 0) return(NULL)
+    
+   observeEvent(input$generate_plot, {
+   output$dose_plot_ui <- renderUI({
+    plotOutput(ns("dose_plot"), height = "400px")
+    })
 
-        data$Patient <- seq_len(nrow(data))
-        data$Cohort_Position <- ave(data$No.Cohort, data$No.Cohort, FUN = seq_along)
-        data$X <- data$No.Cohort + (data$Cohort_Position - 2) * 0.2
-        colors <- ifelse(data$DLT, "red", "green")
-        ylim <- c(0.5, max(data$Dose_Level) + 0.5)
+    output$dose_plot <- renderPlot({
+     data <- conduct_reactive_table_data()
+     if (nrow(data) == 0) return(NULL)
 
-        plot(
-          x = data$X,
-          y = data$Dose_Level,
-          col = colors,
-          pch = 19,
-          cex = 2,
-          xlab = "Cohort",
-          ylab = "Dose Level",
-          main = "Cohort Grouped Patient Dose Level with DLT's",
-          xaxt = "n",
-          ylim = ylim
-        )
-        axis(1, at = sort(unique(data$No.Cohort)), labels = sort(unique(data$No.Cohort)))
-        text(data$X, data$Dose_Level + 0.3, labels = paste0("P", data$Patient), cex = 0.8)
-        legend("bottom", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19)
-      })
+     data$Patient <- seq_len(nrow(data))
+     data$Cohort_Position <- ave(data$No.Cohort, data$No.Cohort, FUN = seq_along)
+     data$X <- data$No.Cohort + (data$Cohort_Position - 2) * 0.2
+     colors <- ifelse(data$DLT, "red", "green")
+     ylim <- c(0.5, max(data$Dose_Level) + 0.5)
+
+     plot(
+     x = data$X,
+     y = data$Dose_Level,
+     col = colors,
+     pch = 19,
+     cex = 2,
+     xlab = "Cohort",
+     ylab = "Dose Level",
+     main = input$plot_title,
+     xaxt = "n",
+     ylim = ylim
+     )
+     axis(1, at = sort(unique(data$No.Cohort)), labels = sort(unique(data$No.Cohort)))
+     text(data$X, data$Dose_Level + 0.3, labels = paste0("P", data$Patient), cex = 0.8)
+     legend("bottom", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19)
+    })
+   })
+
+    observeEvent(input$reset_title, {
+    updateTextInput(
+     session,
+     "plot_title",
+     value = "Cohort Grouped Patient Dose Level with DLT's"
+     )
     })
 
     # CRM card output
