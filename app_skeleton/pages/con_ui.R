@@ -438,7 +438,7 @@ con_server <- function(id, shared) {
        writeLines(rmd_content, rmd_file)
        rmarkdown::render(rmd_file, output_file = file, quiet = TRUE)
  
-     } else if (input$export_type == "Excel") {
+       } else if (input$export_type == "Excel") {
          wb <- openxlsx::createWorkbook()
          openxlsx::addWorksheet(wb, "Cohort Table")
          openxlsx::writeData(wb, "Cohort Table", data)
@@ -455,8 +455,6 @@ con_server <- function(id, shared) {
       }
 
       openxlsx::saveWorkbook(wb, file, overwrite = TRUE)
-    }
+    }})
   })
-}
-)
 }
