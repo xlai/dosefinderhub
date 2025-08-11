@@ -109,8 +109,14 @@ ns <- session$ns
   n_scenarios <- reactive({as.numeric(input$n_scenarios_input)})
 
   ############## Reactive True DLT Probabilities Table ##############
+ 
+  scen_1_init <- c(1, example_scenarios(0.3, 3, 0.05, 5, 1))
+  scen_2_init <- c(2, example_scenarios(0.3, 3, 0.05, 5, 2))
+  scen_3_init <- c(3, example_scenarios(0.3, 3, 0.05, 5, 3))
+  matrix <- rbind(scen_1_init, scen_2_init, scen_3_init)
+  colnames(matrix) <- list("Scenario", "d1", "d2", "d3", "d4", "d5")
 
-  reactive_df <- reactiveVal() # initalising a reactive value to store the data frame
+  reactive_df <- reactiveVal(matrix) # initalising a reactive value to store the data frame
 
   observeEvent({input$refresh_table_input}, {
 
@@ -138,7 +144,7 @@ ns <- session$ns
   })
   
   output$test_df <- renderDT({
-    datatable(reactive_df(), editable = TRUE, rownames = FALSE) 
+    datatable(reactive_df(), editable = TRUE, rownames = FALSE, options = list(scrollX = TRUE)) 
   })
   
   # Observe the cell edits in the datatable
