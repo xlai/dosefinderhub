@@ -333,40 +333,64 @@ trial_design_server <- function(id, shared) {
   shared$phi_1 <- 0.18
   shared$phi_2 <- 0.42
 
-  observeEvent(input$phi_1_multiple, {
-    shared$phi_1 <- as.numeric(input$phi_1_multiple) * shared$ttl()
+  observeEvent(input$ttl_multiple_phi_1, {
+    shared$phi_1 <- as.numeric(input$ttl_multiple_phi_1) * shared$ttl()
+    updateNumericInput(session, "direct_phi_1", value = shared$phi_1)
+    lambda <- boin_boundaries(target = shared$ttl(), ncohort = shared$boin_cohorts(), 
+                                 cohortsize =  shared$cohort_size(), n.earlystop = shared$stop_n_mtd_boin(), 
+                                 p.saf = shared$phi_1, p.tox = shared$phi_2)
+    updateNumericInput(session, "direct_lambda_e", value = lambda$lambda_e)
   })
-  observeEvent(input$phi_2_multiple, {
-    shared$phi_2 <- as.numeric(input$phi_2_multiple) * shared$ttl()
+  observeEvent(input$ttl_multiple_phi_2, {
+    shared$phi_2 <- as.numeric(input$ttl_multiple_phi_2) * shared$ttl()
+    updateNumericInput(session, "direct_phi_2", value = shared$phi_2)
+   lambda <- boin_boundaries(target = shared$ttl(), ncohort = shared$boin_cohorts(), 
+                                 cohortsize =  shared$cohort_size(), n.earlystop = shared$stop_n_mtd_boin(), 
+                                 p.saf = shared$phi_1, p.tox = shared$phi_2)
+    updateNumericInput(session, "direct_lambda_d", value = lambda$lambda_d)
   })
   observeEvent(input$direct_phi_1, {
     shared$phi_1 <- as.numeric(input$direct_phi_1)
+    updateNumericInput(session, "ttl_multiple_phi_1", value = shared$phi_1 / shared$ttl())
+    lambda <- boin_boundaries(target = shared$ttl(), ncohort = shared$boin_cohorts(), 
+                                 cohortsize =  shared$cohort_size(), n.earlystop = shared$stop_n_mtd_boin(), 
+                                 p.saf = shared$phi_1, p.tox = shared$phi_2)
+    updateNumericInput(session, "direct_lambda_e", value = lambda$lambda_e)
   })
   observeEvent(input$direct_phi_2, {
     shared$phi_2 <- as.numeric(input$direct_phi_2)
+    updateNumericInput(session, "ttl_multiple_phi_2", value = shared$phi_2 / shared$ttl())
+     lambda <- boin_boundaries(target = shared$ttl(), ncohort = shared$boin_cohorts(), 
+                                 cohortsize =  shared$cohort_size(), n.earlystop = shared$stop_n_mtd_boin(), 
+                                 p.saf = shared$phi_1, p.tox = shared$phi_2)
+    updateNumericInput(session, "direct_lambda_d", value = lambda$lambda_d)
   })
   observeEvent(input$lambda_e, {
-    shared$lambda_e <- as.numeric(input$direct_lambda_e)
+    shared$phi_1 <- boin_probs(shared$ttl(), as.numeric(input$lambda_e), 1)
+    updateNumericInput(session, "direct_phi_1", value = shared$phi_1)
+    updateNumericInput(session, "ttl_multiple_phi_1", value = shared$phi_1 / shared$ttl())
   })
   observeEvent(input$lambda_d, {
-    shared$lambda_d <- as.numeric(input$direct_lambda_d)
+    shared$phi_2 <- boin_probs(shared$ttl(), as.numeric(input$lambda_d), 2)
+    updateNumericInput(session, "direct_phi_2", value = shared$phi_2)
+    updateNumericInput(session, "ttl_multiple_phi_2", value = shared$phi_2 / shared$ttl())
   })
 
   observeEvent(input$boin_generate_boundaries, {
-   lambda <- BOIN::get.boundary(target = shared$ttl(), ncohort = shared$boin_cohorts(), 
+   lambda <- boin_boundaries(target = shared$ttl(), ncohort = shared$boin_cohorts(), 
                                  cohortsize =  shared$cohort_size(), n.earlystop = shared$stop_n_mtd_boin(), 
-                                 p.saf = shared$phi_1, p.tox = shared$phi_2, 0.95, FALSE, 0.05)
+                                 p.saf = shared$phi_1, p.tox = shared$phi_2)
 
-    output$boin_output_lambda_e <- renderText({ paste("lambda_e = ", lambda$lambda_e) })
-    output$boin_output_lambda_d <- renderText({ paste("lambda_d = ", lambda$lambda_d) })
+    output$boin_output_lambda_e <- renderText({ lambda$text_e })
+    output$boin_output_lambda_d <- renderText({ lambda$text_d })
   })
   observeEvent(input$boin_generate_boundaries_dir, {
-   lambda <- BOIN::get.boundary(target = shared$ttl(), ncohort = shared$boin_cohorts(), 
+   lambda <- boin_boundaries(target = shared$ttl(), ncohort = shared$boin_cohorts(), 
                                  cohortsize =  shared$cohort_size(), n.earlystop = shared$stop_n_mtd_boin(), 
-                                 p.saf = shared$phi_1, p.tox = shared$phi_2, 0.95, FALSE, 0.05)
+                                 p.saf = shared$phi_1, p.tox = shared$phi_2)
 
-    output$boin_output_lambda_e_dir <- renderText({ paste("lambda_e = ", lambda$lambda_e) })
-    output$boin_output_lambda_d_dir <- renderText({ paste("lambda_d = ", lambda$lambda_d) })
+    output$boin_output_lambda_e_dir <- renderText({ lambda$text_e })
+    output$boin_output_lambda_d_dir <- renderText({ lambda$text_d })
   })
 
 

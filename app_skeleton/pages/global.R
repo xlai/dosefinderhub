@@ -85,6 +85,43 @@ validate_numeric_input <- function(value, min_val = NULL, max_val = NULL, intege
 
 # Reusable UI component for numeric input with validation using bslib
 
+###################################### BOIN Boundaries ######################################
+boin_probs <- function(ttl, lambda, type) { # Reverse engineering the BOIN probabilities from lambda and ttl
+  if (type == 1) {
+    f <- function(x) lambda - log((1-x)/(1-ttl))/log((ttl*(1-x))/(x*(1-ttl)))
+  } else if (type == 2) {
+    f <- function(x) lambda - log((1-ttl)/(1-x))/log((x*(1-ttl))/(ttl*(1-x)))
+  }
+
+  result <- uniroot(f, c(0,0.999))
+  return(result$root)
+}
+
+boin_boundaries <- function(target, ncohort, cohortsize, n.earlystop, p.saf, p.tox) { # Generating boundaries
+ if (0 < p.saf && p.saf < 0.95*target && 1.05*target < p.tox && p.tox < 1 && !is.na(p.saf) && !is.na(p.tox)) {
+  lambda <- BOIN::get.boundary(target = target, ncohort = ncohort, 
+                               cohortsize = cohortsize, n.earlystop = n.earlystop, 
+                               p.saf = p.saf, p.tox = p.tox, 0.95, FALSE, 0.05)
+  
+  lambda_e <- lambda$lambda_e
+  lambda_d <- lambda$lambda_d
+
+  text_e <-  paste("lambda_e = ", lambda_e) 
+  text_d <-  paste("lambda_d = ", lambda_d)
+ } else {
+  text_e <- "Probabilities must be less than and greater than the ttl respectively, and cannot be too close to the ttl."
+  text_d <- NULL
+
+  lambda_e <- NULL
+  lambda_d <- NULL
+ }
+ return(list(
+    lambda_e = lambda_e,
+    lambda_d = lambda_d,
+    text_e = text_e,
+    text_d = text_d
+  ))
+}
 
 ############################################ Simulation Code ############################################
 
@@ -580,7 +617,9 @@ plot_dist <- function(data, category, median_vector, title, x_title, col, model_
   ### Function for logistic models.
   logistic_scenarios <- function(pT, MTD, delta, n_doses, a) {
     d <- rep(NA, n_doses)
+    p <- rep(NA, n_doses)
       d[MTD] <- log(pT/(1-pT)) - a 
+      p[MTD] <- pT
 
       G1 <- (log(pT + delta)/(1-(pT + delta)) - a)
       G2 <- (log(pT - delta)/(1-(pT - delta)) - a)
