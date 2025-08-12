@@ -130,10 +130,10 @@ con_server <- function(id, shared) {
 
       start_patient <- nrow(data) + 1
       new_rows <- data.frame(
-        Patient_Number = seq(from = start_patient, length.out = 3),
-        Cohort_Number = rep(new_cohort_number, 3),
-        Dose_Level = rep(recommended_dose, 3),
-        DLT = rep(FALSE, 3),
+        Patient_Number = seq(from = start_patient, length.out = shared$cohort_size()),
+        Cohort_Number = rep(new_cohort_number, shared$cohort_size()),
+        Dose_Level = rep(recommended_dose, shared$cohort_size()),
+        DLT = rep(FALSE, shared$cohort_size()),
         stringsAsFactors = FALSE
       )
       updated_data <- rbind(data, new_rows)
