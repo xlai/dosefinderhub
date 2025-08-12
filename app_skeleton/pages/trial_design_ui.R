@@ -77,6 +77,11 @@ skip_tpt_input <- radioButtons(ns("skip_tpt_input"),"Would you like to be able t
 choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 
 # BOIN specific inputs
+boin_input_choice <- radioButtons("boin_input_choice", "How Would You Like to Input the BOIN Escalation Boundaries?",
+choices = c("Enter the toxicity probability threshold as a multiple of the target toxicity level" = 1, 
+            "Enter the toxicity probability threshold independently of the target toxicity level" = 2,
+            "Enter the escalation boundaries directly" = 3),
+              selected = NULL, inline = TRUE)
 
 boin_stopping_rule <- radioButtons(ns("boin_stopping_rule"), "Would you like to use the BOIN toxicity stopping rule?",
 choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE)
@@ -93,13 +98,21 @@ direct_phi_2 <- numericInput(ns("direct_phi_2"), "What is the lowest toxicity pr
 direct_lambda_e <- numericInput(ns("direct_lambda_e"), "What is the escalation boundary, lambda_e?", min = 0, value = 0.9)
 direct_lambda_d <- numericInput(ns("direct_lambda_d"), "What is the de-escalation boundary, lambda_d?", min = 0, value = 0.1)
 
-boin_ui_inputs_multiple_ttl <- tagList( 
+boin_general_inputs <- tagList(
+  boin_input_choice,
+  hr(),
   boin_stopping_rule,
   boin_cohorts,
+  boin_cohorts_warning_text <- textOutput(ns("boin_cohorts_warning")),
   stop_n_mtd_boin,
+  stop_n_mtd_boin_warning_text <- textOutput(ns("stop_n_mtd_boin_warning"))
+)
+boin_ui_inputs_multiple_ttl <- tagList( 
   hr(),
   ttl_multiple_phi_1,
+  ttl_multiple_phi_1_warning_text <- textOutput(ns("ttl_multiple_phi_1_warning")),
   ttl_multiple_phi_2,
+  ttl_multiple_phi_2_warning_text <- textOutput(ns("ttl_multiple_phi_2_warning")),
   hr(),
   actionButton(ns("boin_generate_boundaries"), "Generate Escalation Boundaries"),
   hr(),
@@ -108,12 +121,11 @@ boin_ui_inputs_multiple_ttl <- tagList(
 )
 
 boin_ui_inputs_direct_tox_prob <- tagList(
-  boin_stopping_rule,
-  boin_cohorts,
-  stop_n_mtd_boin,
   hr(),
   direct_phi_1,
+  direct_phi_1_warning_text <- textOutput(ns("direct_phi_1_warning")),
   direct_phi_2,
+  direct_phi_2_warning_text <- textOutput(ns("direct_phi_2_warning")),
   hr(),
   actionButton(ns("boin_generate_boundaries_dir"), "Generate Escalation Boundaries"),
   hr(),
@@ -122,18 +134,10 @@ boin_ui_inputs_direct_tox_prob <- tagList(
 )
 
 boin_ui_inputs_direct_boundaries <- tagList(
-  boin_stopping_rule,
-  boin_cohorts,
-  stop_n_mtd_boin,
   hr(),
   direct_lambda_e,
-  direct_lambda_d)
-
-boin_input_choice <- radioButtons("boin_input_choice", "How Would You Like to Input the BOIN Escalation Boundaries?",
-choices = c("Enter the toxicity probability threshold as a multiple of the target toxicity level" = 1, 
-            "Enter the toxicity probability threshold independently of the target toxicity level" = 2,
-            "Enter the escalation boundaries directly" = 3),
-              selected = NULL, inline = TRUE)
+  direct_lambda_d
+)
 
 
 ########################################### Running the UI ###########################################
@@ -174,7 +178,7 @@ choices = c("Enter the toxicity probability threshold as a multiple of the targe
           card_header("BOIN Parameters"),
           card_body(
             checkboxInput("display_boin", "Display parameters", value = FALSE),
-           conditionalPanel(condition = "input.display_boin == 1", boin_input_choice, tags$hr()),
+           conditionalPanel(condition = "input.display_boin == 1", boin_general_inputs),
            conditionalPanel(condition = "input.display_boin == 1 && input.boin_input_choice == 1", boin_ui_inputs_multiple_ttl),
            conditionalPanel(condition = "input.display_boin == 1 && input.boin_input_choice == 2", boin_ui_inputs_direct_tox_prob),
            conditionalPanel(condition = "input.display_boin == 1 && input.boin_input_choice == 3", boin_ui_inputs_direct_boundaries),
@@ -341,6 +345,12 @@ trial_design_server <- function(id, shared) {
   observeEvent(input$direct_phi_2, {
     shared$phi_2 <- as.numeric(input$direct_phi_2)
   })
+  observeEvent(input$lambda_e, {
+    shared$lambda_e <- as.numeric(input$direct_lambda_e)
+  })
+  observeEvent(input$lambda_d, {
+    shared$lambda_d <- as.numeric(input$direct_lambda_d)
+  })
 
   observeEvent(input$boin_generate_boundaries, {
    lambda <- BOIN::get.boundary(target = shared$ttl(), ncohort = shared$boin_cohorts(), 
@@ -372,7 +382,14 @@ trial_design_server <- function(id, shared) {
     stop_n_mtd_val = NULL,
     prior_mtd_val = NULL,
     stop_tox_x_val = NULL,
-    stop_tox_y_val = NULL
+    stop_tox_y_val = NULL,
+
+    boin_cohorts_val = NULL,
+    stop_n_mtd_boin_val = NULL,
+    ttl_multiple_phi_1_val = NULL,
+    ttl_multiple_phi_2_val = NULL,
+    direct_phi_1_val = NULL,
+    direct_phi_2_val = NULL
   )
   
   # Define base validation rules for each input
@@ -388,30 +405,53 @@ trial_design_server <- function(id, shared) {
     prior_mtd_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
     stop_tox_x_val = list(min_val = 0, max_val = 1, integer_only = FALSE),
     stop_tox_y_val = list(min_val = 0, max_val = 1, integer_only = FALSE)
+,
+    boin_cohorts_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
+    stop_n_mtd_boin_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
+    ttl_multiple_phi_1_val = list(min_val = 0, max_val = 1, integer_only = FALSE),
+    ttl_multiple_phi_2_val = list(min_val = 1, max_val = NULL, integer_only = FALSE),
+    direct_phi_1_val = list(min_val = 0, max_val = 0.999, integer_only = FALSE),
+    direct_phi_2_val = list(min_val = 0, max_val = 0.999, integer_only = FALSE)
   )
   
   ##### Dynamic validation rules
   validation_rules <- reactive({
     rules <- base_validation_rules
-
     # start_dose <= n_doses
     if (!is.null(input$n_doses_inputt) && !is.na(input$n_doses_inputt) && input$n_doses_inputt > 0) {
       rules$start_dose_val$max_val <- input$n_doses_inputt
     }
-
     # cohort <= max_size
     if (!is.null(input$max_size_inputt) && !is.na(input$max_size_inputt) && input$max_size_inputt > 0) {
       rules$cohort_val$max_val <- input$max_size_inputt
     }
-
     # stop_n_mtd <= max_size
     if (!is.null(input$max_size_inputt) && !is.na(input$max_size_inputt) && input$max_size_inputt > 0) {
       rules$stop_n_mtd_val$max_val <- input$max_size_inputt
     }
-
     # prior_mtd <= n_doses
     if (!is.null(input$n_doses_inputt) && !is.na(input$n_doses_inputt) && input$n_doses_inputt > 0) {
       rules$prior_mtd_val$max_val <- input$n_doses_inputt
+    }
+    # boin_cohorts <= cohort
+    if (!is.null(input$cohort_inputt) && !is.na(input$cohort_inputt) && input$cohort_inputt > 0) {
+      rules$boin_cohorts_val$max_val <- input$cohort_inputt
+    }
+    # stop_n_mtd_boin <= max_size
+    if (!is.null(input$max_size_inputt) && !is.na(input$max_size_inputt) && input$max_size_inputt > 0) {
+      rules$stop_n_mtd_boin_val$max_val <- input$max_size_inputt
+    }
+    # ttl_multiple_phi_2 <= 1/ttl
+    if (!is.null(input$ttl_inputt) && !is.na(input$ttl_inputt) && input$ttl_inputt > 0) {
+      rules$ttl_multiple_phi_2_val$max_val <- 1 / input$ttl_inputt
+    }
+    # direct_phi_1 < ttl
+    if (!is.null(input$ttl_inputt) && !is.na(input$ttl_inputt) && input$ttl_inputt > 0) {
+      rules$direct_phi_1_val$max_val <- input$ttl_inputt
+    }
+    # direct_phi_2 > ttl
+    if (!is.null(input$ttl_inputt) && !is.na(input$ttl_inputt) && input$ttl_inputt > 0) {
+      rules$direct_phi_2_val$min_val <- input$ttl_inputt
     }
     return(rules)
   })
@@ -453,6 +493,16 @@ trial_design_server <- function(id, shared) {
   
   observe({
     update_validation("ttl_val", input$ttl_inputt)
+    # When ttl changes, re-validate phi_1 and phi_2 to show warning if needed
+    if (!is.null(input$ttl_multiple_phi_2)) {
+      update_validation("ttl_multiple_phi_2_val", input$ttl_multiple_phi_2)
+    }
+    if (!is.null(input$direct_phi_1)) {
+      update_validation("direct_phi_1_val", input$direct_phi_1)
+    }
+    if (!is.null(input$direct_phi_2)) {
+      update_validation("direct_phi_2_val", input$direct_phi_2)
+    }
   })
 
     observe({
@@ -463,6 +513,12 @@ trial_design_server <- function(id, shared) {
     }
     if (!is.null(input$stop_n_mtd_input)) {
       update_validation("stop_n_mtd_val", input$stop_n_mtd_input)
+    }
+    if (!is.null(input$boin_cohorts)) {
+      update_validation("boin_cohorts_val", input$boin_cohorts)
+    }
+    if (!is.null(input$stop_n_mtd_boin)) {
+      update_validation("stop_n_mtd_boin_val", input$stop_n_mtd_boin)
     }
   })
   
@@ -493,6 +549,26 @@ trial_design_server <- function(id, shared) {
 
   observe({
     update_validation("stop_tox_y_val", input$stop_tox_y_input)
+  })
+
+  # BOIN Inputs
+  observe({
+    update_validation("boin_cohorts_val", input$boin_cohorts)
+  })
+  observe({
+    update_validation("stop_n_mtd_boin_val", input$stop_n_mtd_boin)
+  })
+  observe({
+    update_validation("ttl_multiple_phi_1_val", input$ttl_multiple_phi_1)
+  })
+  observe({
+    update_validation("ttl_multiple_phi_2_val", input$ttl_multiple_phi_2)
+  })
+  observe({
+    update_validation("direct_phi_1_val", input$direct_phi_1)
+  })
+  observe({
+    update_validation("direct_phi_2_val", input$direct_phi_2)
   })
 
   # Render individual warning messages next to each input
@@ -536,6 +612,32 @@ trial_design_server <- function(id, shared) {
 
   output$stop_tox_y_warning <- renderText({
     validation_state$stop_tox_y_val_warning %||% ""
+  })
+
+  # BOIN
+
+  output$boin_cohorts_warning <- renderText({
+    validation_state$boin_cohorts_val_warning %||% ""
+  })
+
+  output$stop_n_mtd_boin_warning <- renderText({
+    validation_state$stop_n_mtd_boin_val_warning %||% ""
+  })
+
+  output$ttl_multiple_phi_1_warning <- renderText({
+    validation_state$ttl_multiple_phi_1_val_warning %||% ""
+  })
+
+  output$ttl_multiple_phi_2_warning <- renderText({
+    validation_state$ttl_multiple_phi_2_val_warning %||% ""
+  })
+
+  output$direct_phi_1_warning <- renderText({
+    validation_state$direct_phi_1_val_warning %||% ""
+  })
+
+  output$direct_phi_2_warning <- renderText({
+    validation_state$direct_phi_2_val_warning %||% ""
   })
 
   ################################ Basic Mode ################################
