@@ -92,14 +92,14 @@ con_server <- function(id, shared) {
 
     # Initial table generation
     observe({
-      req(shared$max_size, shared$cohort)
-      initial_cohorts <- ceiling(shared$max_size / shared$cohort)
-      total_patients <- initial_cohorts * shared$cohort
+      req(shared$max_size(), shared$cohort_size())
+      initial_cohorts <- ceiling(shared$max_size() / shared$cohort_size())
+      total_patients <- initial_cohorts * shared$cohort_size()
 
       new_rows <- data.frame(
         Patient_Number = seq_len(total_patients),
-        Cohort_Number = rep(1:initial_cohorts, each = shared$cohort)[1:total_patients],
-        Dose_Level = rep(1:initial_cohorts, each = shared$cohort)[1:total_patients],
+        Cohort_Number = rep(1:initial_cohorts, each = shared$cohort_size())[1:total_patients],
+        Dose_Level = rep(1:initial_cohorts, each = shared$cohort_size())[1:total_patients],
         DLT = rep(FALSE, total_patients),
         stringsAsFactors = FALSE
       )
