@@ -2,9 +2,6 @@ library(shiny)
 library(bslib)
 library(DT)
 library(shinydashboard)
-#actionButton(ns("complete_table"), "Complete Table")
-#actionButton("complete_graph", "Complete Graph")
-#uiOutput("download_ui")  # This will conditionally show the download button
 
 # ---------------- UI MODULE ----------------
 con_ui <- function(id) {
@@ -18,7 +15,6 @@ con_ui <- function(id) {
         inline = FALSE
       ),
       actionButton(ns("update_design"), "Update Design"),
-      fileInput(ns("file_upload"), "Upload Previous Responses:", accept = c(".csv", ".rds")),
       radioButtons(ns("export_type"), "Choose Export Format:",
              choices = c("PDF", "Excel"),
              inline = TRUE),
@@ -30,6 +26,12 @@ con_ui <- function(id) {
         value = textOutput(ns("patient_count")),
         showcase = bsicons::bs_icon("people-fill"),
         theme_color = "primary"
+      ),
+      value_box(
+        title = "Trial Status",
+        value = textOutput(ns("trial_status")),
+        showcase = bsicons::bs_icon("hourglass-split"),
+        theme_color = "info"
       ),
       value_box(
         title = "Latest Dose Level",
@@ -90,54 +92,58 @@ con_server <- function(id, shared) {
       )
     )
 
-    # Initial table generation
-    observe({
-      req(shared$max_size(), shared$cohort_size())
-      initial_cohorts <- ceiling(shared$max_size() / shared$cohort_size())
-      total_patients <- initial_cohorts * shared$cohort_size()
-
-      new_rows <- data.frame(
-        Patient_Number = seq_len(total_patients),
-        Cohort_Number = rep(1:initial_cohorts, each = shared$cohort_size())[1:total_patients],
-        Dose_Level = rep(1:initial_cohorts, each = shared$cohort_size())[1:total_patients],
-        DLT = rep(FALSE, total_patients),
-        stringsAsFactors = FALSE
+   # Initial table generation
+   observe({
+     req(shared$max_size(), shared$cohort_size())
+     initial_cohort_size <- shared$cohort_size()
+     initial_rows <- data.frame( 
+       Patient_Number = seq_len(initial_cohort_size),
+       Cohort_Number = rep(1, initial_cohort_size),
+       Dose_Level = rep(1, initial_cohort_size),
+       DLT = rep(FALSE, initial_cohort_size),
+       stringsAsFactors = FALSE
       )
-      conduct_reactive_table_data(new_rows)
+     conduct_reactive_table_data(initial_rows)
     })
 
-    # Add cohort
-    observeEvent(input$add_cohort, {
-      data <- conduct_reactive_table_data()
-      current_cohorts <- if (nrow(data) == 0) 0 else max(data$Cohort_Number)
-      new_cohort_number <- current_cohorts + 1
+   # Add cohort
+   observeEvent(input$add_cohort, {
+     data <- conduct_reactive_table_data()
+     current_patient_count <- nrow(data)
+     max_patients <- shared$max_size()
+     cohort_size <- shared$cohort_size()
+     # Prevent adding beyond max_size
+     if (current_patient_count + cohort_size > max_patients) return()
+     current_cohorts <- if (nrow(data) == 0) 0 else max(data$Cohort_Number)
+     new_cohort_number <- current_cohorts + 1
+     # Determine recommended dose
+     if (nrow(data) == 0) {
+       recommended_dose <- 1
+    } else {
+     latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
+     cohort_data <- data[data$Cohort_Number == latest_cohort, ]
+     current_dose <- unique(cohort_data$Dose_Level)
 
-      if (nrow(data) == 0) {
-        recommended_dose <- 1
-      } else {
-        latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
-        cohort_data <- data[data$Cohort_Number == latest_cohort, ]
-        current_dose <- unique(cohort_data$Dose_Level)
+    if (length(current_dose) != 1 || is.na(current_dose)) {
+      recommended_dose <- 1
+    } else if (any(cohort_data$DLT)) {
+      recommended_dose <- max(current_dose - 1, 1)
+    } else {
+      recommended_dose <- current_dose + 1
+    }  
+    }
 
-        if (length(current_dose) != 1 || is.na(current_dose)) {
-          recommended_dose <- 1
-        } else if (any(cohort_data$DLT)) {
-          recommended_dose <- max(current_dose - 1, 1)
-        } else {
-          recommended_dose <- current_dose + 1
-        }
-      }
+    start_patient <- current_patient_count + 1
+    new_rows <- data.frame(
+     Patient_Number = seq(from = start_patient, length.out = cohort_size),
+     Cohort_Number = rep(new_cohort_number, cohort_size),
+     Dose_Level = rep(recommended_dose, cohort_size),
+     DLT = rep(FALSE, cohort_size),
+     stringsAsFactors = FALSE
+    )
 
-      start_patient <- nrow(data) + 1
-      new_rows <- data.frame(
-        Patient_Number = seq(from = start_patient, length.out = shared$cohort_size()),
-        Cohort_Number = rep(new_cohort_number, shared$cohort_size()),
-        Dose_Level = rep(recommended_dose, shared$cohort_size()),
-        DLT = rep(FALSE, shared$cohort_size()),
-        stringsAsFactors = FALSE
-      )
-      updated_data <- rbind(data, new_rows)
-      conduct_reactive_table_data(updated_data)
+    updated_data <- rbind(data, new_rows)
+    conduct_reactive_table_data(updated_data)
     })
 
     # Remove cohort
@@ -184,7 +190,7 @@ con_server <- function(id, shared) {
     })
 
     ##### value boxes #############################
-        output$latest_dose <- renderText({
+    output$latest_dose <- renderText({
       data <- conduct_reactive_table_data()
       if (nrow(data) == 0) return("N/A")
       latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
@@ -205,6 +211,17 @@ con_server <- function(id, shared) {
         recommended <- current_dose + 1
       }
       recommended
+    })
+
+    output$trial_status <- renderText({
+     data <- conduct_reactive_table_data()
+     max_patients <- shared$max_size()
+
+     if (nrow(data) < max_patients) {
+     "Recruiting"
+     } else {
+     "Trial Recruitment Complete"
+    }
     })
 
     output$patient_count <- renderText({
