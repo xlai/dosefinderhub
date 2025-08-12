@@ -150,34 +150,6 @@ con_server <- function(id, shared) {
       conduct_reactive_table_data(updated_data)
     })
 
-    output$latest_dose <- renderText({
-      data <- conduct_reactive_table_data()
-      if (nrow(data) == 0) return("N/A")
-      latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
-      latest_dose <- unique(data$Dose_Level[data$Cohort_Number == latest_cohort])
-      paste(latest_dose, collapse = ", ")
-    })
-
-    output$recommended_dose <- renderText({
-      data <- conduct_reactive_table_data()
-      if (nrow(data) == 0) return("N/A")
-      latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
-      cohort_data <- data[data$Cohort_Number == latest_cohort, ]
-      current_dose <- unique(cohort_data$Dose_Level)
-      if (length(current_dose) != 1 || is.na(current_dose)) return("N/A")
-      if (any(cohort_data$DLT)) {
-        recommended <- max(current_dose - 1, 1)
-      } else {
-        recommended <- current_dose + 1
-      }
-      recommended
-    })
-
-    output$patient_count <- renderText({
-      data <- conduct_reactive_table_data()
-      nrow(data)
-    })
-
     # Editable table
     output$editable_table <- renderDT({
       datatable(
@@ -208,11 +180,39 @@ con_server <- function(id, shared) {
       } else {
         data[info$row, col_name] <- info$value
       }
-
       conduct_reactive_table_data(data)
     })
 
-    # Plot generation
+    ##### value boxes #############################
+        output$latest_dose <- renderText({
+      data <- conduct_reactive_table_data()
+      if (nrow(data) == 0) return("N/A")
+      latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
+      latest_dose <- unique(data$Dose_Level[data$Cohort_Number == latest_cohort])
+      paste(latest_dose, collapse = ", ")
+    })
+
+    output$recommended_dose <- renderText({
+      data <- conduct_reactive_table_data()
+      if (nrow(data) == 0) return("N/A")
+      latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
+      cohort_data <- data[data$Cohort_Number == latest_cohort, ]
+      current_dose <- unique(cohort_data$Dose_Level)
+      if (length(current_dose) != 1 || is.na(current_dose)) return("N/A")
+      if (any(cohort_data$DLT)) {
+        recommended <- max(current_dose - 1, 1)
+      } else {
+        recommended <- current_dose + 1
+      }
+      recommended
+    })
+
+    output$patient_count <- renderText({
+      data <- conduct_reactive_table_data()
+      nrow(data)
+    })
+
+    # Plot generation#################################
     observeEvent(input$generate_plot, {
       output$dose_plot_ui <- renderUI({
         plotOutput(ns("dose_plot"), height = "400px")
@@ -264,7 +264,7 @@ con_server <- function(id, shared) {
       show_boin_card(input$choice == "BOIN")
     })
 
-    ###### CRM results card logic ####
+    ###### CRM results card logic ###################
    show_crm_card <- reactiveVal(FALSE)
 
    output$crm_results_card_ui <- renderUI({
@@ -273,7 +273,7 @@ con_server <- function(id, shared) {
        full_screen = TRUE,
        card_header("CRM Results"),
        card_body(
-         p("This table summarizes DLTs and posterior estimates by dose level."),
+         p("This table summarises DLTs and posterior estimates by dose level."),
          h5("CRM Summary Table"),
          tableOutput(ns("crm_results_table"))
         )
@@ -304,7 +304,7 @@ con_server <- function(id, shared) {
         full_screen = TRUE,
         card_header("BOIN Results"),
         card_body(
-          p("This table summarizes DLTs and posterior estimates by dose level."),
+          p("This table summarises DLTs and posterior estimates by dose level."),
           h5("BOIN Summary Table"),
           tableOutput(ns("boin_results_table"))
         )
