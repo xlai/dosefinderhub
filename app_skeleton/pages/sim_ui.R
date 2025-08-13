@@ -577,10 +577,6 @@ ns <- session$ns
  current_table1 <- reactiveVal(1)
  current_table2 <- reactiveVal(2)
 
-  observeEvent(input$hehe, {
-    # This is to test the combined df
-  })
-
   observeEvent(input$next1, {
     if (current_table1() < length(sim_df())) {
       current_table1(current_table1() + 1)
