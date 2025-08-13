@@ -202,7 +202,7 @@ boin_ui_inputs_direct_boundaries <- tagList(
     )
 }
 
-trial_design_server <- function(id, shared) {
+trial_design_server <- function(id, shared, parent_session = NULL) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -819,7 +819,9 @@ trial_design_server <- function(id, shared) {
       names <- Filter(Negate(is.null), names)
       showNotification(paste("Please change incorrect values, found in the following input areas:", paste(names, collapse = ", ")), type = "error")
     } else {
-      updateTabsetPanel(session, "trial_design_tabs", selected = "Simulation")
+      if (!is.null(parent_session)) {
+        updateNavbarPage(parent_session, "nav", selected = "Simulation")
+      }
     }
   })
 
