@@ -75,7 +75,7 @@ shinyApp(ui, server)
 # shared$ttl: ttl
 # shared$max_size: Maximum sample size
 # shared$start_dose: Starting dose level
-# shared$cohort: Cohort size
+# shared$cohort_size: Cohort size
 
 # shared$skip_esc_crm: Skip escalation in CRM
 # shared$skip_deesc_crm: Skip de-escalation in CRM

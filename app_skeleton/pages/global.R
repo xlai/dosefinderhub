@@ -85,6 +85,43 @@ validate_numeric_input <- function(value, min_val = NULL, max_val = NULL, intege
 
 # Reusable UI component for numeric input with validation using bslib
 
+###################################### BOIN Boundaries ######################################
+boin_probs <- function(ttl, lambda, type) { # Reverse engineering the BOIN probabilities from lambda and ttl
+  if (type == 1) {
+    f <- function(x) lambda - log((1-x)/(1-ttl))/log((ttl*(1-x))/(x*(1-ttl)))
+  } else if (type == 2) {
+    f <- function(x) lambda - log((1-ttl)/(1-x))/log((x*(1-ttl))/(ttl*(1-x)))
+  }
+
+  result <- uniroot(f, c(0,0.999))
+  return(result$root)
+}
+
+boin_boundaries <- function(target, ncohort, cohortsize, n.earlystop, p.saf, p.tox) { # Generating boundaries
+ if (0 < p.saf && p.saf < 0.95*target && 1.05*target < p.tox && p.tox < 1 && !is.na(p.saf) && !is.na(p.tox)) {
+  lambda <- BOIN::get.boundary(target = target, ncohort = ncohort, 
+                               cohortsize = cohortsize, n.earlystop = n.earlystop, 
+                               p.saf = p.saf, p.tox = p.tox, 0.95, FALSE, 0.05)
+  
+  lambda_e <- lambda$lambda_e
+  lambda_d <- lambda$lambda_d
+
+  text_e <-  paste("lambda_e = ", lambda_e) 
+  text_d <-  paste("lambda_d = ", lambda_d)
+ } else {
+  text_e <- "Probabilities must be less than and greater than the ttl respectively, and cannot be too close to the ttl."
+  text_d <- NULL
+
+  lambda_e <- NULL
+  lambda_d <- NULL
+ }
+ return(list(
+    lambda_e = lambda_e,
+    lambda_d = lambda_d,
+    text_e = text_e,
+    text_d = text_d
+  ))
+}
 
 ############################################ Simulation Code ############################################
 
@@ -183,7 +220,6 @@ mean_length$tpt <- mean(dist_length$tpt)
 output <- list(
     selection_tab = selection_tab$tpt, # % Times dose was selected as MTD
     treatment_tab = treatment_tab$tpt, # % Treated at each dose
-    dist_accuracy = dist_accuracy$tpt, # Distribution of accuracy
     mean_accuracy = mean_accuracy$tpt, # Mean accuracy
     dist_overdose = dist_overdose$tpt, # Distribution of overdose
     mean_overdose = mean_overdose$tpt, # Mean overdose
@@ -294,7 +330,6 @@ mean_length$crm <- mean(dist_length$crm)
 output <- list(
     selection_tab = selection_tab$crm, # % Times dose was selected as MTD
     treatment_tab = treatment_tab$crm, # % Treated at each dose
-    dist_accuracy = dist_accuracy$crm, # Distribution of accuracy
     mean_accuracy = mean_accuracy$crm, # Mean accuracy
     dist_overdose = dist_overdose$crm, # Distribution of overdose
     mean_overdose = mean_overdose$crm, # Mean overdose
@@ -377,7 +412,6 @@ mean_length <- mean(dist_length)
 output <- list(
     selection_tab = selection_tab, # % Times dose was selected as MTD
     treatment_tab = treatment_tab, # % Treated at each dose
-    dist_accuracy = dist_accuracy, # Distribution of accuracy
     mean_accuracy = mean_accuracy, # Mean accuracy
     dist_overdose = dist_overdose, # Distribution of overdose
     mean_overdose = mean_overdose, # Mean overdose
@@ -457,7 +491,7 @@ plot_bar <- function(data, category, value, title, y_title, col, model_picked, m
 
 
 ########################### Function to Format Data for Plot Simulation Histograms ###########################
-plot_dist <- function(data, category, mean_vector, title, x_title, col, model_picked, models, scenarios) {
+plot_dist <- function(data, category, median_vector, title, x_title, col, model_picked, models, scenarios) {
   
   valid_data <- Filter(Negate(is.null), data)
 
@@ -467,9 +501,9 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
   scenario <- c("Scenario 1", "Scenario 2", "Scenario 3") # For later when "by scenario" is implemented
   updated_scenarios <- scenario[!sapply(scenarios, identical, FALSE)]
 
-  Mean <- mean_vector
+  Median <- median_vector
 
-  mean <- data.frame(Mean)
+  median <- data.frame(Median)
 
   if (length(valid_data) == 0) {
     return(NULL)
@@ -500,23 +534,23 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
   combined_data <- do.call(rbind, named_data)
 
    if (model_picked == 1) {
-    mean$model <- updated_model
- 
+    median$model <- updated_model
+
     fill_col <- combined_data$Model
-    colour <- mean$model
+    colour <- median$model
     fill_title <- "Model"
   } else {
-     mean$scenarios <- updated_scenarios
+     median$scenarios <- updated_scenarios
 
     fill_col <- combined_data$Scenario
-    colour <- mean$scenarios
+    colour <- median$scenarios
     fill_title <- "Scenario"
   }
 
   plot <- ggplot(combined_data, aes(x = {{category}}, fill = fill_col)) +
-     geom_histogram(binwidth = 1, position = position_dodge(), color = "black") +
-     geom_vline(data = mean, aes(xintercept = Mean, color = colour), linetype = "dashed") + # Mean fixed for now
-     labs(title = title, x = x_title, y = "Frequency", color = "Mean Values", fill = fill_title) +
+     geom_density(alpha=0.3) +
+     geom_vline(data = median, aes(xintercept = Median, color = colour), linetype = "dashed") + 
+     labs(title = title, x = x_title, y = "Density", color = "Median Values", fill = fill_title) +
     theme_minimal()
 
     return(plot)
@@ -547,7 +581,6 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
   output <- list(
     data_selection = data_selection,
     data_treatment = data_treatment,
-    accuracy = data.frame(accuracy = sim$dist_accuracy),
     #mean_accuracy = as.numeric(sim$mean_accuracy),
     overdose = data.frame(overdose = sim$dist_overdose),
     #mean_overdose = as.numeric(sim$mean_overdose),
@@ -564,7 +597,7 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
   }
  
   for (i in 1:3) {
-    for (j in 1:5) {
+    for (j in 1:4) {
     if (is.null(list1[[i]][[j]])) {
       list2[[j]][[i]] <- list(NULL)
     } else {
@@ -574,7 +607,56 @@ plot_dist <- function(data, category, mean_vector, title, x_title, col, model_pi
   return(list2)
 }
 
-  mean_for_scen <- function(mean) {
-  mean_scen <- lapply(seq_along(mean[[1]]), function(j) sapply(mean, `[`, j))
-  return(mean_scen)
+  median_for_scen <- function(median) {
+  median_scen <- lapply(seq_along(median[[1]]), function(j) sapply(median, `[`, j))
+  return(median_scen)
   }
+
+  ############### Functions to Output Example Scenarios ################
+
+  ### Function for logistic models.
+  logistic_scenarios <- function(pT, MTD, delta, n_doses, a) {
+    d <- rep(NA, n_doses)
+    p <- rep(NA, n_doses)
+      d[MTD] <- log(pT/(1-pT)) - a 
+      p[MTD] <- pT
+
+      G1 <- (log(pT + delta)/(1-(pT + delta)) - a)
+      G2 <- (log(pT - delta)/(1-(pT - delta)) - a)
+
+      Gplus <- G1/G2
+      Gminus <- G2/G1
+
+      for (i in MTD:(n_doses - 1)) {
+        d[i+1] <- Gplus * d[i]
+      }
+      for (i in MTD:2) {
+        d[i-1] <- Gminus * d[i]
+      }
+      for (i in 1:n_doses) {
+        p[i] <- exp(a + d[i])/(1 + exp(a + d[i]))
+      }
+    return(p)
+  }
+
+  # For now, I will take a fixed delta (0.05). This can be refined later.
+  example_scenarios <- function (pT, MTD, delta, n_doses, F) {
+    p <- rep(NA, n_doses)
+    p[MTD] <- pT
+
+    if (F == 1) { # Based on the empiric dose-toxicity model
+      for (i in MTD:(n_doses-1)) {
+        p[i+1] <- exp((log(pT + delta)*log(p[i]))/(log(pT - delta)))
+      }
+      for (i in MTD:2) {
+        p[i-1] <- exp((log(pT - delta)*log(p[i]))/(log(pT + delta)))
+      }
+    } else if (F == 2) { # Based on the 1 parametric logistical dose-toxicity model with a = 3
+      p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 3)
+    } else if (F == 3) { # Based on the 2 parametric logistical dose-toxicity model.
+      p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 0)
+    } else {p  = NULL}
+
+    return(p)
+  }
+ 
