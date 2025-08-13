@@ -55,6 +55,7 @@ sim_ui <- function(id) {
           )
         )
       ),
+
     sidebar = sidebar(
       h3("What Do You Want to Simulate?"),
             ################################ Simulation tab UI ################################
