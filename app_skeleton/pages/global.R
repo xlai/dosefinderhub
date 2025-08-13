@@ -657,7 +657,10 @@ plot_dist <- function(data, category, median_vector, title, x_title, col, model_
     p <- rep(NA, n_doses)
     p[MTD] <- pT
 
-    if (n_doses == 1) {
+    if (MTD > n_doses) {
+      MTD <- ceiling(n_doses/2)
+    }
+    else if (n_doses == 1) {
       p[1] <- pT
     } else if (MTD == 1) {
        for (i in MTD:(n_doses-1)) {
