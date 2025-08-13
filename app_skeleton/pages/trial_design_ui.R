@@ -792,12 +792,32 @@ trial_design_server <- function(id, shared) {
   observeEvent(input$view_simulation, {
     # Validate all inputs before proceeding
     validation_errors <- sapply(names(validation_state), function(x) validation_state[[x]])
-    validation_errors2 <- validation_errors[!grepl("warning", names(validation_errors))]
-    validation_errors3 <- validation_errors[!grepl("warning", names(validation_errors))]
-    validation_errors4 <- Filter(Negate(is.null), validation_errors3)
-   
-    if (length(validation_errors4) > 0) {
-      showNotification(paste("Please change the following inputs:", paste(names(validation_errors4), collapse = ", ")), type = "error")
+    validation_errors <- validation_errors[!grepl("warning", names(validation_errors))]
+    validation_errors <- validation_errors[!grepl("basic", names(validation_errors))]
+    validation_errors <- Filter(Negate(is.null), validation_errors)
+
+    if (length(validation_errors) > 0) {
+      names <- vector("list", 3)
+      crm_names <- cbind(grep("var_val", names(validation_errors)),  grep("mtd_val", names(validation_errors)), grep("stop_tox", names(validation_errors)))
+      boin_names <- cbind(grep("boin", names(validation_errors)), grep("phi", names(validation_errors)))
+      general_names <- validation_errors[-c(crm_names, boin_names)]
+      if (length(general_names) > 0) {
+        names[[1]] <- "General Parameters"
+      } else {
+        names[[1]] <- NULL
+      }
+      if (length(crm_names) > 0) {
+        names[[2]] <- "CRM Parameters"
+      } else {
+        names[[2]] <- NULL
+      }
+      if (length(boin_names) > 0) {
+        names[[3]] <- "BOIN Parameters"
+      } else {
+        names[[3]] <- NULL
+      }
+      names <- Filter(Negate(is.null), names)
+      showNotification(paste("Please change incorrect values, found in the following input areas:", paste(names, collapse = ", ")), type = "error")
     } else {
       updateTabsetPanel(session, "trial_design_tabs", selected = "Simulation")
     }
