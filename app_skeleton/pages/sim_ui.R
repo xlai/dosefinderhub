@@ -24,7 +24,7 @@ sim_ui <- function(id) {
       div( 
         navset_tab(
           nav_panel(
-            "Simulation Inputs", 
+            "Simulation Inputs",
             h3("Simulation Inputs"),
             p("Please fill out the following inputs before running the simulation."),
             tags$hr(),
@@ -266,6 +266,27 @@ validation_state <- reactiveValues(
  sim_titles <- reactiveVal(NULL) # initialising
 
   observeEvent(input$run_simulation, {
+
+    validation_errors <- sapply(names(validation_state), function(x) validation_state[[x]])
+    validation_errors <- validation_errors[!grepl("warning", names(validation_errors))]
+    validation_errors <- validation_errors[!grepl("basic", names(validation_errors))]
+    validation_errors <- Filter(Negate(is.null), validation_errors)
+
+  if (shared$td_warnings > 0) {
+    showNotification(
+      "Please resolve the warnings in the Trial Design tab before running the simulation.",
+      type = "error",
+      duration = 5
+    )
+    return(NULL)
+  } else if (length(validation_errors) > 0) {
+    showNotification(
+      "Please resolve the warnings in the Simulation inputs before running the simulation.",
+      type = "error",
+      duration = 5
+    )
+    return(NULL)
+  } else {
     # Adding in Scenarios. I am going to cap the possible number of Scenarios to 3 (this can be changed later).
 
   scenarios <- c("Scenario 1", "Scenario 2", "Scenario 3") 
@@ -657,6 +678,7 @@ validation_state <- reactiveValues(
 
   } # else (after for loop)
   } # else (before for loop)
+  } # else (for validation)
   }) # observe function
 
  current_table1 <- reactiveVal(1)

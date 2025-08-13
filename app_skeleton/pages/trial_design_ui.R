@@ -421,6 +421,9 @@ trial_design_server <- function(id, shared, parent_session = NULL) {
     basic_start_dose_val = NULL,
     basic_cohort_val = NULL
   )
+  val_length <- reactive({
+    length(validation_state)
+  })
   
   # Define base validation rules for each input
   base_validation_rules <- list(
@@ -789,6 +792,18 @@ trial_design_server <- function(id, shared, parent_session = NULL) {
   })
 
   ## Moving to Simulation Tab
+
+ observe({
+  # Convert reactiveValues to a regular list
+  validation_values <- reactiveValuesToList(validation_state)
+
+  # Remove elements whose names or values contain "warning"
+  filtered <- validation_values[!grepl("warning", names(validation_values))]
+
+  # Count how many of the remaining elements are not NULL
+  shared$td_warnings <- sum(!sapply(filtered, is.null))
+})
+
   observeEvent(input$view_simulation, {
     # Validate all inputs before proceeding
     validation_errors <- sapply(names(validation_state), function(x) validation_state[[x]])
@@ -798,20 +813,30 @@ trial_design_server <- function(id, shared, parent_session = NULL) {
 
     if (length(validation_errors) > 0) {
       names <- vector("list", 3)
-      crm_names <- cbind(grep("var_val", names(validation_errors)),  grep("mtd_val", names(validation_errors)), grep("stop_tox", names(validation_errors)))
-      boin_names <- cbind(grep("boin", names(validation_errors)), grep("phi", names(validation_errors)))
-      general_names <- validation_errors[-c(crm_names, boin_names)]
+      crm_names_var <- grep("var_val", names(validation_errors))
+      crm_names_mtd <- grep("mtd_val", names(validation_errors))
+      crm_names_tox <- grep("stop_tox", names(validation_errors))
+
+      boin_names <- grep("boin", names(validation_errors))
+      boin_names_phi <- grep("phi", names(validation_errors))
+
+      if (length(crm_names_var) == 0 && length(crm_names_mtd) == 0 && length(crm_names_tox) == 0
+          && length(boin_names) == 0 && length(boin_names_phi) == 0) {
+          general_names <- names(validation_errors)
+          } else {
+      general_names <- validation_errors[-c(crm_names_var, crm_names_mtd, crm_names_tox, boin_names, boin_names_phi)]
+          }
       if (length(general_names) > 0) {
         names[[1]] <- "General Parameters"
       } else {
         names[[1]] <- NULL
       }
-      if (length(crm_names) > 0) {
+      if (length(crm_names_var) > 0 || length(crm_names_mtd) > 0 || length(crm_names_tox) > 0) {
         names[[2]] <- "CRM Parameters"
       } else {
         names[[2]] <- NULL
       }
-      if (length(boin_names) > 0) {
+      if (length(boin_names) > 0 || length(boin_names_phi) > 0) {
         names[[3]] <- "BOIN Parameters"
       } else {
         names[[3]] <- NULL
