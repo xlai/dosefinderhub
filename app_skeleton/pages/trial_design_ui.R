@@ -788,6 +788,21 @@ trial_design_server <- function(id, shared) {
     removeModal()
   })
 
+  ## Moving to Simulation Tab
+  observeEvent(input$view_simulation, {
+    # Validate all inputs before proceeding
+    validation_errors <- sapply(names(validation_state), function(x) validation_state[[x]])
+    validation_errors2 <- validation_errors[!grepl("warning", names(validation_errors))]
+    validation_errors3 <- validation_errors[!grepl("warning", names(validation_errors))]
+    validation_errors4 <- Filter(Negate(is.null), validation_errors3)
+   
+    if (length(validation_errors4) > 0) {
+      showNotification(paste("Please change the following inputs:", paste(names(validation_errors4), collapse = ", ")), type = "error")
+    } else {
+      updateTabsetPanel(session, "trial_design_tabs", selected = "Simulation")
+    }
+  })
+
 } # End of function within moduleServer
 ) # End of moduleServer
 } # End of trial_design_server function
