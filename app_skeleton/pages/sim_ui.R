@@ -120,6 +120,15 @@ ns <- session$ns
   reactive_df <- reactiveVal(matrix) # initalising a reactive value to store the data frame
 
   observeEvent({input$refresh_table_input}, {
+   doses <- shared$n_dosess()
+   scen <- n_scenarios()
+  if (doses < 1 || floor(doses) != doses) {
+    showNotification("Please set a valid number of doses in the Trial Design tab before refreshing the table.", type = "error")
+    return(NULL)
+  } else if (scen < 1 ||  floor(scen) != scen || scen > 3) {
+    showNotification("Please select a number of Scenarios between 1 and 3 in the Simulation Inputs before refreshing the table.", type = "error")
+    return(NULL)
+  } else {
 
   ex_scen_1 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), 0.05, shared$n_dosess(), 1)
   ex_scen_2 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), 0.05, shared$n_dosess(), 2)
@@ -142,7 +151,9 @@ ns <- session$ns
 
   cbind <- cbind(dataframe_row_1, dataframe)
   reactive_df(cbind) # Updating the reactive value with the new data frame
+  } # end of else
   })
+  
   
   output$test_df <- renderDT({
     datatable(reactive_df(), editable = TRUE, rownames = FALSE, options = list(scrollX = TRUE)) 
