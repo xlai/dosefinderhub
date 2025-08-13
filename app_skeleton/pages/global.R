@@ -663,12 +663,23 @@ plot_dist <- function(data, category, median_vector, title, x_title, col, model_
     else if (n_doses == 1) {
       p[1] <- pT
     } else if (MTD == 1) {
+      if (F == 1) {
        for (i in MTD:(n_doses-1)) {
         p[i+1] <- exp((log(pT + delta)*log(p[i]))/(log(pT - delta)))
+      } } else if (F == 2) {
+        p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 3)
+      } else if (F == 3) {
+        p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 0)
       }
     } else if (MTD == n_doses) {
-       for (i in MTD:2) {
-        p[i-1] <- exp((log(pT - delta)*log(p[i]))/(log(pT + delta)))
+      if (F == 1) {
+        for (i in MTD:2) {
+          p[i-1] <- exp((log(pT - delta)*log(p[i]))/(log(pT + delta)))
+        }
+      } else if (F == 2) {
+        p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 3)
+      } else if (F == 3) {
+        p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 0)
       }
     } else {
     if (F == 1) { # Based on the empiric dose-toxicity model
