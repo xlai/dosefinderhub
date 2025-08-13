@@ -33,7 +33,8 @@ sim_ui <- function(id) {
             in the table below. If the dimensions do not match, change the number of scenarios and doses and press 
             'Refresh Dimensions'."),
             test_df_table,
-            input_task_button(ns("refresh_table_input"), "Refresh Table Dimensions")
+            input_task_button(ns("refresh_table_input"), "Refresh Table Dimensions"),
+            textOutput(ns("table_warning"))
             ),
           nav_panel(
             "Simulation Output - Tables",
@@ -231,7 +232,31 @@ validation_state <- reactiveValues(
     validation_state$scen_val_warning %||% ""
   })
 
-  
+  ## The reactive table
+  observeEvent(input$test_df_cell_edit, {
+  if (any(is.na(reactive_df()))) {
+    output$table_warning <- renderText({
+      "⚠️ Please ensure all cells in the True DLT probabilities table are filled out before running the simulation."
+    })
+  } else if (any(reactive_df()[, -1] < 0 | reactive_df()[, -1] > 1)) {
+    output$table_warning <- renderText({
+      "⚠️ Please ensure all True DLT probabilities are between 0 and 1."
+    })
+  } else { incr_val <- rep(FALSE, nrow(reactive_df()))
+    for (i in 1: nrow(reactive_df())) {
+    if (is.unsorted(reactive_df()[i, -1])) {
+      incr_val[i] <- TRUE
+    } 
+  }
+  if (any(incr_val)) {
+    output$table_warning <- renderText({
+        "⚠️ Please ensure all rows of the table contain an increasing sequence of true DLT probabilities."
+      })
+  } else {
+    output$table_warning <- NULL
+  }
+  }
+  })
 
  ######################################### Simulation Outputs #########################################
  # Code copied directly from the trial_design tab's server code
