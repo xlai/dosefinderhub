@@ -135,15 +135,15 @@ ns <- session$ns
   ex_scen_3 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), 0.05, shared$n_dosess(), 3)
 
   if (n_scenarios() == 1) {
-    dimensions <- ex_scen_1
+    dimensions <- t(ex_scen_1)
   } else if (n_scenarios() == 2) {
     dimensions <- rbind(ex_scen_1, ex_scen_2)
   } else if (n_scenarios() == 3) {
     dimensions <- rbind(ex_scen_1, ex_scen_2, ex_scen_3)
   }
 
-  colnames(dimensions) <- paste("d", 1:shared$n_dosess(), sep = "")
   dataframe <- data.frame(dimensions) # What was previously doses_table
+  colnames(dataframe) <- paste("d", 1:shared$n_dosess(), sep = "")
 
   Scenario <- matrix(as.numeric(1:n_scenarios()), nrow = n_scenarios(), ncol = 1)
 
@@ -297,6 +297,12 @@ validation_state <- reactiveValues(
       duration = 5
     )
     return(NULL)
+    } else if (shared$n_dosess() != ncol(true_dlts()) || n_scenarios() > nrow(true_dlts())) {
+    showNotification(
+      "Please click Refresh Table Dimensions and fill in the True DLT probabilities table before running the simulation.",
+      type = "error",
+      duration = 5
+    )
   } else {
     # Adding in Scenarios. I am going to cap the possible number of Scenarios to 3 (this can be changed later).
 
