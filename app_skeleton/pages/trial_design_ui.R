@@ -348,6 +348,8 @@ observeEvent(move_data(), {
       as.numeric(input$cohort_inputt)
   })
 
+
+
   # Model-specific variables from configuration tab
   # CRM
   shared$skip_esc_crm <- reactive({as.logical(input$skip_esc_crm_input)})
@@ -824,6 +826,27 @@ observeEvent(move_data(), {
     updateRadioButtons(session, "skip_tpt_input", selected = input$basic_skip_deesc_input)
 
     removeModal()
+  })
+
+  # This is clunky - needs to be changed to be more elegant.
+  observeEvent(input$n_doses_inputt, {
+    shared$n_dosess <- reactive({as.numeric(input$n_doses_inputt)})
+  })
+
+  observeEvent(input$ttl_inputt, {
+    shared$ttl <- reactive({as.numeric(input$ttl_inputt)})
+  })
+
+  observeEvent(input$max_size_inputt, {
+    shared$max_size <- reactive({as.numeric(input$max_size_inputt)})
+  })
+
+  observeEvent(input$start_dose_inputt, {
+    shared$start_dose <- reactive({as.numeric(input$start_dose_inputt)})
+  })
+
+  observeEvent(input$cohort_inputt, {
+    shared$cohort_size <- reactive({as.numeric(input$cohort_inputt)})
   })
 
 } # End of function within moduleServer
