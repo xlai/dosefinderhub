@@ -84,34 +84,73 @@ con_server <- function(id, shared) {
     # Reactive values
     crm_model <- reactiveVal(NULL)
     crm_fit <- reactiveVal(NULL)
-    conduct_reactive_table_data <- reactiveVal(
-      data.frame(
-        Patient_Number = integer(0),
-        Cohort_Number = integer(0),
-        Dose_Level = numeric(0),
-        DLT = logical(0),
-        stringsAsFactors = FALSE
-      )
-    )
-    show_crm_card <- reactiveVal(FALSE)
+    conduct_reactive_table_data <- reactiveVal(data.frame(
+      Patient_Number = integer(0),
+      Cohort_Number = integer(0),
+      Dose_Level = numeric(0),
+      DLT = logical(0),
+      stringsAsFactors = FALSE
+    ))
 
     # Convert table to CRM outcome string
     convert_table_to_crm_outcome <- function(data) {
       split_data <- split(data, data$Cohort_Number)
       outcome_str <- lapply(split_data, function(cohort) {
-        paste0(cohort$Dose_Level[1], paste(ifelse(cohort$DLT, "T", "N"), collapse = ""))
+        dose_levels <- unique(cohort$Dose_Level)
+        if (length(dose_levels) != 1) {
+          stop(paste("Cohort", cohort$Cohort_Number[1], "has inconsistent dose levels"))
+        }
+        paste0(dose_levels, paste(ifelse(cohort$DLT, "T", "N"), collapse = ""))
       })
       paste(outcome_str, collapse = " ")
     }
 
-    # Update design logic
+    # Dose recommendation logic per design
+    get_next_dose_crm <- function(data, model) {
+      outcome_str <- tryCatch(convert_table_to_crm_outcome(data), error = function(e) NULL)
+      if (is.null(outcome_str) || is.null(model)) return(1)
+      fit <- tryCatch(model %>% fit(outcome_str), error = function(e) NULL)
+      crm_fit(fit)
+      if (!is.null(fit)) return(fit %>% recommended_dose())
+      return(1)
+    }
+
+    get_next_dose_boin <- function(data) {
+      latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
+      cohort_data <- data[data$Cohort_Number == latest_cohort, ]
+      current_dose <- unique(cohort_data$Dose_Level)
+      if (length(current_dose) != 1 || is.na(current_dose)) return(1)
+      if (any(cohort_data$DLT)) return(max(current_dose - 1, 1))
+      return(current_dose + 1)
+    }
+
+    get_next_dose_3plus3 <- function(data) {
+      latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
+      cohort_data <- data[data$Cohort_Number == latest_cohort, ]
+      current_dose <- unique(cohort_data$Dose_Level)
+      if (length(current_dose) != 1 || is.na(current_dose)) return(1)
+      dlt_count <- sum(cohort_data$DLT)
+      if (dlt_count == 0) return(current_dose + 1)
+      if (dlt_count == 1) return(current_dose)
+      return(max(current_dose - 1, 1))
+    }
+
+    get_next_recommended_dose <- function(data, design_choice, crm_model = NULL) {
+      if (nrow(data) == 0) return(1)
+      switch(design_choice,
+        "CRM" = get_next_dose_crm(data, crm_model),
+        "BOIN" = get_next_dose_boin(data),
+        "3+3" = get_next_dose_3plus3(data),
+        1
+      )
+    }
+
+    # Update CRM model
     observeEvent(input$update_design, {
       if (input$choice == "CRM") {
-        target <- shared$ttl()
-        skeleton <- shared$skeleton_crm()
         model <- get_trialr_crm(
-          skeleton = skeleton,
-          target = target,
+          skeleton = shared$skeleton_crm(),
+          target = shared$ttl(),
           model = "logistic",
           beta_mean = 0,
           beta_sd = 1,
@@ -122,17 +161,10 @@ con_server <- function(id, shared) {
           stop_when_n_at_dose(dose = "recommended", n = 9)
         crm_model(model)
 
-        # Fit model immediately
         data <- conduct_reactive_table_data()
         if (nrow(data) > 0) {
-          outcome_str <- convert_table_to_crm_outcome(data)
-          fit <- tryCatch(model %>% fit(outcome_str), error = function(e) NULL)
-          crm_fit(fit)
+          dose <- get_next_dose_crm(data, model)
         }
-
-        show_crm_card(TRUE)
-      } else {
-        show_crm_card(FALSE)
       }
     })
 
@@ -149,58 +181,12 @@ con_server <- function(id, shared) {
       conduct_reactive_table_data(initial_rows)
     })
 
-    # Add cohort
-    observeEvent(input$add_cohort, {
-      data <- conduct_reactive_table_data()
-      current_patient_count <- nrow(data)
-      max_patients <- shared$max_size()
-      cohort_size <- shared$cohort_size()
-      if (current_patient_count + cohort_size > max_patients) return()
-
-      new_cohort_number <- if (nrow(data) == 0) 1 else max(data$Cohort_Number) + 1
-      recommended_dose <- 1
-
-      if (input$choice == "CRM" && !is.null(crm_model()) && nrow(data) > 0) {
-        outcome_str <- convert_table_to_crm_outcome(data)
-        fit <- tryCatch(crm_model() %>% fit(outcome_str), error = function(e) NULL)
-        crm_fit(fit)
-        if (!is.null(fit)) {
-          recommended_dose <- fit %>% recommended_dose()
-        }
-      } else if (nrow(data) > 0) {
-        latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
-        cohort_data <- data[data$Cohort_Number == latest_cohort, ]
-        current_dose <- unique(cohort_data$Dose_Level)
-        if (length(current_dose) == 1 && !is.na(current_dose)) {
-          recommended_dose <- if (any(cohort_data$DLT)) max(current_dose - 1, 1) else current_dose + 1
-        }
-      }
-
-      start_patient <- current_patient_count + 1
-      new_rows <- data.frame(
-        Patient_Number = seq(from = start_patient, length.out = cohort_size),
-        Cohort_Number = rep(new_cohort_number, cohort_size),
-        Dose_Level = rep(recommended_dose, cohort_size),
-        DLT = rep(FALSE, cohort_size),
-        stringsAsFactors = FALSE
-      )
-
-      conduct_reactive_table_data(rbind(data, new_rows))
-    })
-
-    # Remove cohort
-    observeEvent(input$remove_cohort, {
-      data <- conduct_reactive_table_data()
-      if (nrow(data) <= 3 || is.na(max(data$Cohort_Number))) return()
-      last_cohort <- max(data$Cohort_Number)
-      conduct_reactive_table_data(data[data$Cohort_Number != last_cohort, ])
-    })
-
     # Table editing
     observeEvent(input$editable_table_cell_edit, {
       info <- input$editable_table_cell_edit
       data <- conduct_reactive_table_data()
       col_name <- colnames(data)[info$col + 1]
+
       if (col_name == "Dose_Level") {
         cohort_number <- data$Cohort_Number[info$row]
         new_value <- as.numeric(info$value)
@@ -224,7 +210,15 @@ con_server <- function(id, shared) {
       )
     }, server = TRUE)
 
-    ##### Value boxes #####
+    # Value box: Recommended dose
+    output$recommended_dose <- renderText({
+      data <- conduct_reactive_table_data()
+      if (nrow(data) == 0) return("N/A")
+      dose <- get_next_recommended_dose(data, input$choice, crm_model())
+      as.character(dose)
+    })
+
+    # Value box: Latest dose
     output$latest_dose <- renderText({
       data <- conduct_reactive_table_data()
       if (nrow(data) == 0) return("N/A")
@@ -233,35 +227,61 @@ con_server <- function(id, shared) {
       paste(latest_dose, collapse = ", ")
     })
 
-    output$recommended_dose <- renderText({
-      fit <- crm_fit()
-      if (is.null(fit)) return("N/A")
-      tryCatch({
-        dose <- fit %>% recommended_dose()
-        as.character(dose)
-      }, error = function(e) {
-        "Error in CRM fitting"
-      })
-    })
-
+    # Value box: Trial status
     output$trial_status <- renderText({
       data <- conduct_reactive_table_data()
       max_patients <- shared$max_size()
       if (nrow(data) >= max_patients) return("Trial Recruitment Complete")
 
-      fit <- crm_fit()
-      if (!is.null(fit)) {
-        recommended <- fit %>% recommended_dose()
-        n_at_recommended <- sum(data$Dose_Level == recommended)
-        if (n_at_recommended >= 9) {
-          return("Suggestion: Stop trial - 9 patients at recommended dose")
+      if (input$choice == "CRM" && !is.null(crm_model()) && nrow(data) > 0) {
+        outcome_str <- tryCatch(convert_table_to_crm_outcome(data), error = function(e) NULL)
+        if (!is.null(outcome_str)) {
+          fit <- tryCatch(crm_model() %>% fit(outcome_str), error = function(e) NULL)
+          if (!is.null(fit)) {
+            recommended <- fit %>% recommended_dose()
+            n_at_recommended <- sum(data$Dose_Level == recommended)
+            if (n_at_recommended >= 9) {
+              return("Suggestion: Stop trial - 9 patients at recommended dose")
+            }
+          }
         }
       }
       "Recruiting"
     })
 
+    # Value box: Patient count
     output$patient_count <- renderText({
       nrow(conduct_reactive_table_data())
+    })
+
+    # Add cohort
+    observeEvent(input$add_cohort, {
+      data <- conduct_reactive_table_data()
+      current_patient_count <- nrow(data)
+      max_patients <- shared$max_size()
+      cohort_size <- shared$cohort_size()
+      if (current_patient_count + cohort_size > max_patients) return()
+
+      new_cohort_number <- if (nrow(data) == 0) 1 else max(data$Cohort_Number) + 1
+      recommended_dose <- get_next_recommended_dose(data, input$choice, crm_model())
+
+      start_patient <- current_patient_count + 1
+      new_rows <- data.frame(
+        Patient_Number = seq(from = start_patient, length.out = cohort_size),
+        Cohort_Number = rep(new_cohort_number, cohort_size),
+        Dose_Level = rep(recommended_dose, cohort_size),
+        DLT = rep(FALSE, cohort_size),
+        stringsAsFactors = FALSE
+      )
+      conduct_reactive_table_data(rbind(data, new_rows))
+    })
+
+    # Remove cohort
+    observeEvent(input$remove_cohort, {
+      data <- conduct_reactive_table_data()
+      if (nrow(data) <= 3 || is.na(max(data$Cohort_Number))) return()
+      last_cohort <- max(data$Cohort_Number)
+      conduct_reactive_table_data(data[data$Cohort_Number != last_cohort, ])
     })
 
     # Plot generation#################################
@@ -310,17 +330,18 @@ con_server <- function(id, shared) {
       updateTextInput(session, "plot_title", value = "Cohort Grouped Patient Dose Level with DLT's")
     })
     
+    ###### CRM results card logic ###################
+   show_crm_card <- reactiveVal(FALSE)
 
-    ##### CRM Results Card #####
-    output$crm_results_card_ui <- renderUI({
-      if (!show_crm_card()) return(NULL)
-      card(
-        full_screen = TRUE,
-        card_header("CRM Results"),
-        card_body(
-          p("This table summarises DLTs and posterior estimates by dose level."),
-          h5("CRM Summary Table"),
-          tableOutput(ns("crm_results_table"))
+   output$crm_results_card_ui <- renderUI({
+     if (!show_crm_card()) return(NULL)
+     card(
+       full_screen = TRUE,
+       card_header("CRM Results"),
+       card_body(
+         p("This table summarises DLTs and posterior estimates by dose level."),
+         h5("CRM Summary Table"),
+         tableOutput(ns("crm_results_table"))
         )
       )
     })
