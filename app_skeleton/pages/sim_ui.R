@@ -112,9 +112,9 @@ ns <- session$ns
 
   ############## Reactive True DLT Probabilities Table ##############
  
-  scen_1_init <- c(1, example_scenarios(0.3, 3, 0.05, 5, 1))
-  scen_2_init <- c(2, example_scenarios(0.3, 3, 0.05, 5, 2))
-  scen_3_init <- c(3, example_scenarios(0.3, 3, 0.05, 5, 3))
+  scen_1_init <- c(1, example_scenarios(0.3, 3, 5))
+  scen_2_init <- c(2, example_scenarios(0.3, 2, 5))
+  scen_3_init <- c(3, example_scenarios(0.3, 4, 5))
   matrix <- rbind(scen_1_init, scen_2_init, scen_3_init)
   colnames(matrix) <- list("Scenario", "d1", "d2", "d3", "d4", "d5")
   matrix_df <- as.data.frame(matrix)
@@ -132,9 +132,9 @@ ns <- session$ns
     return(NULL)
   } else {
 
-  ex_scen_1 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), 0.05, shared$n_dosess(), 1)
-  ex_scen_2 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), 0.05, shared$n_dosess(), 2)
-  ex_scen_3 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), 0.05, shared$n_dosess(), 3)
+  ex_scen_1 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), shared$n_dosess())
+  ex_scen_2 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm() - 1, shared$n_dosess())
+  ex_scen_3 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm() + 1, shared$n_dosess())
 
   if (n_scenarios() == 1) {
     dimensions <- t(ex_scen_1)
