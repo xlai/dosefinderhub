@@ -205,9 +205,79 @@ boin_ui_inputs_direct_boundaries <- tagList(
 trial_design_server <- function(id, shared, move_data, parent_session = NULL) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
+  
+##### Reactive Skeleton Input ######
+reactive_skeleton <- reactiveVal() # initalising a reactive value to store the data frame
+
+ observeEvent({input$n_doses_inputt | input$prior_mtd_input}, {  
+    if (is.na(input$n_doses_inputt) | is.na(input$prior_mtd_input)) {  
+      reactive_skeleton(NULL)  
+    } else if (input$prior_mtd_input > input$n_doses_inputt)  {  
+      reactive_skeleton(NULL)  
+    } else {
+  dose <- as.integer(input$n_doses_inputt)  
+  Prior <- dfcrm::getprior(halfwidth = 0.25*input$ttl_inputt, target = input$ttl_inputt, nu = input$prior_mtd_input, nlevel = dose)
+
+  rownames_skel <-paste("d", 1:dose, sep = "")
+
+  df <- data.frame(Dose = rownames_skel, Prior = Prior)
+
+  reactive_skeleton(df) # Updating the reactive value with the new data frame
+   } })
+  
+  output$skeleton_df <- renderDT({
+    datatable(reactive_skeleton(), editable = TRUE, rownames = FALSE, options = list(searching = FALSE, paging = FALSE, info = FALSE)) #, scrollX = TRUE, scrollX="250px", paging = FALSE
+  })
+
+  observeEvent(input$skeleton_df_cell_edit, {
+    info <- input$skeleton_df_cell_edit
+
+    modified_data <- reactive_skeleton()
+    modified_data[info$row, info$col + 1] <- DT::coerceValue(info$value, modified_data[info$row, info$col]) # +1 is here to counterract the movement of edited data.
+    reactive_skeleton(modified_data)
+  })
+
+  shared$skeleton_crm <- reactive({
+    as.vector(reactive_skeleton()[, -1])
+  })
+  #print(shared$skeleton_crm())
 
 ################## Questionnaire Inputs ##################    
-# Logic needs to be added from orgin/dev.
+# There needs to be logic here to trasnfer data - I have taken this directly from the old Transfer Results From Questionnaire button.
+observeEvent(move_data(), {
+# Transfer questionnaire results to trial design inputs
+  if (length(shared$q_n_doses()) > 0) {
+    updateNumericInput(session, "n_doses_inputt", value = shared$q_n_doses())
+  } else {
+    updateNumericInput(session, "n_doses_inputt", value = 5) # Default value if not set
+  }
+  if (length(shared$q_ttl()) > 0) {
+    updateNumericInput(session, "ttl_inputt", value = shared$q_ttl())
+  } else {
+    updateNumericInput(session, "ttl_inputt", value = 0.3) # Default value if not set
+  }
+  if (length(shared$q_max_size()) > 0) {
+    updateNumericInput(session, "max_size_inputt", value = shared$q_max_size())
+  }
+  else {
+    updateNumericInput(session, "max_size_inputt", value = 30) # Default value if not set
+  }
+  if (length(shared$q_start_dose()) > 0) {
+    updateNumericInput(session, "start_dose_inputt", value = shared$q_start_dose())
+  }
+  else {
+    updateNumericInput(session, "start_dose_inputt", value = 1) # Default value if not set
+  }
+  if (length(shared$q_cohort()) > 0) {
+    updateNumericInput(session, "cohort_inputt", value = shared$q_cohort())
+  }
+  else {
+    updateNumericInput(session, "cohort_inputt", value = 3) # Default value if not set
+  }
+
+  # Need to make move_data FALSE again so that it doesn't keep transferring data
+  move_data(FALSE)
+})
 
 
     #################################### From Configurations Tab Server #####################################
