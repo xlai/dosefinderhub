@@ -8,7 +8,7 @@ cat("=== Test Case 1: CRM Scenario ===\n")
 crm_responses <- list(
   toxicity_confidence = "Very confident (good historical data)",
   trial_priorities = "Finding the best dose efficiently", 
-  statistical_support = "Yes experienced with complex modeling",
+  statistical_support = "Yes experienced with complex modeling",  
   decision_transparency = "Flexible adaptation preferred"
 )
 
