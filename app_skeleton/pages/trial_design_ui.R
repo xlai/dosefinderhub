@@ -229,7 +229,7 @@ reactive_skeleton <- reactiveVal() # initalising a reactive value to store the d
    } })
   
   output$skeleton_df <- renderDT({
-    datatable(reactive_skeleton(), editable = TRUE, rownames = FALSE, options = list(searching = FALSE, paging = FALSE, info = FALSE, scollX = TRUE)) #, scrollX = TRUE, scrollX="250px", paging = FALSE
+    datatable(reactive_skeleton(), editable = TRUE, rownames = FALSE, options = list(searching = FALSE, paging = FALSE, info = FALSE, scrollX = TRUE)) #, scrollX = TRUE, scrollX="250px", paging = FALSE
   })
 
   observeEvent(input$skeleton_df_cell_edit, {
@@ -807,6 +807,7 @@ observeEvent(move_data(), {
     max_size <- shared$max_size()
     start_dose <- shared$start_dose()
     cohort <- shared$cohort_size()
+    prior_mtd <- shared$prior_mtd_crm()
     
     shiny::showModal(
       modalDialog( 
@@ -824,6 +825,8 @@ observeEvent(move_data(), {
         textOutput(ns("basic_start_dose_warning")),
         numericInput(ns("basic_cohort_inputt"), "What size will the cohorts be?", min = 1, value = cohort, step = 1),
         textOutput(ns("basic_cohort_warning")),
+        numericInput(ns("basic_prior_mtd_input"), "What is your prior guess of the true MTD?", min = 1, value = prior_mtd, step = 1),
+        textOutput(ns("basic_prior_mtd_warning")),
         radioButtons(ns("basic_skip_esc_input"),"Would you like to be able to skip doses when escalating? (For CRM models only)",
           choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE),
         radioButtons(ns("basic_skip_deesc_input"),"Would you like to be able to skip doses when de-escalating? (For CRM and 3+3 models only)",
@@ -846,7 +849,7 @@ observeEvent(move_data(), {
     updateRadioButtons(session, "skip_esc_crm_input", selected = input$basic_skip_esc_input)
     updateRadioButtons(session, "skip_deesc_crm_input", selected = input$basic_skip_deesc_input)
     updateRadioButtons(session, "skip_tpt_input", selected = input$basic_skip_deesc_input)
-
+    updateNumericInput(session, "prior_mtd_input", value = input$basic_prior_mtd_input)
     removeModal()
   })
 
