@@ -627,15 +627,28 @@ plot_dist <- function(data, category, median_vector, title, x_title, col, model_
       Gplus <- G1/G2
       Gminus <- G2/G1
 
+      if (MTD == 1) {
+      for (i in MTD:(n_doses - 1)) {
+        d[i+1] <- Gplus * d[i]
+      }
+      } else if (MTD == n_doses) {
+        for (i in MTD:2) {
+        d[i-1] <- Gminus * d[i]
+      }
+      } else {
+
       for (i in MTD:(n_doses - 1)) {
         d[i+1] <- Gplus * d[i]
       }
       for (i in MTD:2) {
         d[i-1] <- Gminus * d[i]
       }
+      }
+
       for (i in 1:n_doses) {
         p[i] <- exp(a + d[i])/(1 + exp(a + d[i]))
       }
+
     return(p)
   }
 
@@ -644,6 +657,31 @@ plot_dist <- function(data, category, median_vector, title, x_title, col, model_
     p <- rep(NA, n_doses)
     p[MTD] <- pT
 
+    if (MTD > n_doses) {
+      MTD <- ceiling(n_doses/2)
+    }
+    else if (n_doses == 1) {
+      p[1] <- pT
+    } else if (MTD == 1) {
+      if (F == 1) {
+       for (i in MTD:(n_doses-1)) {
+        p[i+1] <- exp((log(pT + delta)*log(p[i]))/(log(pT - delta)))
+      } } else if (F == 2) {
+        p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 3)
+      } else if (F == 3) {
+        p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 0)
+      }
+    } else if (MTD == n_doses) {
+      if (F == 1) {
+        for (i in MTD:2) {
+          p[i-1] <- exp((log(pT - delta)*log(p[i]))/(log(pT + delta)))
+        }
+      } else if (F == 2) {
+        p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 3)
+      } else if (F == 3) {
+        p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 0)
+      }
+    } else {
     if (F == 1) { # Based on the empiric dose-toxicity model
       for (i in MTD:(n_doses-1)) {
         p[i+1] <- exp((log(pT + delta)*log(p[i]))/(log(pT - delta)))
@@ -655,7 +693,8 @@ plot_dist <- function(data, category, median_vector, title, x_title, col, model_
       p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 3)
     } else if (F == 3) { # Based on the 2 parametric logistical dose-toxicity model.
       p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 0)
-    } else {p  = NULL}
+    } 
+    } 
 
     return(p)
   }

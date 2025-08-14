@@ -202,7 +202,7 @@ boin_ui_inputs_direct_boundaries <- tagList(
     )
 }
 
-trial_design_server <- function(id, shared, parent_session = NULL) {
+trial_design_server <- function(id, shared, move_data, parent_session = NULL) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -789,6 +789,27 @@ trial_design_server <- function(id, shared, parent_session = NULL) {
     updateRadioButtons(session, "skip_tpt_input", selected = input$basic_skip_deesc_input)
 
     removeModal()
+  })
+
+  # This is clunky - needs to be changed to be more elegant.
+  observeEvent(input$n_doses_inputt, {
+    shared$n_dosess <- reactive({as.numeric(input$n_doses_inputt)})
+  })
+
+  observeEvent(input$ttl_inputt, {
+    shared$ttl <- reactive({as.numeric(input$ttl_inputt)})
+  })
+
+  observeEvent(input$max_size_inputt, {
+    shared$max_size <- reactive({as.numeric(input$max_size_inputt)})
+  })
+
+  observeEvent(input$start_dose_inputt, {
+    shared$start_dose <- reactive({as.numeric(input$start_dose_inputt)})
+  })
+
+  observeEvent(input$cohort_inputt, {
+    shared$cohort_size <- reactive({as.numeric(input$cohort_inputt)})
   })
 
   ## Moving to Simulation Tab

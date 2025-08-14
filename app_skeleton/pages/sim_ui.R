@@ -55,6 +55,7 @@ sim_ui <- function(id) {
           )
         )
       ),
+
     sidebar = sidebar(
       h3("What Do You Want to Simulate?"),
             ################################ Simulation tab UI ################################
@@ -116,8 +117,9 @@ ns <- session$ns
   scen_3_init <- c(3, example_scenarios(0.3, 3, 0.05, 5, 3))
   matrix <- rbind(scen_1_init, scen_2_init, scen_3_init)
   colnames(matrix) <- list("Scenario", "d1", "d2", "d3", "d4", "d5")
+  matrix_df <- as.data.frame(matrix)
 
-  reactive_df <- reactiveVal(matrix) # initalising a reactive value to store the data frame
+  reactive_df <- reactiveVal(matrix_df) # initalising a reactive value to store the data frame
 
   observeEvent({input$refresh_table_input}, {
    doses <- shared$n_dosess()
