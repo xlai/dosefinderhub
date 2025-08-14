@@ -24,7 +24,7 @@ sim_ui <- function(id) {
       div( 
         navset_tab(
           nav_panel(
-            "Simulation Inputs", 
+            "Simulation Inputs",
             h3("Simulation Inputs"),
             p("Please fill out the following inputs before running the simulation."),
             tags$hr(),
@@ -122,21 +122,30 @@ ns <- session$ns
   reactive_df <- reactiveVal(matrix_df) # initalising a reactive value to store the data frame
 
   observeEvent({input$refresh_table_input}, {
+   doses <- shared$n_dosess()
+   scen <- n_scenarios()
+  if (doses < 1 || floor(doses) != doses) {
+    showNotification("Please set a valid number of doses in the Trial Design tab before refreshing the table.", type = "error")
+    return(NULL)
+  } else if (scen < 1 ||  floor(scen) != scen || scen > 3) {
+    showNotification("Please select a number of Scenarios between 1 and 3 in the Simulation Inputs before refreshing the table.", type = "error")
+    return(NULL)
+  } else {
 
   ex_scen_1 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), 0.05, shared$n_dosess(), 1)
   ex_scen_2 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), 0.05, shared$n_dosess(), 2)
   ex_scen_3 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), 0.05, shared$n_dosess(), 3)
 
   if (n_scenarios() == 1) {
-    dimensions <- ex_scen_1
+    dimensions <- t(ex_scen_1)
   } else if (n_scenarios() == 2) {
     dimensions <- rbind(ex_scen_1, ex_scen_2)
   } else if (n_scenarios() == 3) {
     dimensions <- rbind(ex_scen_1, ex_scen_2, ex_scen_3)
   }
 
-  colnames(dimensions) <- paste("d", 1:shared$n_dosess(), sep = "")
   dataframe <- data.frame(dimensions) # What was previously doses_table
+  colnames(dataframe) <- paste("d", 1:shared$n_dosess(), sep = "")
 
   Scenario <- matrix(as.numeric(1:n_scenarios()), nrow = n_scenarios(), ncol = 1)
 
@@ -144,7 +153,9 @@ ns <- session$ns
 
   cbind <- cbind(dataframe_row_1, dataframe)
   reactive_df(cbind) # Updating the reactive value with the new data frame
+  } # end of else
   })
+  
   
   output$test_df <- renderDT({
     datatable(reactive_df(), editable = TRUE, rownames = FALSE, options = list(scrollX = TRUE)) 
@@ -183,6 +194,7 @@ ns <- session$ns
 validation_state <- reactiveValues(
     sim_val = NULL,
     scen_val = NULL,
+    table_val = NULL,
   )
   
   # Define base validation rules for each input
@@ -234,30 +246,49 @@ validation_state <- reactiveValues(
     validation_state$scen_val_warning %||% ""
   })
 
-  ## The reactive table
+  # Function to validate table data
+  validate_table_data <- function() {
+    data <- reactive_df()
+    
+    if (any(is.na(data))) {
+      return("⚠️ Please ensure all cells in the True DLT probabilities table are filled out before running the simulation.")
+    } else if (any(data[, -1] < 0 | data[, -1] > 1)) {
+      return("⚠️ Please ensure all True DLT probabilities are between 0 and 1.")
+    } else {
+      incr_val <- rep(FALSE, nrow(data))
+      for (i in 1:nrow(data)) {
+        if (is.unsorted(data[i, -1])) {
+          incr_val[i] <- TRUE
+        } 
+      }
+      if (any(incr_val)) {
+        return("⚠️ Please ensure all rows of the table contain an increasing sequence of true DLT probabilities.")
+      } else {
+        return(NULL)
+      }
+    }
+  }
+  
+  # Update table validation function
+  update_table_validation <- function() {
+    error_msg <- validate_table_data()
+    validation_state$table_val <- error_msg
+    
+    if (is.null(error_msg)) {
+      output$table_warning <- renderText({NULL})
+    } else {
+      output$table_warning <- renderText({error_msg})
+    }
+  }
+  
+  ## The reactive table - validate on cell edit
   observeEvent(input$test_df_cell_edit, {
-  if (any(is.na(reactive_df()))) {
-    output$table_warning <- renderText({
-      "⚠️ Please ensure all cells in the True DLT probabilities table are filled out before running the simulation."
-    })
-  } else if (any(reactive_df()[, -1] < 0 | reactive_df()[, -1] > 1)) {
-    output$table_warning <- renderText({
-      "⚠️ Please ensure all True DLT probabilities are between 0 and 1."
-    })
-  } else { incr_val <- rep(FALSE, nrow(reactive_df()))
-    for (i in 1: nrow(reactive_df())) {
-    if (is.unsorted(reactive_df()[i, -1])) {
-      incr_val[i] <- TRUE
-    } 
-  }
-  if (any(incr_val)) {
-    output$table_warning <- renderText({
-        "⚠️ Please ensure all rows of the table contain an increasing sequence of true DLT probabilities."
-      })
-  } else {
-    output$table_warning <- NULL
-  }
-  }
+    update_table_validation()
+  })
+  
+  ## Also validate when table is refreshed
+  observeEvent(reactive_df(), {
+    update_table_validation()
   })
 
  ######################################### Simulation Outputs #########################################
@@ -268,6 +299,40 @@ validation_state <- reactiveValues(
  sim_titles <- reactiveVal(NULL) # initialising
 
   observeEvent(input$run_simulation, {
+
+    validation_errors <- sapply(names(validation_state), function(x) validation_state[[x]])
+    validation_errors <- validation_errors[!grepl("warning", names(validation_errors))]
+    validation_errors <- validation_errors[!grepl("basic", names(validation_errors))]
+    validation_errors <- Filter(Negate(is.null), validation_errors)
+
+  if (shared$td_warnings > 0) {
+    showNotification(
+      "Please resolve the warnings in the Trial Design tab before running the simulation.",
+      type = "error",
+      duration = 5
+    )
+    return(NULL)
+  } else if (length(validation_errors) > 0) {
+    showNotification(
+      "Please resolve the warnings in the Simulation inputs before running the simulation.",
+      type = "error",
+      duration = 5
+    )
+    return(NULL)
+    } else if (!is.null(validation_state$table_val)) {
+    showNotification(
+      "Please resolve the warnings in the True DLT probabilities table before running the simulation.",
+      type = "error",
+      duration = 5
+    )
+    return(NULL)
+    } else if (shared$n_dosess() != ncol(true_dlts()) || n_scenarios() > nrow(true_dlts())) {
+    showNotification(
+      "Please click Refresh Table Dimensions and fill in the True DLT probabilities table before running the simulation.",
+      type = "error",
+      duration = 5
+    )
+  } else {
     # Adding in Scenarios. I am going to cap the possible number of Scenarios to 3 (this can be changed later).
 
   scenarios <- c("Scenario 1", "Scenario 2", "Scenario 3") 
@@ -659,6 +724,7 @@ validation_state <- reactiveValues(
 
   } # else (after for loop)
   } # else (before for loop)
+  } # else (for validation)
   }) # observe function
 
  current_table1 <- reactiveVal(1)

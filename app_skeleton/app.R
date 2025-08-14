@@ -41,7 +41,7 @@ server <- function(input, output, session){
 
     intro_server("intro", session)
     questionnaire_results <- mod_questionnaire_server("questionnaire", shared, session, move_data = move_data)
-    trial_design_server("trial_design", shared, move_data = move_data)
+    trial_design_server("trial_design", shared, move_data = move_data, session)
     sim_server("simulation", shared)
     con_server("conduct", shared)
 

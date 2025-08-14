@@ -44,10 +44,7 @@ above_target_input <- radioButtons(ns("above_target_input"),
 choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
 prior_var_input <- numericInput(ns("prior_var_input"), "What is the estimate of the prior variance?", min = 0, value = 0.1)
 stop_n_mtd_input <- numericInput(ns("stop_n_mtd_input"), "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = 24)
-
-skeleton_table <- DT::DTOutput(ns("skeleton_df"))
-# textInput(ns("skeleton_input"), "What are the prior estimates of the DLT rates at each dose? Please make this an increasing list and separate each value with a comma.", value = "0.108321683015674,0.255548628279939,0.425089891767129,0.576775912195444,0.817103320499882")
-
+skeleton_input <- textInput(ns("skeleton_input"), "What are the prior estimates of the DLT rates at each dose? Please make this an increasing list and separate each value with a comma.", value = "0.108321683015674,0.255548628279939,0.425089891767129,0.576775912195444,0.817103320499882")
 prior_mtd_input <- numericInput(ns("prior_mtd_input"), "What is your prior guess of the MTD?", min = 1, value = 3)
 stop_tox_x_input <- numericInput(ns("stop_tox_x_input"), "When using the this Bayesian safety early criterion: p(true DLT rate at lowest dose > target DLT rate + x | data) > y, what would you like x to be? This is the excess toxicity above the target DLT.", min = 0, value = 0.09)
 stop_tox_y_input <- numericInput(ns("stop_tox_y_input"), "What would you like y to be? This is the confidence level for safety stopping.", min = 0, max = 1, value = 0.77)
@@ -66,8 +63,7 @@ specific_ui_inputs_crm <- tagList(
   prior_var_warning_text,
   stop_n_mtd_input,
   stop_n_mtd_warning_text,
-  p("What are the prior estimates of the DLT rates at each dose? Please add them to the table below."),
-  skeleton_table,
+  skeleton_input,
   prior_mtd_input,
   prior_mtd_warning_text,
   stop_tox_x_input,
@@ -200,88 +196,20 @@ boin_ui_inputs_direct_boundaries <- tagList(
       downloadButton("config_save_button", "Download file with all configurations"),
       tags$hr(), # Separator line
       p("Done filling out the configurations? Click the button below to run simulations."),
-      actionButton(ns("view_simulation"), "View Simulation")
+      actionButton(ns("view_simulation"), "View Simulation"),
 
     )
     )
 }
 
-trial_design_server <- function(id, shared, move_data) {
+trial_design_server <- function(id, shared, move_data, parent_session = NULL) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-##### Reactive Skeleton Input ######
-reactive_skeleton <- reactiveVal() # initalising a reactive value to store the data frame
-
- observeEvent({input$n_doses_inputt | input$prior_mtd_input}, {  
-    if (is.na(input$n_doses_inputt) | is.na(input$prior_mtd_input)) {  
-      reactive_skeleton(NULL)  
-    } else if (input$prior_mtd_input > input$n_doses_inputt)  {  
-      reactive_skeleton(NULL)  
-    } else {
-  dose <- as.integer(input$n_doses_inputt)  
-  Prior <- dfcrm::getprior(halfwidth = 0.25*input$ttl_inputt, target = input$ttl_inputt, nu = input$prior_mtd_input, nlevel = dose)
-
-  rownames_skel <-paste("d", 1:dose, sep = "")
-
-  df <- data.frame(Dose = rownames_skel, Prior = Prior)
-
-  reactive_skeleton(df) # Updating the reactive value with the new data frame
-   } })
-  
-  output$skeleton_df <- renderDT({
-    datatable(reactive_skeleton(), editable = TRUE, rownames = FALSE, options = list(searching = FALSE, paging = FALSE, info = FALSE)) #, scrollX = TRUE, scrollX="250px", paging = FALSE
-  })
-
-  observeEvent(input$skeleton_df_cell_edit, {
-    info <- input$skeleton_df_cell_edit
-
-    modified_data <- reactive_skeleton()
-    modified_data[info$row, info$col + 1] <- DT::coerceValue(info$value, modified_data[info$row, info$col]) # +1 is here to counterract the movement of edited data.
-    reactive_skeleton(modified_data)
-  })
-
-  shared$skeleton_crm <- reactive({
-    as.vector(reactive_skeleton()[, -1])
-  })
-  #print(shared$skeleton_crm())
-
 ################## Questionnaire Inputs ##################    
-# There needs to be logic here to trasnfer data - I have taken this directly from the old Transfer Results From Questionnaire button.
-observeEvent(move_data(), {
-# Transfer questionnaire results to trial design inputs
-  if (length(shared$q_n_doses()) > 0) {
-    updateNumericInput(session, "n_doses_inputt", value = shared$q_n_doses())
-  } else {
-    updateNumericInput(session, "n_doses_inputt", value = 5) # Default value if not set
-  }
-  if (length(shared$q_ttl()) > 0) {
-    updateNumericInput(session, "ttl_inputt", value = shared$q_ttl())
-  } else {
-    updateNumericInput(session, "ttl_inputt", value = 0.3) # Default value if not set
-  }
-  if (length(shared$q_max_size()) > 0) {
-    updateNumericInput(session, "max_size_inputt", value = shared$q_max_size())
-  }
-  else {
-    updateNumericInput(session, "max_size_inputt", value = 30) # Default value if not set
-  }
-  if (length(shared$q_start_dose()) > 0) {
-    updateNumericInput(session, "start_dose_inputt", value = shared$q_start_dose())
-  }
-  else {
-    updateNumericInput(session, "start_dose_inputt", value = 1) # Default value if not set
-  }
-  if (length(shared$q_cohort()) > 0) {
-    updateNumericInput(session, "cohort_inputt", value = shared$q_cohort())
-  }
-  else {
-    updateNumericInput(session, "cohort_inputt", value = 3) # Default value if not set
-  }
+# Logic needs to be added from orgin/dev.
 
-  # Need to make move_data FALSE again so that it doesn't keep transferring data
-  move_data(FALSE)
-})
+
     #################################### From Configurations Tab Server #####################################
 
  ######################################## Configuration tab's file upload/download ########################################
@@ -333,22 +261,40 @@ observeEvent(move_data(), {
 
   # General variables from configuration tab - use questionnaire values if available, otherwise UI inputs
   shared$n_dosess <- reactive({
+    if (!is.null(shared$q_n_doses) && length(shared$q_n_doses()) > 0) {
+      shared$q_n_doses()
+    } else {
       as.numeric(input$n_doses_inputt)
+    }
   })
   shared$ttl <- reactive({
+    if (!is.null(shared$q_ttl) && length(shared$q_ttl()) > 0) {
+      shared$q_ttl()
+    } else {
       as.numeric(input$ttl_inputt)
+    }
   })
   shared$max_size <- reactive({
+    if (!is.null(shared$q_max_size) && length(shared$q_max_size()) > 0) {
+      shared$q_max_size()
+    } else {
       as.numeric(input$max_size_inputt)
+    }
   })
   shared$start_dose <- reactive({
+    if (!is.null(shared$q_start_dose) && length(shared$q_start_dose()) > 0) {
+      shared$q_start_dose()
+    } else {
       as.numeric(input$start_dose_inputt)
+    }
   })
   shared$cohort_size <- reactive({
+    if (!is.null(shared$q_cohort) && length(shared$q_cohort()) > 0) {
+      shared$q_cohort()
+    } else {
       as.numeric(input$cohort_inputt)
+    }
   })
-
-
 
   # Model-specific variables from configuration tab
   # CRM
@@ -357,7 +303,21 @@ observeEvent(move_data(), {
   shared$above_target_crm <- reactive({as.logical(input$above_target_input)}) # This isn't used in the sim_crm function
   shared$prior_var_crm <- reactive({as.numeric(input$prior_var_input)})
   shared$stop_n_mtd_crm <- reactive({as.numeric(input$stop_n_mtd_input)})
-  
+  shared$skeleton_crm <- reactive({
+    # If user has entered custom skeleton, use that
+    if (nchar(input$skeleton_input) > 0 && input$skeleton_input != "") {
+      as.numeric(unlist(strsplit(input$skeleton_input, ",")))
+    } else {
+      # Generate default skeleton based on number of doses
+      n_doses <- shared$n_dosess()
+      if (!is.null(n_doses) && !is.na(n_doses) && n_doses > 0) {
+        seq(0.1, 0.8, length.out = n_doses)
+      } else {
+        # Fallback to original default
+        as.numeric(unlist(strsplit("0.108321683015674,0.255548628279939,0.425089891767129,0.576775912195444,0.817103320499882", ",")))
+      }
+    }
+  })
   shared$prior_mtd_crm <- reactive({as.numeric(input$prior_mtd_input)})  # This isn't used in the sim_crm function
   shared$stop_tox_x_crm <- reactive({as.numeric(input$stop_tox_x_input)})
   shared$stop_tox_y_crm <- reactive({as.numeric(input$stop_tox_y_input)})  
@@ -461,6 +421,9 @@ observeEvent(move_data(), {
     basic_start_dose_val = NULL,
     basic_cohort_val = NULL
   )
+  val_length <- reactive({
+    length(validation_state)
+  })
   
   # Define base validation rules for each input
   base_validation_rules <- list(
@@ -847,6 +810,65 @@ observeEvent(move_data(), {
 
   observeEvent(input$cohort_inputt, {
     shared$cohort_size <- reactive({as.numeric(input$cohort_inputt)})
+  })
+
+  ## Moving to Simulation Tab
+
+ observe({
+  # Convert reactiveValues to a regular list
+  validation_values <- reactiveValuesToList(validation_state)
+
+  # Remove elements whose names or values contain "warning"
+  filtered <- validation_values[!grepl("warning", names(validation_values))]
+
+  # Count how many of the remaining elements are not NULL
+  shared$td_warnings <- sum(!sapply(filtered, is.null))
+})
+
+  observeEvent(input$view_simulation, {
+    # Validate all inputs before proceeding
+    validation_errors <- sapply(names(validation_state), function(x) validation_state[[x]])
+    validation_errors <- validation_errors[!grepl("warning", names(validation_errors))]
+    validation_errors <- validation_errors[!grepl("basic", names(validation_errors))]
+    validation_errors <- Filter(Negate(is.null), validation_errors)
+
+    if (length(validation_errors) > 0) {
+      names <- vector("list", 3)
+      crm_names_var <- grep("var_val", names(validation_errors))
+      crm_names_mtd <- grep("mtd_val", names(validation_errors))
+      crm_names_tox <- grep("stop_tox", names(validation_errors))
+
+      boin_names <- grep("boin", names(validation_errors))
+      boin_names_phi <- grep("phi", names(validation_errors))
+
+      if (length(crm_names_var) == 0 && length(crm_names_mtd) == 0 && length(crm_names_tox) == 0
+          && length(boin_names) == 0 && length(boin_names_phi) == 0) {
+          general_names <- names(validation_errors)
+          } else {
+      general_names <- validation_errors[-c(crm_names_var, crm_names_mtd, crm_names_tox, boin_names, boin_names_phi)]
+          }
+      if (length(general_names) > 0) {
+        names[[1]] <- "General Parameters"
+      } else {
+        names[[1]] <- NULL
+      }
+      if (length(crm_names_var) > 0 || length(crm_names_mtd) > 0 || length(crm_names_tox) > 0) {
+        names[[2]] <- "CRM Parameters"
+      } else {
+        names[[2]] <- NULL
+      }
+      if (length(boin_names) > 0 || length(boin_names_phi) > 0) {
+        names[[3]] <- "BOIN Parameters"
+      } else {
+        names[[3]] <- NULL
+      }
+      names <- Filter(Negate(is.null), names)
+      showNotification(paste("Please change incorrect values, found in the following input areas:", paste(names, collapse = ", ")), type = "error")
+    } else {
+      if (!is.null(parent_session)) {
+        updateNavbarPage(parent_session, "nav", selected = "Simulation")
+      }
+    }
   })
 
 } # End of function within moduleServer
