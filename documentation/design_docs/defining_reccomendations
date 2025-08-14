@@ -23,6 +23,7 @@ If
 x<0.28: CRM = +1, BOIN = +1, 3+3 = 0.
 CRM is particularly effective when the true dose lies among higher levels, offering improved accuracy and dose allocation compared to rule-based designs.
 Reference:
+Pillai, A.K. (2015). Establish the Maximum Tolerated Dose in Phase-I Trials using 3 + 3 Method.
 Iasonos, A., Wilton, A. S., Riedel, E. R., Seshan, V. E., & Spriggs, D. R. (2008). A comprehensive comparison of the continual reassessment method to the standard 3 + 3 dose escalation scheme in Phase I dose-finding studies. Clinical Trials, 5(5), 465–477. https://doi.org/10.1177/1740774508096474
 
 3. Confidence in Toxic Dose Estimation
