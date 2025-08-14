@@ -624,8 +624,17 @@ plot_dist <- function(data, category, median_vector, title, x_title, col, model_
       G1 <- (log(pT + delta)/(1-(pT + delta)) - a)
       G2 <- (log(pT - delta)/(1-(pT - delta)) - a)
 
-      Gplus <- G1/G2
-      Gminus <- G2/G1
+      # Need to fix this!
+      if (pT < 0.5) {
+        Gplus <- G1/G2
+        Gminus <- G2/G1
+      } else if (pT > 0.5) {
+        Gplus <- G2/G1
+        Gminus <- G1/G2
+      } else {
+        Gplus <- 1.2
+        Gminus <- 0.8
+      }
 
       if (MTD == 1) {
       for (i in MTD:(n_doses - 1)) {
