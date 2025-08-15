@@ -283,32 +283,24 @@ con_server <- function(id, shared) {
 
 
     output$recommended_dose <- renderText({
-    data <- conduct_reactive_table_data()
-    if (nrow(data) == 0) return("N/A")
- 
-    if (input$choice == "CRM") {
-    model <- crm_model()
+  data <- conduct_reactive_table_data()
+  if (nrow(data) == 0) return("N/A")
+
+  if (input$choice %in% c("CRM", "BOIN")) {
+    model <- if (input$choice == "CRM") crm_model() else boin_model()
     if (is.null(model)) return("N/A")
+
     outcome_str <- convert_table_to_crm_outcome(data)
-    tryCatch({
+    dose <- tryCatch({
       fit_result <- model %>% fit(outcome_str)
-      dose <- fit_result %>% recommended_dose()
-      as.character(dose)
+      fit_result %>% recommended_dose() %>% as.character()
     }, error = function(e) {
-      "Error in CRM fitting"
+      "Error in model fitting"
     })
-    } else if (input$choice == "BOIN") {
-    model <- boin_model()
-    if (is.null(model)) return("N/A")
-    outcome_str <- convert_table_to_crm_outcome(data)
-    tryCatch({
-      fit_result <- model %>% fit(outcome_str)
-      dose <- fit_result %>% recommended_dose()
-      as.character(dose)
-    }, error = function(e) {
-      "Error in BOIN fitting"
-    })
-    } else if (input$choice == "3+3") {
+    return(dose)
+  }
+
+  if (input$choice == "3+3") {
     latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
     cohort_data <- data[data$Cohort_Number == latest_cohort, ]
     current_dose <- unique(cohort_data$Dose_Level)
@@ -319,29 +311,23 @@ con_server <- function(id, shared) {
     previous_same_dose <- nrow(previous_cohort_data) > 0 &&
                           all(previous_cohort_data$Dose_Level == current_dose)
 
-    if (previous_same_dose) {
+    recommended <- if (previous_same_dose) {
       total_dlt <- dlt_count + sum(previous_cohort_data$DLT)
-      if (total_dlt >= 2) {
-        recommended <- max(current_dose - 1, 1)
-      } else if (sum(previous_cohort_data$DLT) == 1 && dlt_count == 0) {
-        recommended <- current_dose + 1
-      } else {
-        recommended <- current_dose
-      }
+      if (total_dlt >= 2) max(current_dose - 1, 1)
+      else if (sum(previous_cohort_data$DLT) == 1 && dlt_count == 0) current_dose + 1
+      else current_dose
     } else {
-      if (dlt_count == 0) {
-        recommended <- current_dose + 1
-      } else if (dlt_count == 1) {
-        recommended <- current_dose
-      } else {
-        recommended <- max(current_dose - 1, 1)
-      }
+      if (dlt_count == 0) current_dose + 1
+      else if (dlt_count == 1) current_dose
+      else max(current_dose - 1, 1)
     }
-    recommended
-    } else {
-    return("N/A")
-    }
-    })
+
+    return(as.character(recommended))
+  }
+
+  return("N/A")
+})
+
 
     output$trial_status <- renderText({
      data <- conduct_reactive_table_data()
