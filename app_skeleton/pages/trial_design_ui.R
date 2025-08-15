@@ -140,7 +140,7 @@ boin_ui_inputs_direct_boundaries <- tagList(
 
 other_basic_inputs <- tagList(
   numericInput(ns("basic_prior_mtd_input"), "What is your prior guess of the true MTD?", min = 1, value = 3, step = 1),
-  textOutput(ns("basic_prior_mtd_warning")),
+  textOutput(ns("basic_prior_warning")),
   radioButtons(ns("basic_skip_esc_input"),"Would you like to be able to skip doses when escalating? (For CRM models only)",
                    choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE),
   radioButtons(ns("basic_skip_deesc_input"),"Would you like to be able to skip doses when de-escalating? (For CRM models only)",
@@ -483,11 +483,7 @@ observeEvent(move_data(), {
     direct_phi_1_val = NULL,
     direct_phi_2_val = NULL,
 
-    basic_n_doses_val = NULL,
-    basic_ttl_val = NULL,
-    basic_max_size_val = NULL,
-    basic_start_dose_val = NULL,
-    basic_cohort_val = NULL
+    basic_prior_val = NULL
   )
   val_length <- reactive({
     length(validation_state)
@@ -505,8 +501,8 @@ observeEvent(move_data(), {
     stop_n_mtd_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
     prior_mtd_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
     stop_tox_x_val = list(min_val = 0, max_val = 1, integer_only = FALSE),
-    stop_tox_y_val = list(min_val = 0, max_val = 1, integer_only = FALSE)
-,
+    stop_tox_y_val = list(min_val = 0, max_val = 1, integer_only = FALSE),
+
     boin_cohorts_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
     stop_n_mtd_boin_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
     ttl_multiple_phi_1_val = list(min_val = 0, max_val = 1, integer_only = FALSE),
@@ -514,11 +510,7 @@ observeEvent(move_data(), {
     direct_phi_1_val = list(min_val = 0, max_val = 0.999, integer_only = FALSE),
     direct_phi_2_val = list(min_val = 0, max_val = 0.999, integer_only = FALSE),
 
-    basic_n_doses_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
-    basic_ttl_val = list(min_val = 0, max_val = 0.999, integer_only = FALSE),
-    basic_max_size_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
-    basic_start_dose_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
-    basic_cohort_val = list(min_val = 1, max_val = NULL, integer_only = TRUE)
+    basic_prior_val = list(min_val = 1, max_val = NULL, integer_only = TRUE)
   )
   
   ##### Dynamic validation rules
@@ -528,15 +520,9 @@ observeEvent(move_data(), {
     if (!is.null(input$n_doses_inputt) && !is.na(input$n_doses_inputt) && input$n_doses_inputt > 0) {
       rules$start_dose_val$max_val <- input$n_doses_inputt
     }
-    if (!is.null(input$basic_n_doses_inputt) && !is.na(input$basic_n_doses_inputt) && input$basic_n_doses_inputt > 0) {
-      rules$basic_start_dose_val$max_val <- input$basic_n_doses_inputt
-    }
     # cohort <= max_size
     if (!is.null(input$max_size_inputt) && !is.na(input$max_size_inputt) && input$max_size_inputt > 0) {
       rules$cohort_val$max_val <- input$max_size_inputt
-    }
-    if (!is.null(input$basic_max_size_inputt) && !is.na(input$basic_max_size_inputt) && input$basic_max_size_inputt > 0) {
-      rules$basic_cohort_val$max_val <- input$basic_max_size_inputt
     }
     # stop_n_mtd <= max_size
     if (!is.null(input$max_size_inputt) && !is.na(input$max_size_inputt) && input$max_size_inputt > 0) {
@@ -545,6 +531,9 @@ observeEvent(move_data(), {
     # prior_mtd <= n_doses
     if (!is.null(input$n_doses_inputt) && !is.na(input$n_doses_inputt) && input$n_doses_inputt > 0) {
       rules$prior_mtd_val$max_val <- input$n_doses_inputt
+    }
+    if (!is.null(input$n_doses_inputt) && !is.na(input$n_doses_inputt) && input$n_doses_inputt > 0) {
+      rules$basic_prior_val$max_val <- input$n_doses_inputt
     }
     # boin_cohorts <= cohort
     if (!is.null(input$cohort_inputt) && !is.na(input$cohort_inputt) && input$cohort_inputt > 0) {
@@ -602,12 +591,8 @@ observeEvent(move_data(), {
     if (!is.null(input$prior_mtd_input)) {
       update_validation("prior_mtd_val", input$prior_mtd_input)
     }
-  })
-  
-  observe({ 
-    update_validation("basic_n_doses_val", input$basic_n_doses_inputt)
-    if (!is.null(input$basic_start_dose_inputt)) {
-      update_validation("basic_start_dose_val", input$basic_start_dose_inputt)
+    if (!is.null(input$basic_prior_mtd_input)) {
+      update_validation("basic_prior_val", input$basic_prior_mtd_input)
     }
   })
 
@@ -623,10 +608,6 @@ observeEvent(move_data(), {
     if (!is.null(input$direct_phi_2)) {
       update_validation("direct_phi_2_val", input$direct_phi_2)
     }
-  })
-
-  observe({
-    update_validation("basic_ttl_val", input$basic_ttl_inputt)
   })
 
     observe({
@@ -655,33 +636,22 @@ observeEvent(move_data(), {
   })
 
   observe({
-    update_validation("basic_cohort_val", input$basic_cohort_inputt)
-    if (!is.null(input$basic_cohort_inputt)) {
-      update_validation("basic_cohort_val", input$basic_cohort_inputt)
-    }
-  })
-  
-  observe({
     update_validation("start_dose_val", input$start_dose_inputt)
   })
   
   observe({
-    update_validation("basic_start_dose_val", input$basic_start_dose_inputt)
-  })
-
-  observe({
     update_validation("cohort_val", input$cohort_inputt)
-  })
-
-  observe({
-    update_validation("basic_cohort_val", input$basic_cohort_inputt)
   })
   
   # CRM Inputs
   observe({
     update_validation("prior_var_val", input$prior_var_input)
   })
-  
+
+  observe({
+    update_validation("basic_prior_val", input$basic_prior_mtd_input)
+  })
+
   observe({
     update_validation("stop_n_mtd_val", input$stop_n_mtd_input)
   })
@@ -723,46 +693,30 @@ observeEvent(move_data(), {
     validation_state$n_doses_val_warning %||% ""
   })
 
-   output$basic_n_doses_warning <- renderText({
-    validation_state$basic_n_doses_val_warning %||% ""
-  })
-
   output$ttl_warning <- renderText({
     validation_state$ttl_val_warning %||% ""
   })
 
-  output$basic_ttl_warning <- renderText({
-    validation_state$basic_ttl_val_warning %||% ""
-  })
-  
   output$max_size_warning <- renderText({
     validation_state$max_size_val_warning %||% ""
   })
 
-  output$basic_max_size_warning <- renderText({
-    validation_state$basic_max_size_val_warning %||% ""
-  })
-
   output$start_dose_warning <- renderText({
     validation_state$start_dose_val_warning %||% ""
-  })
-
-  output$basic_start_dose_warning <- renderText({
-    validation_state$basic_start_dose_val_warning %||% ""
   })
   
   output$cohort_warning <- renderText({
     validation_state$cohort_val_warning %||% ""
   })
 
-  output$basic_cohort_warning <- renderText({
-    validation_state$basic_cohort_val_warning %||% ""
-  })
-
   # CRM 
 
   output$prior_var_warning <- renderText({
     validation_state$prior_var_val_warning %||% ""
+  })
+
+    output$basic_prior_warning <- renderText({
+    validation_state$basic_prior_val_warning %||% ""
   })
 
   output$stop_n_mtd_warning <- renderText({
@@ -809,56 +763,37 @@ observeEvent(move_data(), {
 
   ################################ Basic Mode ################################
 
-  observeEvent(input$basic_mode, {
-
-    n_doses <- shared$n_dosess()
-    ttl <- shared$ttl()
-    max_size <- shared$max_size()
-    start_dose <- shared$start_dose()
-    cohort <- shared$cohort_size()
-    prior_mtd <- shared$prior_mtd_crm()
-    
-    shiny::showModal(
-      modalDialog( 
-        title = "Trial Design - Basic Mode",
-        size = 'xl',
-        easyClose = FALSE,
-        p("Please enter your desired parameters below and click Submit to return to the app."),
-        numericInput(ns("basic_n_doses_inputt"), "How many dose levels are being tested?", min = 1, value = n_doses, step = 1),
-        textOutput(ns("basic_n_doses_warning")),
-        numericInput(ns("basic_ttl_inputt"), "What is the target toxicity level for this trial, as a decimal?", min = 0, max = 0.999, value = ttl, step = 0.01),
-        textOutput(ns("basic_ttl_warning")),
-        numericInput(ns("basic_max_size_inputt"), "What is the maximum sample size for this trial?", min = 1, value = max_size, step = 1),
-        textOutput(ns("basic_max_size_warning")),
-        numericInput(ns("basic_start_dose_inputt"), "What is the starting dose level?", min = 1, value = start_dose, step = 1),
-        textOutput(ns("basic_start_dose_warning")),
-        numericInput(ns("basic_cohort_inputt"), "What size will the cohorts be?", min = 1, value = cohort, step = 1),
-        textOutput(ns("basic_cohort_warning")),
-        numericInput(ns("basic_prior_mtd_input"), "What is your prior guess of the true MTD?", min = 1, value = prior_mtd, step = 1),
-        textOutput(ns("basic_prior_mtd_warning")),
-        radioButtons(ns("basic_skip_esc_input"),"Would you like to be able to skip doses when escalating? (For CRM models only)",
-          choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE),
-        radioButtons(ns("basic_skip_deesc_input"),"Would you like to be able to skip doses when de-escalating? (For CRM models only)",
-          choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE),
-        footer = tagList(
-          modalButton("Cancel"),
-          actionButton(ns("submit_basic_mode"), "Submit")
-        )
-      )
-    )
+  output$mode_title <- renderText({
+    if (input$modes == 1) {
+      "Trial Design - Basic Mode"
+    } else {
+      "Trial Design - Advanced Mode"
+    }
   })
 
-  observeEvent(input$submit_basic_mode, {
-    # Update shared variables with basic mode inputs
-    updateNumericInput(session, "n_doses_inputt", value = input$basic_n_doses_inputt)
-    updateNumericInput(session, "ttl_inputt", value = input$basic_ttl_inputt)
-    updateNumericInput(session, "max_size_inputt", value = input$basic_max_size_inputt)
-    updateNumericInput(session, "start_dose_inputt", value = input$basic_start_dose_inputt)
-    updateNumericInput(session, "cohort_inputt", value = input$basic_cohort_inputt)
+  observeEvent(input$transfer_advanced, {
+    if (!is.null(validation_state$basic_prior_val) | 
+        !is.null(validation_state$n_doses_val) |
+        !is.null(validation_state$ttl_val) |
+        !is.null(validation_state$max_size_val) |
+        !is.null(validation_state$start_dose_val) |
+        !is.null(validation_state$cohort_val) ) {
+      showNotification("Please correct the incorrect values before transferring to advanced mode.", type = "error")
+      return()
+    } else{
+    # Update model-specific shared variables with basic mode inputs
     updateRadioButtons(session, "skip_esc_crm_input", selected = input$basic_skip_esc_input)
     updateRadioButtons(session, "skip_deesc_crm_input", selected = input$basic_skip_deesc_input)
     updateNumericInput(session, "prior_mtd_input", value = input$basic_prior_mtd_input)
-    removeModal()
+
+    # Updating other advanced inputs to make sense with basic mode variables
+    stop_number <- ceiling(shared$max_size()/2)
+    num_cohorts <- floor(shared$max_size()/shared$cohort_size())
+
+    updateNumericInput(session, "stop_n_mtd_input", value = stop_number)
+    updateNumericInput(session, "stop_n_mtd_input_boin", value = stop_number)
+    updateNumericInput(session, "boin_cohorts", value = num_cohorts)
+    }
   })
 
   # This is clunky - needs to be changed to be more elegant.
