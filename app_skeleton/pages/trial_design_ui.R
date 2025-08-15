@@ -75,10 +75,6 @@ specific_ui_inputs_crm <- tagList(
   stop_tox_y_warning_text
 )
 
-# 3+3 specific inputs
-allow_deesc_tpt_input <- radioButtons(ns("allow_deesc_tpt_input"),"Would you like to be able to de-escalate doses?",
-choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE)
-
 # BOIN specific inputs
 boin_input_choice <- radioButtons("boin_input_choice", "How Would You Like to Input the BOIN Escalation Boundaries?",
 choices = c("Enter the toxicity probability threshold as a multiple of the target toxicity level" = 1, 
@@ -168,13 +164,6 @@ boin_ui_inputs_direct_boundaries <- tagList(
           card_body(
            checkboxInput("display_crm", "Display parameters", value = FALSE),
            conditionalPanel(condition = "input.display_crm==1", specific_ui_inputs_crm)
-          )
-        ),
-        card(full_screen = TRUE,
-          card_header("3+3 Parameters"),
-          card_body(
-          checkboxInput("display_tpt", "Display parameters", value = FALSE),
-           conditionalPanel(condition = "input.display_tpt==1", allow_deesc_tpt_input)
           )
         ),
         card(full_screen = TRUE,
@@ -380,9 +369,6 @@ observeEvent(move_data(), {
   shared$prior_mtd_crm <- reactive({as.numeric(input$prior_mtd_input)})  # This isn't used in the sim_crm function
   shared$stop_tox_x_crm <- reactive({as.numeric(input$stop_tox_x_input)})
   shared$stop_tox_y_crm <- reactive({as.numeric(input$stop_tox_y_input)})  
-
-  # 3+3
-  shared$allow_deesc_tpt <- reactive({as.logical(input$allow_deesc_tpt_input)})
 
   # BOIN
   shared$boin_stopping_rule <- reactive({as.logical(input$boin_stopping_rule)})
