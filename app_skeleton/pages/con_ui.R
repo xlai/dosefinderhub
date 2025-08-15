@@ -2,78 +2,90 @@ library(shiny)
 library(bslib)
 library(DT)
 library(shinydashboard)
+library(shinyjs)
 
 # ---------------- UI MODULE ----------------
 con_ui <- function(id) {
   ns <- NS(id)
-  page_sidebar(
-    sidebar = sidebar(
-      radioButtons(
-        inputId = ns("choice"),
-        label = "Select which design to update during trial conduct:",
-        choices = c("3+3", "CRM", "BOIN"),
-        inline = FALSE
+  tagList(
+    shinyjs::useShinyjs(),  # Enable shinyjs
+    tags$style(HTML("
+      button:disabled {
+        background-color: #ccc !important;
+        color: #666 !important;
+        cursor: not-allowed !important;
+      }
+    ")),
+    page_sidebar(
+      sidebar = sidebar(
+        radioButtons(
+          inputId = ns("choice"),
+          label = "Select which design to update during trial conduct:",
+          choices = c("3+3", "CRM", "BOIN"),
+          inline = FALSE
+        ),
+        actionButton(ns("update_design"), "Update Design"),
+        radioButtons(ns("export_type"), "Choose Export Format:",
+               choices = c("Rmd","PDF", "Excel"),
+               inline = TRUE),
+        downloadButton(ns("download_report"), "Download Report")
       ),
-      actionButton(ns("update_design"), "Update Design"),
-      radioButtons(ns("export_type"), "Choose Export Format:",
-             choices = c("Rmd","PDF", "Excel"),
-             inline = TRUE),
-     downloadButton(ns("download_report"), "Download Report")
-    ),
-    layout_columns(
-      value_box(
-        title = "Current Number of Patients",
-        value = textOutput(ns("patient_count")),
-        showcase = bsicons::bs_icon("people-fill"),
-        theme_color = "primary"
-      ),
-      value_box(
-        title = "Trial Status",
-        value = textOutput(ns("trial_status")),
-        showcase = bsicons::bs_icon("hourglass-split"),
-        theme_color = "info"
-      ),
-      value_box(
-        title = "Latest Dose Level",
-        value = textOutput(ns("latest_dose")),
-        showcase = bsicons::bs_icon("capsule"),
-        theme_color = "success"
-      ),
-      value_box(
-        title = "Recommended Next Dose Level",
-        value = textOutput(ns("recommended_dose")),
-        showcase = bsicons::bs_icon("arrow-up-circle"),
-        theme_color = "warning"
-      )
-    ),
-    layout_columns(
-      card(
-        full_screen = TRUE,
-        card_header("Data"),
-        card_body(
-          div(
-            style = "display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;",
-            actionButton(ns("add_cohort"), "Add Cohort"),
-            actionButton(ns("remove_cohort"), "Remove Cohort")
-          ),
-          DTOutput(ns("editable_table"))
+      layout_columns(
+        value_box(
+          title = "Current Number of Patients",
+          value = textOutput(ns("patient_count")),
+          showcase = bsicons::bs_icon("people-fill"),
+          theme_color = "primary"
+        ),
+        value_box(
+          title = "Trial Status",
+          value = textOutput(ns("trial_status")),
+          showcase = bsicons::bs_icon("hourglass-split"),
+          theme_color = "info"
+        ),
+        value_box(
+          title = "Latest Dose Level",
+          value = textOutput(ns("latest_dose")),
+          showcase = bsicons::bs_icon("capsule"),
+          theme_color = "success"
+        ),
+        value_box(
+          title = "Recommended Next Dose Level",
+          value = textOutput(ns("recommended_dose")),
+          showcase = bsicons::bs_icon("arrow-up-circle"),
+          theme_color = "warning"
         )
       ),
-      card(
-        full_screen = TRUE,
-        card_header("Overview"),
-        card_body(
-          textInput(ns("plot_title"), "Graph Title:", value = "Cohort Grouped Patient Dose Level with DLT's"),
-          actionButton(ns("generate_plot"), "Generate Graph"),
-          uiOutput(ns("dose_plot_ui")),
-          actionButton(ns("reset_title"), "Reset Title")
+      layout_columns(
+        card(
+          full_screen = TRUE,
+          card_header("Data"),
+          card_body(
+            div(
+              style = "display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;",
+              actionButton(ns("add_cohort"), "Add Cohort"),
+              actionButton(ns("remove_cohort"), "Remove Cohort")
+            ),
+            DTOutput(ns("editable_table"))
+          )
+        ),
+        card(
+          full_screen = TRUE,
+          card_header("Overview"),
+          card_body(
+            textInput(ns("plot_title"), "Graph Title:", value = "Cohort Grouped Patient Dose Level with DLT's"),
+            actionButton(ns("generate_plot"), "Generate Graph"),
+            uiOutput(ns("dose_plot_ui")),
+            actionButton(ns("reset_title"), "Reset Title")
+          )
         )
-      )
       ),
       uiOutput(ns("crm_results_card_ui")),
       uiOutput(ns("boin_results_card_ui"))
+    )
   )
 }
+
 
 
 ################################### SERVER MODULE ###############################################################
@@ -175,56 +187,52 @@ con_server <- function(id, shared) {
     })
 
     # Add cohort
-   observeEvent(input$add_cohort, {
-  data <- conduct_reactive_table_data()
-  current_patient_count <- nrow(data)
-  max_patients <- shared$max_size()
-  cohort_size <- shared$cohort_size()
-
-  # Prevent exceeding max sample size
-  if (current_patient_count + cohort_size > max_patients) return()
-
-  # Determine new cohort number
-  new_cohort_number <- if (nrow(data) == 0) 1 else max(data$Cohort_Number) + 1
-
-  # Default dose level
-  recommended_dose <- 1
-
-  # Use model-based escalation for CRM, BOIN, and 3+3
-  if (input$choice %in% c("CRM", "BOIN", "3+3")) {
-    model <- switch(input$choice,
+    observeEvent(input$add_cohort, {
+      data <- conduct_reactive_table_data()
+      current_patient_count <- nrow(data)
+      max_patients <- shared$max_size()
+      cohort_size <- shared$cohort_size()
+      # Prevent exceeding max sample size
+      if (current_patient_count + cohort_size > max_patients) return()
+      # New cohort number
+      new_cohort_number <- if (nrow(data) == 0) 1 else max(data$Cohort_Number) + 1
+      # Default dose level
+      recommended_dose <- 1
+      # Use model-based escalation for CRM, BOIN, and 3+3
+      if (input$choice %in% c("CRM", "BOIN", "3+3")) {
+        model <- switch(input$choice,
                     "CRM" = crm_model(),
                     "BOIN" = boin_model(),
                     "3+3" = tpt_model())
 
-    if (!is.null(model) && nrow(data) > 0) {
-      outcome_str <- convert_table_to_crm_outcome(data)
-      fit_result <- tryCatch(model %>% fit(outcome_str), error = function(e) NULL)
+      if (!is.null(model) && nrow(data) > 0) {
+        outcome_str <- convert_table_to_crm_outcome(data)
+        fit_result <- tryCatch(model %>% fit(outcome_str), error = function(e) NULL)
 
-      if (!is.null(fit_result)) {
-        recommended_dose <- tryCatch({
-          fit_result %>% recommended_dose()
-        }, error = function(e) {
-          message("Error in recommended_dose(): ", e$message)
-          NA
-        })
+        if (!is.null(fit_result)) {
+          recommended_dose <- tryCatch({
+            fit_result %>% recommended_dose()
+          }, error = function(e) {
+           message("Error in recommended_dose(): ", e$message)
+           NA
+          })
+        }
       }
-    }
-  }
+      }
 
-  # Add new cohort rows
-  start_patient <- current_patient_count + 1
-  new_rows <- data.frame(
-    Patient_Number = seq(from = start_patient, length.out = cohort_size),
-    Cohort_Number = rep(new_cohort_number, cohort_size),
-    Dose_Level = rep(recommended_dose, cohort_size),
-    DLT = rep(FALSE, cohort_size),
-    stringsAsFactors = FALSE
-  )
+      # Add new cohort rows
+      start_patient <- current_patient_count + 1
+      new_rows <- data.frame(
+        Patient_Number = seq(from = start_patient, length.out = cohort_size),
+        Cohort_Number = rep(new_cohort_number, cohort_size),
+        Dose_Level = rep(recommended_dose, cohort_size),
+        DLT = rep(FALSE, cohort_size),
+        stringsAsFactors = FALSE
+      )
 
-  # Update the reactive data
-  conduct_reactive_table_data(rbind(data, new_rows))
-})
+     # Update the reactive data
+     conduct_reactive_table_data(rbind(data, new_rows))
+    })
 
     # Remove cohort
     observeEvent(input$remove_cohort, {
@@ -278,6 +286,7 @@ con_server <- function(id, shared) {
     }
 
     ##### Value boxes #####
+    #Latest/Current Dose Level
    output$latest_dose <- renderText({
      data <- conduct_reactive_table_data()
      if (nrow(data) == 0) return("N/A")
@@ -286,72 +295,74 @@ con_server <- function(id, shared) {
      paste(latest_dose, collapse = ", ")
     })
 
-
+    # Recommended next dose level
     output$recommended_dose <- renderText({
-  data <- conduct_reactive_table_data()
-  if (nrow(data) == 0) return("N/A")
-  choice <- input$choice
+     data <- conduct_reactive_table_data()
+     if (nrow(data) == 0) return("N/A")
+     choice <- input$choice
 
-  if (choice %in% c("CRM", "BOIN", "3+3")) {
-    model <- switch(choice,
+     if (choice %in% c("CRM", "BOIN", "3+3")) {
+       model <- switch(choice,
                     "CRM" = crm_model(),
                     "BOIN" = boin_model(),
                     "3+3" = tpt_model())
 
-    if (is.null(model)) return("N/A")
-    outcome_str <- convert_table_to_crm_outcome(data)
+       if (is.null(model)) return("N/A")
+       outcome_str <- convert_table_to_crm_outcome(data)
 
-    tryCatch({
-      fit_result <- model %>% fit(outcome_str)
-      dose <- fit_result %>% recommended_dose()
-      final_dose(as.character(dose))  # Save final dose
-      if (trial_stopped()) {
-        paste("Final MTD Level:", dose)
-      } else {
+       tryCatch({
+         fit_result <- model %>% fit(outcome_str)
+         dose <- fit_result %>% recommended_dose()
+         final_dose(as.character(dose))  # Save final dose
+        if (trial_stopped()) {
+          paste("Final MTD Level:", dose)
+        } else {
         as.character(dose)
       }
-    }, error = function(e) {
+      }, error = function(e) {
       trial_stopped(TRUE)
       "Final MTD Level: Latest Dose"
+      })
+      } else {
+       "N/A"
+      }
     })
-  } else {
-    "N/A"
-  }
-})
-
-
-
+    
+    # Trial status
     output$trial_status <- renderText({
-  data <- conduct_reactive_table_data()
-  max_patients <- shared$max_size()
-
-  if (design_initialized() != input$choice) {
-    return("Press 'Update Design' to start")
-  }
-
-  if (trial_stopped()) {
-    return("Trial Stopped Due to Toxicity Levels")
-  }
-
-  if (nrow(data) >= max_patients) {
-    return("Trial Recruitment Complete")
-  }
-
-  if (input$choice == "CRM" && !is.null(crm_model()) && nrow(data) > 0) {
-    outcome_str <- convert_table_to_crm_outcome(data)
-    fit_result <- tryCatch(crm_model() %>% fit(outcome_str), error = function(e) NULL)
-    if (!is.null(fit_result)) {
-      recommended <- fit_result %>% recommended_dose()
-      n_at_recommended <- sum(data$Dose_Level == recommended)
+     data <- conduct_reactive_table_data()
+     max_patients <- shared$max_size()
+     if (design_initialized() != input$choice) {
+       return("Press 'Update Design' to start")
+      }
+      if (trial_stopped()) {
+        return("Trial Stopped Due to Toxicity Levels")
+      }
+      if (nrow(data) >= max_patients) {
+       return("Trial Recruitment Complete")
+      }
+      if (input$choice == "CRM" && !is.null(crm_model()) && nrow(data) > 0) {
+       outcome_str <- convert_table_to_crm_outcome(data)
+       fit_result <- tryCatch(crm_model() %>% fit(outcome_str), error = function(e) NULL)
+      if (!is.null(fit_result)) {
+        recommended <- fit_result %>% recommended_dose()
+        n_at_recommended <- sum(data$Dose_Level == recommended)
       if (n_at_recommended >= 9) {
         return("Suggestion: Stop trial - 9 patients at recommended dose")
       }
     }
-  }
-
-  "Recruiting"
-})
-
+    }
+    "Recruiting"
+    })
+   
+    #Disables Add Cohort button if trial is stopped
+   observe({
+     if (trial_stopped()) {
+     shinyjs::disable("add_cohort")
+     } else {
+       shinyjs::enable("add_cohort")
+     }
+    })
 
 
     # Patient count
