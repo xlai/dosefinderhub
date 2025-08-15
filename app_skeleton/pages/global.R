@@ -128,7 +128,7 @@ boin_boundaries <- function(target, ncohort, cohortsize, n.earlystop, p.saf, p.t
 ### This is a rewrite of the basesim.r file as a set of functions that can be used reactively to simulate data.
 
 ########################### 3+3 Simulation Function ###########################
-sim_tpt <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss, skip_deesc, current_seed) {
+sim_tpt <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss, current_seed) {
 
 # Best dose and level
 best_dose <- max(true_dlt_ss[true_dlt_ss<=ttl])
@@ -160,12 +160,9 @@ mean_length <- list()
 # Initialize list
   model <- list()
   
-  # Set parameters
-  tpt_allow_deesc <- skip_deesc
-  
   # Create the model
   model$tpt <- escalation::get_three_plus_three(num_doses = n_doses, 
-    allow_deescalate = tpt_allow_deesc, 
+    allow_deescalate = FALSE,
     set.seed(current_seed)) %>% 
     stop_at_n(n=max_n)
 
