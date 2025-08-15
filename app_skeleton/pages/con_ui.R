@@ -81,10 +81,13 @@ con_server <- function(id, shared) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-    # Store CRM model
+    # Store reactives
     crm_model <- reactiveVal(NULL)
     boin_model <- reactiveVal(NULL)
     tpt_model <- reactiveVal(NULL)
+    trial_stopped <- reactiveVal(FALSE)
+    final_dose <- reactiveVal(NULL)
+
    
     design_initialized <- reactiveVal(FALSE)
 
@@ -173,67 +176,55 @@ con_server <- function(id, shared) {
 
     # Add cohort
    observeEvent(input$add_cohort, {
-     data <- conduct_reactive_table_data()
-     current_patient_count <- nrow(data)
-     max_patients <- shared$max_size()
-     cohort_size <- shared$cohort_size()
-     if (current_patient_count + cohort_size > max_patients) return()
-     new_cohort_number <- if (nrow(data) == 0) 1 else max(data$Cohort_Number) + 1
-     recommended_dose <- 1
-     if (input$choice == "CRM" && !is.null(crm_model()) && nrow(data) > 0) {
-       outcome_str <- convert_table_to_crm_outcome(data)
-       fit_result <- tryCatch(crm_model() %>% fit(outcome_str), error = function(e) NULL)
-       if (!is.null(fit_result)) {
-         recommended_dose <- fit_result %>% recommended_dose()
-        }
-      } else if (input$choice == "BOIN" && !is.null(boin_model())) {
+  data <- conduct_reactive_table_data()
+  current_patient_count <- nrow(data)
+  max_patients <- shared$max_size()
+  cohort_size <- shared$cohort_size()
+
+  # Prevent exceeding max sample size
+  if (current_patient_count + cohort_size > max_patients) return()
+
+  # Determine new cohort number
+  new_cohort_number <- if (nrow(data) == 0) 1 else max(data$Cohort_Number) + 1
+
+  # Default dose level
+  recommended_dose <- 1
+
+  # Use model-based escalation for CRM, BOIN, and 3+3
+  if (input$choice %in% c("CRM", "BOIN", "3+3")) {
+    model <- switch(input$choice,
+                    "CRM" = crm_model(),
+                    "BOIN" = boin_model(),
+                    "3+3" = tpt_model())
+
+    if (!is.null(model) && nrow(data) > 0) {
       outcome_str <- convert_table_to_crm_outcome(data)
-      fit_result <- tryCatch(boin_model() %>% fit(outcome_str), error = function(e) NULL)
+      fit_result <- tryCatch(model %>% fit(outcome_str), error = function(e) NULL)
+
       if (!is.null(fit_result)) {
-        recommended_dose <- fit_result %>% recommended_dose()
-      }
-    } else if (input$choice == "3+3") {
-      latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
-      cohort_data <- data[data$Cohort_Number == latest_cohort, ]
-      current_dose <- unique(cohort_data$Dose_Level)
-
-     if (length(current_dose) == 1 && !is.na(current_dose)) {
-      dlt_count <- sum(cohort_data$DLT)
-      previous_cohort_data <- data[data$Cohort_Number == (latest_cohort - 1), ]
-      previous_same_dose <- nrow(previous_cohort_data) > 0 &&
-                            all(previous_cohort_data$Dose_Level == current_dose)
-
-      if (previous_same_dose) {
-        total_dlt <- dlt_count + sum(previous_cohort_data$DLT)
-        if (total_dlt >= 2) {
-          recommended_dose <- max(current_dose - 1, 1)
-        } else if (sum(previous_cohort_data$DLT) == 1 && dlt_count == 0) {
-          recommended_dose <- current_dose + 1
-        } else {
-          recommended_dose <- current_dose
-        }
-      } else {
-        if (dlt_count == 0) {
-          recommended_dose <- current_dose + 1
-        } else if (dlt_count == 1) {
-          recommended_dose <- current_dose
-        } else {
-          recommended_dose <- max(current_dose - 1, 1)
-        }
+        recommended_dose <- tryCatch({
+          fit_result %>% recommended_dose()
+        }, error = function(e) {
+          message("Error in recommended_dose(): ", e$message)
+          NA
+        })
       }
     }
-    }
+  }
 
-     start_patient <- current_patient_count + 1
-     new_rows <- data.frame(
-       Patient_Number = seq(from = start_patient, length.out = cohort_size),
-       Cohort_Number = rep(new_cohort_number, cohort_size),
-       Dose_Level = rep(recommended_dose, cohort_size),
-       DLT = rep(FALSE, cohort_size),
-       stringsAsFactors = FALSE
-      )
-     conduct_reactive_table_data(rbind(data, new_rows))
-    })
+  # Add new cohort rows
+  start_patient <- current_patient_count + 1
+  new_rows <- data.frame(
+    Patient_Number = seq(from = start_patient, length.out = cohort_size),
+    Cohort_Number = rep(new_cohort_number, cohort_size),
+    Dose_Level = rep(recommended_dose, cohort_size),
+    DLT = rep(FALSE, cohort_size),
+    stringsAsFactors = FALSE
+  )
+
+  # Update the reactive data
+  conduct_reactive_table_data(rbind(data, new_rows))
+})
 
     # Remove cohort
     observeEvent(input$remove_cohort, {
@@ -299,7 +290,6 @@ con_server <- function(id, shared) {
     output$recommended_dose <- renderText({
   data <- conduct_reactive_table_data()
   if (nrow(data) == 0) return("N/A")
-
   choice <- input$choice
 
   if (choice %in% c("CRM", "BOIN", "3+3")) {
@@ -309,47 +299,59 @@ con_server <- function(id, shared) {
                     "3+3" = tpt_model())
 
     if (is.null(model)) return("N/A")
-
     outcome_str <- convert_table_to_crm_outcome(data)
 
-    return(tryCatch({
+    tryCatch({
       fit_result <- model %>% fit(outcome_str)
-      as.character(fit_result %>% recommended_dose())
+      dose <- fit_result %>% recommended_dose()
+      final_dose(as.character(dose))  # Save final dose
+      if (trial_stopped()) {
+        paste("Final MTD Level:", dose)
+      } else {
+        as.character(dose)
+      }
     }, error = function(e) {
-      paste("Error in", choice, "fitting")
-    }))
+      trial_stopped(TRUE)
+      "Final MTD Level: Latest Dose"
+    })
+  } else {
+    "N/A"
   }
-
-  return("N/A")
 })
 
 
+
     output$trial_status <- renderText({
-     data <- conduct_reactive_table_data()
-     max_patients <- shared$max_size()
+  data <- conduct_reactive_table_data()
+  max_patients <- shared$max_size()
 
-     # Show prompt if current design hasn't been initialized
-      if (design_initialized() != input$choice) {
-       return("Press 'Update Design' to start")
+  if (design_initialized() != input$choice) {
+    return("Press 'Update Design' to start")
+  }
+
+  if (trial_stopped()) {
+    return("Trial Stopped Due to Toxicity Levels")
+  }
+
+  if (nrow(data) >= max_patients) {
+    return("Trial Recruitment Complete")
+  }
+
+  if (input$choice == "CRM" && !is.null(crm_model()) && nrow(data) > 0) {
+    outcome_str <- convert_table_to_crm_outcome(data)
+    fit_result <- tryCatch(crm_model() %>% fit(outcome_str), error = function(e) NULL)
+    if (!is.null(fit_result)) {
+      recommended <- fit_result %>% recommended_dose()
+      n_at_recommended <- sum(data$Dose_Level == recommended)
+      if (n_at_recommended >= 9) {
+        return("Suggestion: Stop trial - 9 patients at recommended dose")
       }
+    }
+  }
 
-      if (nrow(data) >= max_patients) {
-       return("Trial Recruitment Complete")
-      }
+  "Recruiting"
+})
 
-     if (input$choice == "CRM" && !is.null(crm_model()) && nrow(data) > 0) {
-       outcome_str <- convert_table_to_crm_outcome(data)
-       fit_result <- tryCatch(crm_model() %>% fit(outcome_str), error = function(e) NULL)
-       if (!is.null(fit_result)) {
-         recommended <- fit_result %>% recommended_dose()
-         n_at_recommended <- sum(data$Dose_Level == recommended)
-         if (n_at_recommended >= 9) {
-           return("Suggestion: Stop trial - 9 patients at recommended dose")
-         }
-       }
-     }
-     "Recruiting"
-    })
 
 
     # Patient count
@@ -380,18 +382,18 @@ con_server <- function(id, shared) {
         # Plot area
        par(mar = c(5, 4, 4, 1))  # Normal margins
        plot(
-  x = data$X,
-  y = data$Dose_Level,
-  col = colors,
-  pch = 19,
-  cex = 2,
-  xlab = "Cohort",
-  ylab = "Dose Level",
-  main = input$plot_title,
-  xaxt = "n",
-  ylim = ylim
-)
-grid(nx = NULL, ny = NULL, col = "lightgray", lty = "dashed", lwd = 0.5)  # Add grid lines
+         x = data$X,
+         y = data$Dose_Level,
+         col = colors,
+         pch = 19,
+         cex = 2,
+         xlab = "Cohort",
+         ylab = "Dose Level",
+         main = input$plot_title,
+         xaxt = "n",
+         ylim = ylim
+       )
+       grid(nx = NULL, ny = NULL, col = "lightgray", lty = "dashed", lwd = 0.5)  # Add grid lines
 
        axis(1, at = sort(unique(data$Cohort_Number)), labels = sort(unique(data$Cohort_Number)))
        text(data$X, data$Dose_Level + 0.3, labels = paste0("P", data$Patient), cex = 0.8)
