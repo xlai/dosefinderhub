@@ -535,9 +535,9 @@ observeEvent(move_data(), {
     if (!is.null(input$n_doses_inputt) && !is.na(input$n_doses_inputt) && input$n_doses_inputt > 0) {
       rules$basic_prior_val$max_val <- input$n_doses_inputt
     }
-    # boin_cohorts <= cohort
+    # boin_cohorts <= max_size/cohort
     if (!is.null(input$cohort_inputt) && !is.na(input$cohort_inputt) && input$cohort_inputt > 0) {
-      rules$boin_cohorts_val$max_val <- input$cohort_inputt
+      rules$boin_cohorts_val$max_val <- input$max_size_inputt / input$cohort_inputt
     }
     # stop_n_mtd_boin <= max_size
     if (!is.null(input$max_size_inputt) && !is.na(input$max_size_inputt) && input$max_size_inputt > 0) {
@@ -791,7 +791,7 @@ observeEvent(move_data(), {
     num_cohorts <- floor(shared$max_size()/shared$cohort_size())
 
     updateNumericInput(session, "stop_n_mtd_input", value = stop_number)
-    updateNumericInput(session, "stop_n_mtd_input_boin", value = stop_number)
+    updateNumericInput(session, "stop_n_mtd_boin", value = stop_number)
     updateNumericInput(session, "boin_cohorts", value = num_cohorts)
     }
   })
@@ -837,7 +837,7 @@ observeEvent(move_data(), {
     validation_errors <- validation_errors[!grepl("basic", names(validation_errors))]
     validation_errors <- Filter(Negate(is.null), validation_errors)
 
-    if (length(validation_errors) > 0) {
+      if (length(validation_errors) > 0) {
       names <- vector("list", 3)
       crm_names_var <- grep("var_val", names(validation_errors))
       crm_names_mtd <- grep("mtd_val", names(validation_errors))
@@ -868,8 +868,15 @@ observeEvent(move_data(), {
         names[[3]] <- NULL
       }
       names <- Filter(Negate(is.null), names)
-      showNotification(paste("Please change incorrect values, found in the following input areas:", paste(names, collapse = ", ")), type = "error")
-    } else {
+      if (1 %in% input$modes & (input$basic_prior_mtd_input != input$prior_mtd_input | 
+                                       input$basic_skip_esc_input != input$skip_esc_crm_input |
+                                       input$basic_skip_deesc_input != input$skip_deesc_crm_input)) {
+        showNotification(paste("Please click the 'Transfer Results to Advanced Mode' button to update the advanced parameters with the basic mode inputs."), type = "warning")
+      } else if (1 %in% input$modes & (length(crm_names_var) + length(crm_names_mtd) + length(boin_names) > 0)) {
+         showNotification(paste("Please click the 'Transfer Results to Advanced Mode' button to update the advanced parameters with the basic mode inputs."), type = "warning")
+      } else {
+        showNotification(paste("Please change incorrect values, found in the following input areas:", paste(names, collapse = ", ")), type = "error")
+    } }  else {
       if (!is.null(parent_session)) {
         updateNavbarPage(parent_session, "nav", selected = "Simulation")
       }
