@@ -138,15 +138,23 @@ boin_ui_inputs_direct_boundaries <- tagList(
   direct_lambda_d
 )
 
+other_basic_inputs <- tagList(
+  numericInput(ns("basic_prior_mtd_input"), "What is your prior guess of the true MTD?", min = 1, value = 3, step = 1),
+  textOutput(ns("basic_prior_mtd_warning")),
+  radioButtons(ns("basic_skip_esc_input"),"Would you like to be able to skip doses when escalating? (For CRM models only)",
+                   choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE),
+  radioButtons(ns("basic_skip_deesc_input"),"Would you like to be able to skip doses when de-escalating? (For CRM models only)",
+                  choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE)
+)
+
 
 ########################################### Running the UI ###########################################
 
 
   page_sidebar( 
-      p("Prefer to control only the basic parameters? Click here."),
-      actionButton(ns("basic_mode"), "Basic Mode"),
+      radioButtons(ns("modes"), "Which mode would you prefer to use?", choices = c("Basic" = 1, "Advanced" = 2), selected = 2, inline = TRUE),
       tags$hr(),
-      h3("Trial Design - Advanced Mode"),
+      textOutput(ns("mode_title"), container = h3),
    # General Trial Design Parameters
      layout_column_wrap(  
      card(full_screen = TRUE,
@@ -158,6 +166,7 @@ boin_ui_inputs_direct_boundaries <- tagList(
       )),
 
       #Specific Trial Design Parameters
+       conditionalPanel(condition = sprintf("input['%s'] == 2", ns("modes")),
        layout_column_wrap(  
         card( full_screen = TRUE,
           card_header("CRM Parameters"),
@@ -176,7 +185,21 @@ boin_ui_inputs_direct_boundaries <- tagList(
            conditionalPanel(condition = "input.display_boin == 1 && input.boin_input_choice == 3", boin_ui_inputs_direct_boundaries),
           )
         )
+      )
+       ),
+       conditionalPanel(condition = sprintf("input['%s'] == 1", ns("modes")),
+       layout_column_wrap(  
+        card( full_screen = TRUE,
+          card_header("Model-Specific Basic Parameters"),
+          card_body(
+           checkboxInput("display_basic", "Display parameters", value = FALSE),
+           conditionalPanel(condition = "input.display_basic==1", other_basic_inputs)
+          )
+        ),
       ),
+        p("Once you've finished filling out the basic mode, press the button below to update the advanced parameters to 'general' results that match the basic inputs."),
+        actionButton(ns("transfer_advanced"), "Transfer Results to Advanced Mode")
+       ),
     sidebar = sidebar(
       h3("Trial Design"),
       tags$hr(), # Separator line
