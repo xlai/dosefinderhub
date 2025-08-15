@@ -84,6 +84,7 @@ con_server <- function(id, shared) {
     # Store CRM model
     crm_model <- reactiveVal(NULL)
     boin_model <- reactiveVal(NULL)
+    tpt_model <- reactiveVal(NULL)
    
     design_initialized <- reactiveVal(FALSE)
 
@@ -115,19 +116,32 @@ con_server <- function(id, shared) {
        stop_when_n_at_dose(dose = "recommended", n = 9)
        crm_model(model)
        boin_model(NULL)
+       tpt_model(NULL)
       }
 
      if (input$choice == "BOIN") {
        target <- shared$ttl()
        num_doses <- shared$n_dosess()
        model <- get_boin(num_doses = num_doses, target = target) %>%
-         dont_skip_doses(when_escalating = TRUE) %>%
-         stop_at_n(n = shared$max_size()) %>%
+       dont_skip_doses(when_escalating = TRUE) %>%
+       stop_at_n(n = shared$max_size()) %>%
        stop_when_n_at_dose(dose = "recommended", n = 9)
        boin_model(model)
        crm_model(NULL)
+       tpt_model(NULL)
       }
 
+      if (input$choice == "3+3") {
+        target <- shared$ttl()
+        num_doses <- shared$n_dosess()
+        model <- get_three_plus_three(num_doses = num_doses, target = target) %>%
+       dont_skip_doses(when_escalating = TRUE) %>%
+       stop_at_n(n = shared$max_size()) %>%
+       stop_when_n_at_dose(dose = "recommended", n = 9)
+       crm_model(NULL)
+       boin_model(NULL)
+       tpt_model(model)
+      }
      show_crm_card(input$choice == "CRM")
      show_boin_card(input$choice == "BOIN")
     })
@@ -286,43 +300,24 @@ con_server <- function(id, shared) {
   data <- conduct_reactive_table_data()
   if (nrow(data) == 0) return("N/A")
 
-  if (input$choice %in% c("CRM", "BOIN")) {
-    model <- if (input$choice == "CRM") crm_model() else boin_model()
+  choice <- input$choice
+
+  if (choice %in% c("CRM", "BOIN", "3+3")) {
+    model <- switch(choice,
+                    "CRM" = crm_model(),
+                    "BOIN" = boin_model(),
+                    "3+3" = tpt_model())
+
     if (is.null(model)) return("N/A")
 
     outcome_str <- convert_table_to_crm_outcome(data)
-    dose <- tryCatch({
+
+    return(tryCatch({
       fit_result <- model %>% fit(outcome_str)
-      fit_result %>% recommended_dose() %>% as.character()
+      as.character(fit_result %>% recommended_dose())
     }, error = function(e) {
-      "Error in model fitting"
-    })
-    return(dose)
-  }
-
-  if (input$choice == "3+3") {
-    latest_cohort <- max(data$Cohort_Number, na.rm = TRUE)
-    cohort_data <- data[data$Cohort_Number == latest_cohort, ]
-    current_dose <- unique(cohort_data$Dose_Level)
-    if (length(current_dose) != 1 || is.na(current_dose)) return("N/A")
-
-    dlt_count <- sum(cohort_data$DLT)
-    previous_cohort_data <- data[data$Cohort_Number == (latest_cohort - 1), ]
-    previous_same_dose <- nrow(previous_cohort_data) > 0 &&
-                          all(previous_cohort_data$Dose_Level == current_dose)
-
-    recommended <- if (previous_same_dose) {
-      total_dlt <- dlt_count + sum(previous_cohort_data$DLT)
-      if (total_dlt >= 2) max(current_dose - 1, 1)
-      else if (sum(previous_cohort_data$DLT) == 1 && dlt_count == 0) current_dose + 1
-      else current_dose
-    } else {
-      if (dlt_count == 0) current_dose + 1
-      else if (dlt_count == 1) current_dose
-      else max(current_dose - 1, 1)
-    }
-
-    return(as.character(recommended))
+      paste("Error in", choice, "fitting")
+    }))
   }
 
   return("N/A")
