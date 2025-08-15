@@ -439,20 +439,51 @@ con_server <- function(id, shared) {
       )
     })
     
-    output$crm_results_table <- renderTable({
-      data <- conduct_reactive_table_data()
-      if (nrow(data) == 0) return(NULL)
-      # Summarise DLTs by Dose Level
-      summary <- aggregate(DLT ~ Dose_Level, data = data, FUN = function(x) sum(x, na.rm = TRUE))
-      # placeholder CRM stats ###FAKE NEED TO CHANGE
-      summary$Posterior_DLT_Rate <- round(runif(nrow(summary), 0.1, 0.5), 2)
-      summary$CI_Upper <- round(summary$Posterior_DLT_Rate + runif(nrow(summary), 0.05, 0.15), 2)
-      summary$CI_Lower <- round(summary$Posterior_DLT_Rate - runif(nrow(summary), 0.05, 0.1), 2)
-      colnames(summary) <- c("Dose Level", "No. of DLTs", "Posterior DLT Rate", "CI Upper", "CI Lower")
-      # Set row names to Dose Level
-      rownames(summary) <- paste("Dose Level", summary$`Dose Level`)
-      summary
-    })
+output$crm_results_table <- renderTable({
+  model <- crm_model()
+  data <- conduct_reactive_table_data()
+
+  if (is.null(model) || nrow(data) == 0) return(NULL)
+
+  outcome_str <- convert_table_to_crm_outcome(data)
+  fit <- tryCatch(model %>% fit(outcome_str), error = function(e) NULL)
+  if (is.null(fit)) return(NULL)
+
+  # Get number of patients treated at each dose
+  treated <- fit %>% n_at_dose()
+
+  # Get posterior DLT rates
+  posterior <- fit %>% mean_prob_tox()
+
+  # Get number of DLTs per dose from the data table
+  dlt_counts <- aggregate(DLT ~ Dose_Level, data = data, FUN = function(x) sum(x, na.rm = TRUE))
+  colnames(dlt_counts) <- c("Dose_Level", "No_of_DLTs")
+
+  # Build base table from model output
+  dose_levels <- seq_along(posterior)
+  results <- data.frame(
+    Dose_Level = dose_levels,
+    No_of_Patients = treated,
+    Posterior_DLT_Rate = round(posterior, 3),
+    stringsAsFactors = FALSE
+  )
+
+  # Merge in DLT counts
+  results <- merge(results, dlt_counts, by = "Dose_Level", all.x = TRUE)
+  results$No_of_DLTs[is.na(results$No_of_DLTs)] <- 0
+
+  # Add placeholder credible intervals
+  results$CI_Upper <- round(pmin(results$Posterior_DLT_Rate + 0.1, 1), 3)
+  results$CI_Lower <- round(pmax(results$Posterior_DLT_Rate - 0.1, 0), 3)
+
+ #Name columns
+  results <- results[, c("Dose_Level","No_of_Patients", "No_of_DLTs",  "Posterior_DLT_Rate", "CI_Upper", "CI_Lower")]
+  colnames(results) <- c("Dose Level","No. of Patients", "No. of DLTs",  "Posterior DLT Rate", "CI Upper", "CI Lower")
+  rownames(results) <- paste("Dose Level", results$`Dose Level`)
+
+  results
+})
+
 
     #### BOIN results card logic ####
     show_boin_card <- reactiveVal(FALSE)
@@ -470,21 +501,51 @@ con_server <- function(id, shared) {
       )
     })
     
-    output$boin_results_table <- renderTable({
-      data <- conduct_reactive_table_data()
-      if (nrow(data) == 0) return(NULL)
-      # Summarise DLTs by Dose Level
-      summary <- aggregate(DLT ~ Dose_Level, data = data, FUN = function(x) sum(x, na.rm = TRUE))
-      # placeholder BOIN stats ###FAKE NEED TO CHANGE
-      summary$Posterior_DLT_Rate <- round(runif(nrow(summary), 0.1, 0.5), 2)
-      summary$CI_Upper <- round(summary$Posterior_DLT_Rate + runif(nrow(summary), 0.05, 0.15), 2)
-      summary$CI_Lower <- round(summary$Posterior_DLT_Rate - runif(nrow(summary), 0.05, 0.1), 2)
-      summary$Desirability_Score <- round(runif(nrow(summary), 0, 1), 2)
-      colnames(summary) <- c("Dose Level", "No. of DLTs", "Posterior DLT Rate", "CI Upper", "CI Lower", "Desirability Score")
-      # Set row names to Dose Level
-      rownames(summary) <- paste("Dose Level", summary$`Dose Level`)
-      summary
-    })
+output$boin_results_table <- renderTable({
+  model <- boin_model()
+  data <- conduct_reactive_table_data()
+
+  if (is.null(model) || nrow(data) == 0) return(NULL)
+
+  outcome_str <- convert_table_to_crm_outcome(data)
+  fit <- tryCatch(model %>% fit(outcome_str), error = function(e) NULL)
+  if (is.null(fit)) return(NULL)
+
+  # Get number of patients treated at each dose
+  treated <- fit %>% n_at_dose()
+
+  # Get posterior DLT rates
+  posterior <- fit %>% mean_prob_tox()
+
+  # Get number of DLTs per dose from the data table
+  dlt_counts <- aggregate(DLT ~ Dose_Level, data = data, FUN = function(x) sum(x, na.rm = TRUE))
+  colnames(dlt_counts) <- c("Dose_Level", "No_of_DLTs")
+
+  # Build base table from model output
+  dose_levels <- seq_along(posterior)
+  results <- data.frame(
+    Dose_Level = dose_levels,
+    No_of_Patients = treated,
+    Posterior_DLT_Rate = round(posterior, 3),
+    stringsAsFactors = FALSE
+  )
+
+  # Merge in DLT counts
+  results <- merge(results, dlt_counts, by = "Dose_Level", all.x = TRUE)
+  results$No_of_DLTs[is.na(results$No_of_DLTs)] <- 0
+
+  ######## Placeholder credible intervals!!!!!
+  results$CI_Upper <- round(pmin(results$Posterior_DLT_Rate + 0.1, 1), 3)
+  results$CI_Lower <- round(pmax(results$Posterior_DLT_Rate - 0.1, 0), 3)
+
+  #Name columns
+  results <- results[, c("Dose_Level","No_of_Patients", "No_of_DLTs",  "Posterior_DLT_Rate", "CI_Upper", "CI_Lower")]
+  colnames(results) <- c("Dose Level","No. of Patients", "No. of DLTs",  "Posterior DLT Rate", "CI Upper", "CI Lower")
+  rownames(results) <- paste("Dose Level", results$`Dose Level`)
+
+  results
+})
+
 
     ################################### Rmd file generation #########################################################
    output$download_report <- downloadHandler(
@@ -528,6 +589,7 @@ con_server <- function(id, shared) {
 
        if (input$choice == "CRM") {
          crm_data <- aggregate(DLT ~ Dose_Level, data = data, FUN = function(x) sum(x, na.rm = TRUE))
+         crm_data$No_of_Patients <- treated[as.character(crm_data$Dose_Level)]
          crm_data$Posterior_DLT_Rate <- round(runif(nrow(crm_data), 0.1, 0.5), 2)
          crm_data$CI_Upper <- round(crm_data$Posterior_DLT_Rate + runif(nrow(crm_data), 0.05, 0.15), 2)
          crm_data$CI_Lower <- round(crm_data$Posterior_DLT_Rate - runif(nrow(crm_data), 0.05, 0.1), 2)
@@ -537,6 +599,7 @@ con_server <- function(id, shared) {
           "```{r}",
           "crm_data <- data.frame(",
           paste0("  Dose_Level = c(", paste(crm_data$Dose_Level, collapse = ", "), "),"),
+          paste0("  No_of_Patients = c(", paste(crm_data$No_of_Patients, collapse = ", "), "),"),
           paste0("  No_of_DLTs = c(", paste(crm_data$DLT, collapse = ", "), "),"),
           paste0("  Posterior_DLT_Rate = c(", paste(crm_data$Posterior_DLT_Rate, collapse = ", "), "),"),
           paste0("  CI_Upper = c(", paste(crm_data$CI_Upper, collapse = ", "), "),"),
@@ -547,21 +610,23 @@ con_server <- function(id, shared) {
         )
        } else if (input$choice == "BOIN") {
          boin_data <- aggregate(DLT ~ Dose_Level, data = data, FUN = function(x) sum(x, na.rm = TRUE))
+         boin_data$No_of_Patients <- treated[as.character(boin_data$Dose_Level)]
          boin_data$Posterior_DLT_Rate <- round(runif(nrow(boin_data), 0.1, 0.5), 2)
          boin_data$CI_Upper <- round(boin_data$Posterior_DLT_Rate + runif(nrow(boin_data), 0.05, 0.15), 2)
          boin_data$CI_Lower <- round(boin_data$Posterior_DLT_Rate - runif(nrow(boin_data), 0.05, 0.1), 2)
-         boin_data$Desirability_Score <- round(runif(nrow(boin_data), 0, 1), 2)
+         #boin_data$Desirability_Score <- round(runif(nrow(boin_data), 0, 1), 2)
 
          table_section <- c(
          "## BOIN Summary Table",
          "```{r}",
          "boin_data <- data.frame(",
          paste0("  Dose_Level = c(", paste(boin_data$Dose_Level, collapse = ", "), "),"),
+         paste0("  No_of_Patients = c(", paste(boin_data$No_of_Patients, collapse = ", "), "),"),
          paste0("  No_of_DLTs = c(", paste(boin_data$DLT, collapse = ", "), "),"),
          paste0("  Posterior_DLT_Rate = c(", paste(boin_data$Posterior_DLT_Rate, collapse = ", "), "),"),
          paste0("  CI_Upper = c(", paste(boin_data$CI_Upper, collapse = ", "), "),"),
          paste0("  CI_Lower = c(", paste(boin_data$CI_Lower, collapse = ", "), "),"),
-         paste0("  Desirability_Score = c(", paste(boin_data$Desirability_Score, collapse = ", "), ")"),
+         #paste0("  Desirability_Score = c(", paste(boin_data$Desirability_Score, collapse = ", "), ")"),
          ")",
          "knitr::kable(boin_data)",
          "```"
