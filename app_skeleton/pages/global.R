@@ -128,7 +128,7 @@ boin_boundaries <- function(target, ncohort, cohortsize, n.earlystop, p.saf, p.t
 ### This is a rewrite of the basesim.r file as a set of functions that can be used reactively to simulate data.
 
 ########################### 3+3 Simulation Function ###########################
-sim_tpt <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss, skip_deesc, current_seed) {
+sim_tpt <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss, current_seed) {
 
 # Best dose and level
 best_dose <- max(true_dlt_ss[true_dlt_ss<=ttl])
@@ -160,12 +160,9 @@ mean_length <- list()
 # Initialize list
   model <- list()
   
-  # Set parameters
-  tpt_allow_deesc <- skip_deesc
-  
   # Create the model
   model$tpt <- escalation::get_three_plus_three(num_doses = n_doses, 
-    allow_deescalate = tpt_allow_deesc, 
+    allow_deescalate = FALSE,
     set.seed(current_seed)) %>% 
     stop_at_n(n=max_n)
 
@@ -614,88 +611,34 @@ plot_dist <- function(data, category, median_vector, title, x_title, col, model_
 
   ############### Functions to Output Example Scenarios ################
 
-  ### Function for logistic models.
-  logistic_scenarios <- function(pT, MTD, delta, n_doses, a) {
-    d <- rep(NA, n_doses)
-    p <- rep(NA, n_doses)
-      d[MTD] <- log(pT/(1-pT)) - a 
-      p[MTD] <- pT
-
-      G1 <- (log(pT + delta)/(1-(pT + delta)) - a)
-      G2 <- (log(pT - delta)/(1-(pT - delta)) - a)
-
-      Gplus <- G1/G2
-      Gminus <- G2/G1
-
-      if (MTD == 1) {
-      for (i in MTD:(n_doses - 1)) {
-        d[i+1] <- Gplus * d[i]
-      }
-      } else if (MTD == n_doses) {
-        for (i in MTD:2) {
-        d[i-1] <- Gminus * d[i]
-      }
-      } else {
-
-      for (i in MTD:(n_doses - 1)) {
-        d[i+1] <- Gplus * d[i]
-      }
-      for (i in MTD:2) {
-        d[i-1] <- Gminus * d[i]
-      }
-      }
-
-      for (i in 1:n_doses) {
-        p[i] <- exp(a + d[i])/(1 + exp(a + d[i]))
-      }
-
-    return(p)
-  }
-
   # For now, I will take a fixed delta (0.05). This can be refined later.
-  example_scenarios <- function (pT, MTD, delta, n_doses, F) {
+  example_scenarios <- function (ttl, mtd, n_doses) {
     p <- rep(NA, n_doses)
-    p[MTD] <- pT
+    p[mtd] <- ttl
 
-    if (MTD > n_doses) {
-      MTD <- ceiling(n_doses/2)
-    }
-    else if (n_doses == 1) {
-      p[1] <- pT
-    } else if (MTD == 1) {
-      if (F == 1) {
-       for (i in MTD:(n_doses-1)) {
-        p[i+1] <- exp((log(pT + delta)*log(p[i]))/(log(pT - delta)))
-      } } else if (F == 2) {
-        p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 3)
-      } else if (F == 3) {
-        p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 0)
-      }
-    } else if (MTD == n_doses) {
-      if (F == 1) {
-        for (i in MTD:2) {
-          p[i-1] <- exp((log(pT - delta)*log(p[i]))/(log(pT + delta)))
-        }
-      } else if (F == 2) {
-        p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 3)
-      } else if (F == 3) {
-        p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 0)
-      }
+    if (ttl < 0.5) {
+      lower <- 0.05
+      upper <- 2*(ttl-0.05)
+    } else if (ttl > 0.5) {
+      lower <- 2*ttl - 0.95
+      upper <- 0.95
     } else {
-    if (F == 1) { # Based on the empiric dose-toxicity model
-      for (i in MTD:(n_doses-1)) {
-        p[i+1] <- exp((log(pT + delta)*log(p[i]))/(log(pT - delta)))
-      }
-      for (i in MTD:2) {
-        p[i-1] <- exp((log(pT - delta)*log(p[i]))/(log(pT + delta)))
-      }
-    } else if (F == 2) { # Based on the 1 parametric logistical dose-toxicity model with a = 3
-      p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 3)
-    } else if (F == 3) { # Based on the 2 parametric logistical dose-toxicity model.
-      p <- logistic_scenarios(pT, MTD, delta, n_doses, a = 0)
-    } 
-    } 
+      lower <- 0.2
+      upper <- 0.8
+    }
+   
 
-    return(p)
+    upper_doses <- n_doses - mtd + 1
+    lower_doses <- mtd 
+
+    if (upper_doses > 0) {
+      p[mtd:n_doses] <- seq(from = ttl, to = upper, length.out = upper_doses)
+    }
+    if (lower_doses > 0) {
+      p[1:mtd] <- seq(from = lower, to = ttl, length.out = lower_doses)
+    }
+
+    q <- round(p, 2)
+    return(q)
   }
  

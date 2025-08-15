@@ -40,14 +40,16 @@ sim_ui <- function(id) {
             "Simulation Output - Tables",
             h3("Simulation Output - Tables"),
             tags$hr(),
-            uiOutput(ns("tables_ui")), # Individual view
-            textOutput(ns("titles1")),
-            tableOutput(ns("tables1")),
-            uiOutput(ns("buttons1")),
+            uiOutput(ns("tables_ui")), # Individual view dropdown
+            textOutput(ns("titles1"), container = h4), # Comparative view - titles of table 1
+            tableOutput(ns("tables1")), # Comparative view - table 1
+            uiOutput(ns("buttons1")), # Comparative view - buttons for table 1
             tags$hr(),
-            textOutput(ns("titles2")),
-            tableOutput(ns("tables2")),
-            uiOutput(ns("buttons2"))
+            textOutput(ns("selected_ind_title"), container = h4), # Individual table titles
+            tableOutput(ns("selected_ind_table")), # Individual table output
+            textOutput(ns("titles2"), container = h4), # Comparative view - titles of table 2
+            tableOutput(ns("tables2")), # Comparative view - table 2
+            uiOutput(ns("buttons2")) # Comparative view - buttons for table 2
           ),
           nav_panel("Simulation Output - Plots",
           h3("Simulation Output - Plots"),
@@ -112,9 +114,9 @@ ns <- session$ns
 
   ############## Reactive True DLT Probabilities Table ##############
  
-  scen_1_init <- c(1, example_scenarios(0.3, 3, 0.05, 5, 1))
-  scen_2_init <- c(2, example_scenarios(0.3, 3, 0.05, 5, 2))
-  scen_3_init <- c(3, example_scenarios(0.3, 3, 0.05, 5, 3))
+  scen_1_init <- c(1, example_scenarios(0.3, 3, 5))
+  scen_2_init <- c(2, example_scenarios(0.3, 2, 5))
+  scen_3_init <- c(3, example_scenarios(0.3, 4, 5))
   matrix <- rbind(scen_1_init, scen_2_init, scen_3_init)
   colnames(matrix) <- list("Scenario", "d1", "d2", "d3", "d4", "d5")
   matrix_df <- as.data.frame(matrix)
@@ -132,9 +134,9 @@ ns <- session$ns
     return(NULL)
   } else {
 
-  ex_scen_1 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), 0.05, shared$n_dosess(), 1)
-  ex_scen_2 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), 0.05, shared$n_dosess(), 2)
-  ex_scen_3 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), 0.05, shared$n_dosess(), 3)
+  ex_scen_1 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm(), shared$n_dosess())
+  ex_scen_2 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm() - 1, shared$n_dosess())
+  ex_scen_3 <- example_scenarios(shared$ttl(), shared$prior_mtd_crm() + 1, shared$n_dosess())
 
   if (n_scenarios() == 1) {
     dimensions <- t(ex_scen_1)
@@ -375,7 +377,7 @@ validation_state <- reactiveValues(
 
   # Design - only running simulations that are necessary to save time.
   if ("3+3" %in% input$simulation_design_selection_input)
-      { tpt_sim <- sim_tpt(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skip_tpt(), 12345)
+      { tpt_sim <- sim_tpt(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), 12345)
        tpt_modified_tab <- tpt_sim[-c(4,6)]
 
       tpt_modified_tab$mean_accuracy <- as.data.frame(tpt_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
@@ -519,37 +521,26 @@ validation_state <- reactiveValues(
   combined_data_frames <- do.call(c, combined_list) 
   combined_titles <- do.call(c, title_list) 
 
-  
   n_data_frames <- length(combined_data_frames)
  
   # Using generic table names to render the UI with all the tables in it.
-  if (n_data_frames == 0) {generate_tables_ui <- NULL  # The case where nothing is entered
+  if (n_data_frames == 0) { # The case where nothing is entered
+    output$tables_ui <- NULL
+    output$selected_ind_table <- NULL
+    output$selected_ind_title <- NULL
+    output$titles1 <- NULL
+    output$titles2 <- NULL
+    output$tables1 <- NULL
+    output$tables2 <- NULL
+    output$buttons1 <- NULL
+    output$buttons2 <- NULL
   } else {
-  table_names <- c(paste(rep("Table", n_data_frames), as.list(as.character(1:n_data_frames)), sep = " "))
-  names(combined_data_frames) <- table_names
-
-  ## Using the names of the tables to render a UI with all the tables in it.
-  generate_tables_ui <- renderUI({
-    lapply(names(combined_data_frames), function(table_name) {
-      table_number <- as.numeric(gsub("Table ", "", table_name)) # Extracting the number from the table name
-      tagList(
-      h4(combined_titles[[table_number]]), # Title for each table
-        tableOutput(ns(paste0("table_", table_name))) # Table output
-      )
-    })
-  })
-  
-  # Rendering each table
-  lapply(names(combined_data_frames), function(table_name) {
-    output[[paste0("table_", table_name)]] <- renderTable({
-      combined_data_frames[[table_name]]
-    }, rownames = TRUE, colnames = TRUE) 
-  }) 
-
-  tables_and_titles <- renderUI({ generate_tables_ui })
 
   if ("Individually" %in% input$comparative_view | n_data_frames == 1) {
-    output$tables_ui <- tables_and_titles
+    output$tables_ui <- renderUI({selectInput(
+      ns("ind_tables"), "Select a table to view",
+      choices = combined_titles, selected = combined_titles[1], multiple = FALSE, width = "100%"
+    )})
 
     output$titles1 <- NULL
     output$titles2 <- NULL
@@ -558,8 +549,12 @@ validation_state <- reactiveValues(
     output$buttons1 <- NULL
     output$buttons2 <- NULL
 
+   sim_df <- sim_df(combined_data_frames) 
+   sim_titles <- sim_titles(combined_titles)
 
   } else {output$tables_ui <- NULL
+  output$selected_ind_table <- NULL
+  output$selected_ind_title <- NULL
 
   output$titles1 <- renderText({combined_titles[[1]]})
   output$titles2 <- renderText({combined_titles[[2]]})
@@ -773,6 +768,20 @@ validation_state <- reactiveValues(
         sim_titles()[[current_table2()]]
       })
     } 
+  })
+
+  # Individual table outputs
+  observeEvent(input$ind_tables, {
+    selected_table <- input$ind_tables
+    table_index <- which(sim_titles() == selected_table)
+  
+    output$selected_ind_table <- renderTable({
+      sim_df()[[table_index]]
+    }, rownames = TRUE, colnames = TRUE)
+    
+    output$selected_ind_title <- renderText({
+      selected_table
+    })
   })
 
 
