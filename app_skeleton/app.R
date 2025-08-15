@@ -90,7 +90,7 @@ shinyApp(ui, server)
 # shared$stop_tox_x_crm: Stop toxicity x in CRM
 # shared$stop_tox_y_crm: Stop toxicity y in CRM
 
-# shared$skip_tpt: Skip de-escalation in 3+3
+# shared$allow_deesc_tpt: Allow de-escalation in 3+3
 
 # shared$boin_stopping_rule: Stopping rule in BOIN
 # shared$boin_cohorts: Number of cohorts in BOIN

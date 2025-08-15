@@ -76,8 +76,8 @@ specific_ui_inputs_crm <- tagList(
 )
 
 # 3+3 specific inputs
-skip_tpt_input <- radioButtons(ns("skip_tpt_input"),"Would you like to be able to skip doses when de-escalating?",
-choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
+allow_deesc_tpt_input <- radioButtons(ns("allow_deesc_tpt_input"),"Would you like to be able to de-escalate doses?",
+choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE)
 
 # BOIN specific inputs
 boin_input_choice <- radioButtons("boin_input_choice", "How Would You Like to Input the BOIN Escalation Boundaries?",
@@ -174,7 +174,7 @@ boin_ui_inputs_direct_boundaries <- tagList(
           card_header("3+3 Parameters"),
           card_body(
           checkboxInput("display_tpt", "Display parameters", value = FALSE),
-           conditionalPanel(condition = "input.display_tpt==1", skip_tpt_input)
+           conditionalPanel(condition = "input.display_tpt==1", allow_deesc_tpt_input)
           )
         ),
         card(full_screen = TRUE,
@@ -382,7 +382,7 @@ observeEvent(move_data(), {
   shared$stop_tox_y_crm <- reactive({as.numeric(input$stop_tox_y_input)})  
 
   # 3+3
-  shared$skip_tpt <- reactive({as.logical(input$skip_tpt_input)})
+  shared$allow_deesc_tpt <- reactive({as.logical(input$allow_deesc_tpt_input)})
 
   # BOIN
   shared$boin_stopping_rule <- reactive({as.logical(input$boin_stopping_rule)})
@@ -829,7 +829,7 @@ observeEvent(move_data(), {
         textOutput(ns("basic_prior_mtd_warning")),
         radioButtons(ns("basic_skip_esc_input"),"Would you like to be able to skip doses when escalating? (For CRM models only)",
           choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE),
-        radioButtons(ns("basic_skip_deesc_input"),"Would you like to be able to skip doses when de-escalating? (For CRM and 3+3 models only)",
+        radioButtons(ns("basic_skip_deesc_input"),"Would you like to be able to skip doses when de-escalating? (For CRM models only)",
           choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE),
         footer = tagList(
           modalButton("Cancel"),
@@ -848,7 +848,6 @@ observeEvent(move_data(), {
     updateNumericInput(session, "cohort_inputt", value = input$basic_cohort_inputt)
     updateRadioButtons(session, "skip_esc_crm_input", selected = input$basic_skip_esc_input)
     updateRadioButtons(session, "skip_deesc_crm_input", selected = input$basic_skip_deesc_input)
-    updateRadioButtons(session, "skip_tpt_input", selected = input$basic_skip_deesc_input)
     updateNumericInput(session, "prior_mtd_input", value = input$basic_prior_mtd_input)
     removeModal()
   })
