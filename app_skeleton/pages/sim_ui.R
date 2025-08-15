@@ -40,14 +40,16 @@ sim_ui <- function(id) {
             "Simulation Output - Tables",
             h3("Simulation Output - Tables"),
             tags$hr(),
-            uiOutput(ns("tables_ui")), # Individual view
-            textOutput(ns("titles1")),
-            tableOutput(ns("tables1")),
-            uiOutput(ns("buttons1")),
+            uiOutput(ns("tables_ui")), # Individual view dropdown
+            textOutput(ns("titles1"), container = h4), # Comparative view - titles of table 1
+            tableOutput(ns("tables1")), # Comparative view - table 1
+            uiOutput(ns("buttons1")), # Comparative view - buttons for table 1
             tags$hr(),
-            textOutput(ns("titles2")),
-            tableOutput(ns("tables2")),
-            uiOutput(ns("buttons2"))
+            textOutput(ns("selected_ind_title"), container = h4), # Individual table titles
+            tableOutput(ns("selected_ind_table")), # Individual table output
+            textOutput(ns("titles2"), container = h4), # Comparative view - titles of table 2
+            tableOutput(ns("tables2")), # Comparative view - table 2
+            uiOutput(ns("buttons2")) # Comparative view - buttons for table 2
           ),
           nav_panel("Simulation Output - Plots",
           h3("Simulation Output - Plots"),
@@ -519,37 +521,26 @@ validation_state <- reactiveValues(
   combined_data_frames <- do.call(c, combined_list) 
   combined_titles <- do.call(c, title_list) 
 
-  
   n_data_frames <- length(combined_data_frames)
  
   # Using generic table names to render the UI with all the tables in it.
-  if (n_data_frames == 0) {generate_tables_ui <- NULL  # The case where nothing is entered
+  if (n_data_frames == 0) { # The case where nothing is entered
+    output$tables_ui <- NULL
+    output$selected_ind_table <- NULL
+    output$selected_ind_title <- NULL
+    output$titles1 <- NULL
+    output$titles2 <- NULL
+    output$tables1 <- NULL
+    output$tables2 <- NULL
+    output$buttons1 <- NULL
+    output$buttons2 <- NULL
   } else {
-  table_names <- c(paste(rep("Table", n_data_frames), as.list(as.character(1:n_data_frames)), sep = " "))
-  names(combined_data_frames) <- table_names
-
-  ## Using the names of the tables to render a UI with all the tables in it.
-  generate_tables_ui <- renderUI({
-    lapply(names(combined_data_frames), function(table_name) {
-      table_number <- as.numeric(gsub("Table ", "", table_name)) # Extracting the number from the table name
-      tagList(
-      h4(combined_titles[[table_number]]), # Title for each table
-        tableOutput(ns(paste0("table_", table_name))) # Table output
-      )
-    })
-  })
-  
-  # Rendering each table
-  lapply(names(combined_data_frames), function(table_name) {
-    output[[paste0("table_", table_name)]] <- renderTable({
-      combined_data_frames[[table_name]]
-    }, rownames = TRUE, colnames = TRUE) 
-  }) 
-
-  tables_and_titles <- renderUI({ generate_tables_ui })
 
   if ("Individually" %in% input$comparative_view | n_data_frames == 1) {
-    output$tables_ui <- tables_and_titles
+    output$tables_ui <- renderUI({selectInput(
+      ns("ind_tables"), "Select a table to view",
+      choices = combined_titles, selected = combined_titles[1], multiple = FALSE, width = "100%"
+    )})
 
     output$titles1 <- NULL
     output$titles2 <- NULL
@@ -558,8 +549,12 @@ validation_state <- reactiveValues(
     output$buttons1 <- NULL
     output$buttons2 <- NULL
 
+   sim_df <- sim_df(combined_data_frames) 
+   sim_titles <- sim_titles(combined_titles)
 
   } else {output$tables_ui <- NULL
+  output$selected_ind_table <- NULL
+  output$selected_ind_title <- NULL
 
   output$titles1 <- renderText({combined_titles[[1]]})
   output$titles2 <- renderText({combined_titles[[2]]})
@@ -773,6 +768,20 @@ validation_state <- reactiveValues(
         sim_titles()[[current_table2()]]
       })
     } 
+  })
+
+  # Individual table outputs
+  observeEvent(input$ind_tables, {
+    selected_table <- input$ind_tables
+    table_index <- which(sim_titles() == selected_table)
+  
+    output$selected_ind_table <- renderTable({
+      sim_df()[[table_index]]
+    }, rownames = TRUE, colnames = TRUE)
+    
+    output$selected_ind_title <- renderText({
+      selected_table
+    })
   })
 
 
