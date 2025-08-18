@@ -594,7 +594,8 @@ plot_dist_ind <- function(data, category, median, title, x_title, col) {
   plot <- ggplot(valid_data, aes(x = {{category}})) +
      geom_density(alpha=0.3, fill = col) +
      geom_vline(aes(xintercept = median), color = col, linetype = "dashed") +
-     labs(title = title, x = x_title, y = "Density", color = "Median Value") +
+     annotate("text", x = median, y = 0, label = paste("Median:", median), vjust = -1, color = col, angle = 90, hjust = -3) +
+     labs(title = title, x = x_title, y = "Density") +
     theme_minimal()
 
     return(plot)
