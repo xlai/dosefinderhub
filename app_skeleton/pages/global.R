@@ -581,6 +581,24 @@ plot_dist <- function(data, category, median_vector, title, x_title, col, model_
     return(plot)
 }}
 
+plot_dist_ind <- function(data, category, median, title, x_title, col) {
+  
+
+ valid_data <- as.data.frame(data)
+  median <- as.numeric(median)
+
+  if (length(data) == 0) {
+    return(NULL)
+  } else {
+  
+  plot <- ggplot(valid_data, aes(x = {{category}})) +
+     geom_density(alpha=0.3, fill = col) +
+     geom_vline(aes(xintercept = median), color = col, linetype = "dashed") +
+     labs(title = title, x = x_title, y = "Density", color = "Median Value") +
+    theme_minimal()
+
+    return(plot)
+}}
 ########################### Functions to Format Data for Plotting###########################
  data_for_plotting <- function(sim, ttl) {
   true_dlts <- sim$treatment_tab[2,] # True DLTs from treatment table
