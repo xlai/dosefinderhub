@@ -868,16 +868,17 @@ observeEvent(move_data(), {
         names[[3]] <- NULL
       }
       names <- Filter(Negate(is.null), names)
+
+       if (1 %in% input$modes & (length(crm_names_var) + length(crm_names_mtd) + length(boin_names) > 0)) {
+         showNotification(paste("Please click the 'Transfer Results to Advanced Mode' button to update the advanced parameters with the basic mode inputs."), type = "warning")
+      } else {
+        showNotification(paste("Please change incorrect values, found in the following input areas:", paste(names, collapse = ", ")), type = "error")
+    } } else {
       if (1 %in% input$modes & (input$basic_prior_mtd_input != input$prior_mtd_input | 
                                        input$basic_skip_esc_input != input$skip_esc_crm_input |
                                        input$basic_skip_deesc_input != input$skip_deesc_crm_input)) {
         showNotification(paste("Please click the 'Transfer Results to Advanced Mode' button to update the advanced parameters with the basic mode inputs."), type = "warning")
-      } else if (1 %in% input$modes & (length(crm_names_var) + length(crm_names_mtd) + length(boin_names) > 0)) {
-         showNotification(paste("Please click the 'Transfer Results to Advanced Mode' button to update the advanced parameters with the basic mode inputs."), type = "warning")
-      } else {
-        showNotification(paste("Please change incorrect values, found in the following input areas:", paste(names, collapse = ", ")), type = "error")
-    } }  else {
-      if (!is.null(parent_session)) {
+      } else if (!is.null(parent_session)) {
         updateNavbarPage(parent_session, "nav", selected = "Simulation")
       }
     }
