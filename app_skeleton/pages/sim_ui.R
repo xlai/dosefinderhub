@@ -613,9 +613,9 @@ validation_state <- reactiveValues(
       } else if (!is.null(met$treatment)) {
       graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_bar_ind(met, Dose_Level, treatment, title = paste("% Treated at Dose for", updated_model[[i]], updated_scenarios[[j]]), y_title = "% Treated at Dose", col = "blue") # Using blue for MTD
       } else if (!is.null(met$overdose)) {
-      graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_dist(met, overdose, mo, title = paste("Distribution of Overdoses for", updated_model[[i]], updated_scenarios[[j]]), x_title = "Overdose", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
+      graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_dist_ind(met, overdose, mo, title = paste("Distribution of Overdoses for", updated_model[[i]], updated_scenarios[[j]]), x_title = "Overdose", col = "blue") # Using blue for median
       } else if (!is.null(met$length)) {
-      graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_dist(met, length, ml, title = paste("Distribution of Trial Duration for", updated_model[[i]], updated_scenarios[[j]]), x_title = "Trial Duration", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
+      graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_dist_ind(met, length, ml, title = paste("Distribution of Trial Duration for", updated_model[[i]], updated_scenarios[[j]]), x_title = "Trial Duration", col = "blue") # Using blue for median
       } else {
         graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- NULL
       }
@@ -636,7 +636,7 @@ validation_state <- reactiveValues(
    sim_graphs <- sim_graphs(filtered_graphs) # Updating the reactive value with the new plots
 
   } else if ("Comparatively by Design" %in% input$comparative_view) { # Focusing on "by model"
-  graphs <- vector("list", 4*n_scen) # initialising for use later
+  graphs <- vector("list", 4*n_scen*n_models) # initialising for use later
 
    for (j in 1:n_scen) {
     data <- plot_list[[j]]   #plot_list[[j]][[k]] = Scenario j, Metric k.
