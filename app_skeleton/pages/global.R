@@ -434,7 +434,7 @@ plot_bar <- function(data, category, value, title, y_title, col, model_picked, m
   
   named_data <- lapply(seq_along(valid_data), function(i) {
     df <- valid_data[[i]]
-    df$Model <- paste0(updated_model[i])
+    df$Design <- paste0(updated_model[i])
 
     updated_scenarios_2 <- vector()
 
@@ -457,8 +457,8 @@ plot_bar <- function(data, category, value, title, y_title, col, model_picked, m
   combined_data <- do.call(rbind, named_data)
   
   if (model_picked == 1) {
-    fill_col <- combined_data$Model
-    fill_title <- "Model"
+    fill_col <- combined_data$Design
+    fill_title <- "Design"
   } else {
     fill_col <- combined_data$Scenario
     fill_title <- "Scenario"
@@ -508,7 +508,7 @@ plot_dist <- function(data, category, median_vector, title, x_title, col, model_
   
   named_data <- lapply(seq_along(valid_data), function(i) {
     df <- valid_data[[i]]
-    df$Model <- paste0(updated_model[i])
+    df$Design <- paste0(updated_model[i])
 
     updated_scenarios_2 <- vector()
 
@@ -533,9 +533,9 @@ plot_dist <- function(data, category, median_vector, title, x_title, col, model_
    if (model_picked == 1) {
     median$model <- updated_model
 
-    fill_col <- combined_data$Model
+    fill_col <- combined_data$Design
     colour <- median$model
-    fill_title <- "Model"
+    fill_title <- "Design"
   } else {
      median$scenarios <- updated_scenarios
 
