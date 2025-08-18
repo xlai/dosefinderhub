@@ -585,10 +585,57 @@ validation_state <- reactiveValues(
   }
   ########################## Plots #####################################
 
-  # Focusing on "by model" 
+   
   metric_no_accuracy <- selected_metric[-3] # Removing accuracy from the list of selected metrics
+  if  ("Individually" %in% input$comparative_view) {
+    graphs <- vector("list", 4*n_scen*n_models) # initialising for use later
+     updated_model <- model[!sapply(selected_models, identical, FALSE)] 
 
-  if ("Comparatively by Design" %in% input$comparative_view) {
+    for (j in 1:n_scen) {
+      data_scen <- plot_list[[j]]
+ 
+      mo <- 1 # Hard-coded median overdose for the plots for now
+      ml <- 20
+
+      data_mod <- plot_by_scenario(data_scen, 4, 4, n_models) # Reordering data such that we have scenario, model, metric.
+      
+      used_data <- data_mod[!sapply(data_mod, identical, FALSE)] 
+
+      for (i in 1:n_models) {
+        data <- used_data[[i]]
+      
+       for (k in 1:4) {
+        met <- as.data.frame(data[[k]])
+
+       if (metric_no_accuracy[k] == FALSE) { next
+      } else if (!is.null(met$selection)) {
+      graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_bar_ind(met, Dose, selection, title = paste("% Times Dose Was Selected as MTD for", updated_model[[i]], updated_scenarios[[j]]), y_title = "% Times Dose Was Selected as MTD", col = "blue") # Using blue for MTD
+      } else if (!is.null(met$treatment)) {
+      graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_bar_ind(met, Dose_Level, treatment, title = paste("% Treated at Dose for", updated_model[[i]], updated_scenarios[[j]]), y_title = "% Treated at Dose", col = "blue") # Using blue for MTD
+      } else if (!is.null(met$overdose)) {
+      graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_dist(met, overdose, mo, title = paste("Distribution of Overdoses for", updated_model[[i]], updated_scenarios[[j]]), x_title = "Overdose", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
+      } else if (!is.null(met$length)) {
+      graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_dist(met, length, ml, title = paste("Distribution of Trial Duration for", updated_model[[i]], updated_scenarios[[j]]), x_title = "Trial Duration", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
+      } else {
+        graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- NULL
+      }
+    }
+      }
+    }
+
+     # Removing NULL values from the graphs list
+  filtered_graphs <- Filter(Negate(is.null), graphs)
+
+  names(filtered_graphs) <- sapply(filtered_graphs, function(x) x$labels$title)
+
+  output$generate_graphs_ui <- renderUI({selectInput(
+      ns("ind_graph"), "Select a plot to view",
+      choices = names(filtered_graphs), selected = names(filtered_graphs)[1], multiple = FALSE, width = "100%"
+    )})
+
+   sim_graphs <- sim_graphs(filtered_graphs) # Updating the reactive value with the new plots
+
+  } else if ("Comparatively by Design" %in% input$comparative_view) { # Focusing on "by model"
   graphs <- vector("list", 4*n_scen) # initialising for use later
 
    for (j in 1:n_scen) {
@@ -627,8 +674,6 @@ validation_state <- reactiveValues(
 
    sim_graphs <- sim_graphs(filtered_graphs) # Updating the reactive value with the new plots
 
-   output$selected_s_graph <- NULL
-
   } else if ("Comparatively by Scenario" %in% input$comparative_view) {
     # Focusing on "by scenario"
   # Adding NULLs where necessary
@@ -657,9 +702,9 @@ validation_state <- reactiveValues(
 
   # Combining data for plotting
  
-  tpt_by_scenario <- plot_by_scenario(plot_tpt_full)
-  crm_by_scenario <- plot_by_scenario(plot_crm_full)
-  boin_by_scenario <- plot_by_scenario(plot_boin_full)
+  tpt_by_scenario <- plot_by_scenario(plot_tpt_full, 5, 3, 4)
+  crm_by_scenario <- plot_by_scenario(plot_crm_full, 5, 3, 4)
+  boin_by_scenario <- plot_by_scenario(plot_boin_full, 5, 3, 4)
 
   plot_list_by_scenario <- list(tpt_by_scenario, crm_by_scenario, boin_by_scenario)
 
@@ -708,8 +753,6 @@ validation_state <- reactiveValues(
     )})
 
    sim_graphs <- sim_graphs(filtered_graphs) # Updating the reactive value with the new plots
-
-   output$selected_m_graph <- NULL
 
   } else {output$generate_graphs_ui <- NULL} # For now - will become individual plots later
 
@@ -796,6 +839,15 @@ validation_state <- reactiveValues(
       sim_graphs()[[selected_plot]]
     })
   })
+
+  observeEvent(input$ind_graph, {
+    selected_plot <- input$ind_graph
+
+    output$selected_graph <- renderPlot({
+      sim_graphs()[[selected_plot]]
+    })
+  })
+
 
 
 

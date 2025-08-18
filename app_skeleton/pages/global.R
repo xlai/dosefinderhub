@@ -486,6 +486,34 @@ plot_bar <- function(data, category, value, title, y_title, col, model_picked, m
     return(plot)
 }} # end of plot_bar function
 
+plot_bar_ind <- function(data, category, value, title, y_title, col) {
+valid_data <- Filter(Negate(is.null), data)
+
+  if (length(valid_data) == 0) {
+    return(NULL)
+  } else {
+
+ plot <- ggplot(valid_data, aes(x = {{category}}, y = {{value}}, pattern = highlight)) +
+  geom_bar_pattern(
+    stat = "identity",
+    position = position_dodge(),
+    pattern_density = 0.2,
+    pattern_spacing = 0.05,
+    fill = col,
+    pattern_fill = "white",
+    color = "black"
+  ) +
+  scale_pattern_manual(values = c("MTD" = "crosshatch", "Other" = "none")) +
+  labs(
+    title = title,
+    x = "Dose Level",
+    y = y_title,
+    pattern = "Is the Dose Level the True MTD?"
+  ) +
+  theme_minimal()
+
+    return(plot)
+}}
 
 ########################### Function to Format Data for Plot Simulation Histograms ###########################
 plot_dist <- function(data, category, median_vector, title, x_title, col, model_picked, models, scenarios) {
@@ -586,15 +614,15 @@ plot_dist <- function(data, category, median_vector, title, x_title, col, model_
   )
 }
  
- plot_by_scenario <- function(list1) { # Might be worth rewriting this to look more like mean_for_scen in future
-  list2 <- vector("list", length = 5)
+ plot_by_scenario <- function(list1, num1, num2, num3) { # Might be worth rewriting this to look more like mean_for_scen in future
+  list2 <- vector("list", length = num1)
 
-  for (j in 1:5) {
-   list2[[j]] <- vector("list", length = 3)
+  for (j in 1:num1) {
+   list2[[j]] <- vector("list", length = num2)
   }
  
-  for (i in 1:3) {
-    for (j in 1:4) {
+  for (i in 1:num2) {
+    for (j in 1:num3) {
     if (is.null(list1[[i]][[j]])) {
       list2[[j]][[i]] <- list(NULL)
     } else {
