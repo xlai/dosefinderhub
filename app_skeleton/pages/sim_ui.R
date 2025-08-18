@@ -594,8 +594,6 @@ validation_state <- reactiveValues(
     for (j in 1:n_scen) {
       data_scen <- plot_list[[j]]
  
-      mo <- 1 # Hard-coded median overdose for the plots for now
-      ml <- 20
 
       data_mod <- plot_by_scenario(data_scen, 4, 4, n_models) # Reordering data such that we have scenario, model, metric.
       
@@ -603,6 +601,9 @@ validation_state <- reactiveValues(
 
       for (i in 1:n_models) {
         data <- used_data[[i]]
+
+        mo <- median_overdose[[j]][i]
+        ml <- median_length[[j]][i]
       
        for (k in 1:4) {
         met <- as.data.frame(data[[k]])
