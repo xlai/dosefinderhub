@@ -54,8 +54,8 @@ sim_ui <- function(id) {
           nav_panel("Simulation Output - Plots",
           h3("Simulation Output - Plots"),
           uiOutput(ns("generate_graphs_ui")), # Graph selection
-          plotOutput(ns("selected_m_graph")), # Comparative view by model
-          plotOutput(ns("selected_s_graph")), # Comparative view by scenario
+          tags$hr(),
+          plotOutput(ns("selected_graph")), # Comparative view 
           )
         )
       ),
@@ -700,21 +700,18 @@ validation_state <- reactiveValues(
   # Removing NULL values from the graphs list
   filtered_graphs <- Filter(Negate(is.null), graphs)
 
-  output$generate_graphs_ui <- renderUI({
-    lapply(seq_along(filtered_graphs), function(i) {
-      plotOutput(ns(paste0("plot_", i)), height = "400px")
-    })
-  })
+  named_graph <- setNames(filtered_graphs, paste0("plot_", seq_along(filtered_graphs)))
 
-  # Rendering each graph
-  lapply(seq_along(filtered_graphs), function(i) {
+  output$generate_graphs_ui <- renderUI({selectInput(
+      ns("s_graph"), "Select a plot to view",
+      choices = names(named_graph), selected = names(named_graph)[1], multiple = FALSE, width = "100%"
+    )})
 
-    output[[paste0("plot_", i)]] <- renderPlot({
-      filtered_graphs[[i]]
-    })
-  })
+   sim_graphs <- sim_graphs(named_graph) # Updating the reactive value with the new plots
 
-  } else {output$generate_graphs_ui <- NULL} # For now.
+   output$selected_m_graph <- NULL
+
+  } else {output$generate_graphs_ui <- NULL} # For now - will become individual plots later
 
   } # else (after for loop)
   } # else (before for loop)
@@ -787,10 +784,19 @@ validation_state <- reactiveValues(
   observeEvent(input$m_graph, {
     selected_plot <- input$m_graph
     
-    output$selected_m_graph <- renderPlot({
+    output$selected_graph <- renderPlot({
       sim_graphs()[[selected_plot]]
     })
   })
+
+  observeEvent(input$s_graph, {
+    selected_plot <- input$s_graph
+    
+    output$selected_graph <- renderPlot({
+      sim_graphs()[[selected_plot]]
+    })
+  })
+
 
 
   }) # End of moduleServer
