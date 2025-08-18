@@ -53,7 +53,9 @@ sim_ui <- function(id) {
           ),
           nav_panel("Simulation Output - Plots",
           h3("Simulation Output - Plots"),
-          uiOutput(ns("generate_graphs_ui"))
+          uiOutput(ns("generate_graphs_ui")), # Graph selection
+          plotOutput(ns("selected_m_graph")), # Comparative view by model
+          plotOutput(ns("selected_s_graph")), # Comparative view by scenario
           )
         )
       ),
@@ -81,8 +83,7 @@ sim_ui <- function(id) {
         tags$hr(), # Separator line
   
         radioButtons(ns("comparative_view") , "How would you like to view the simulation results?",
-          choices = c("Individually", "Comparatively"), selected = "Comparatively", inline = TRUE),
-    
+          choices = c("Individually", "Comparatively by Design", "Comparatively by Scenario"), selected = "Individually", inline = TRUE),
 
       #selectizeInput("visual_selection_input", "Select type of output",
         #choices = c("Table", "Plot"),
@@ -299,6 +300,7 @@ validation_state <- reactiveValues(
 
  sim_df <- reactiveVal(NULL) # initialising
  sim_titles <- reactiveVal(NULL) # initialising
+ sim_graphs <- reactiveVal(NULL) # initialising
 
   observeEvent(input$run_simulation, {
 
@@ -586,7 +588,7 @@ validation_state <- reactiveValues(
   # Focusing on "by model" 
   metric_no_accuracy <- selected_metric[-3] # Removing accuracy from the list of selected metrics
 
-  if ("Individually" %in% input$comparative_view) {
+  if ("Comparatively by Design" %in% input$comparative_view) {
   graphs <- vector("list", 4*n_scen) # initialising for use later
 
    for (j in 1:n_scen) {
@@ -609,28 +611,25 @@ validation_state <- reactiveValues(
       graphs[[4*(j-1) + k]] <- plot_dist(met, length, ml, title = paste("Distribution of Trial Duration for", updated_scenarios[[j]]), x_title = "Trial Duration", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
       } else {
         graphs[[4*(j-1) + k]] <- NULL
-      } # Using fixed values for means for now
+      } 
     }
    }
 
   # Removing NULL values from the graphs list
   filtered_graphs <- Filter(Negate(is.null), graphs)
 
-  output$generate_graphs_ui <- renderUI({
-    lapply(seq_along(filtered_graphs), function(i) {
-      plotOutput(ns(paste0("plot_", i)), height = "400px")
-    })
-  })
+  named_graph <- setNames(filtered_graphs, paste0("plot_", seq_along(filtered_graphs)))
 
-  # Rendering each graph
-  lapply(seq_along(filtered_graphs), function(i) {
+  output$generate_graphs_ui <- renderUI({selectInput(
+      ns("m_graph"), "Select a plot to view",
+      choices = names(named_graph), selected = names(named_graph)[1], multiple = FALSE, width = "100%"
+    )})
 
-    output[[paste0("plot_", i)]] <- renderPlot({
-      filtered_graphs[[i]]
-    })
-  })
+   sim_graphs <- sim_graphs(named_graph) # Updating the reactive value with the new plots
 
-  } else if ("Comparatively" %in% input$comparative_view) {
+   output$selected_s_graph <- NULL
+
+  } else if ("Comparatively by Scenario" %in% input$comparative_view) {
     # Focusing on "by scenario"
   # Adding NULLs where necessary
 
@@ -781,6 +780,15 @@ validation_state <- reactiveValues(
     
     output$selected_ind_title <- renderText({
       selected_table
+    })
+  })
+
+  # Comparative plots outputs
+  observeEvent(input$m_graph, {
+    selected_plot <- input$m_graph
+    
+    output$selected_m_graph <- renderPlot({
+      sim_graphs()[[selected_plot]]
     })
   })
 
