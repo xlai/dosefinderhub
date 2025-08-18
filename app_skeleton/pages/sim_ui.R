@@ -618,14 +618,14 @@ validation_state <- reactiveValues(
   # Removing NULL values from the graphs list
   filtered_graphs <- Filter(Negate(is.null), graphs)
 
-  named_graph <- setNames(filtered_graphs, paste0("plot_", seq_along(filtered_graphs)))
+  names(filtered_graphs) <- sapply(filtered_graphs, function(x) x$labels$title)
 
   output$generate_graphs_ui <- renderUI({selectInput(
       ns("m_graph"), "Select a plot to view",
-      choices = names(named_graph), selected = names(named_graph)[1], multiple = FALSE, width = "100%"
+      choices = names(filtered_graphs), selected = names(filtered_graphs)[1], multiple = FALSE, width = "100%"
     )})
 
-   sim_graphs <- sim_graphs(named_graph) # Updating the reactive value with the new plots
+   sim_graphs <- sim_graphs(filtered_graphs) # Updating the reactive value with the new plots
 
    output$selected_s_graph <- NULL
 
@@ -700,14 +700,14 @@ validation_state <- reactiveValues(
   # Removing NULL values from the graphs list
   filtered_graphs <- Filter(Negate(is.null), graphs)
 
-  named_graph <- setNames(filtered_graphs, paste0("plot_", seq_along(filtered_graphs)))
+  names(filtered_graphs) <- sapply(filtered_graphs, function(x) x$labels$title)
 
   output$generate_graphs_ui <- renderUI({selectInput(
       ns("s_graph"), "Select a plot to view",
-      choices = names(named_graph), selected = names(named_graph)[1], multiple = FALSE, width = "100%"
+      choices = names(filtered_graphs), selected = names(filtered_graphs)[1], multiple = FALSE, width = "100%"
     )})
 
-   sim_graphs <- sim_graphs(named_graph) # Updating the reactive value with the new plots
+   sim_graphs <- sim_graphs(filtered_graphs) # Updating the reactive value with the new plots
 
    output$selected_m_graph <- NULL
 
