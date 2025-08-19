@@ -12,7 +12,7 @@ con_ui <- function(id) {
     ),
     sidebar = sidebar(
       h4("Conduct"),
-      p("This section provides guidance on how to conduct the trial based on the selected design."),
+      p("This section provides guidance on how to conduct the trial based on the selected design HI~~~."),
       actionButton(ns("finalize_button"), "Finalize Design")
     )
   )
