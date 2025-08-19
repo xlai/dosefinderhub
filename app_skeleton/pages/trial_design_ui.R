@@ -138,7 +138,6 @@ boin_ui_inputs_direct_boundaries <- tagList(
   direct_lambda_d
 )
 
-# Basic mode inputs integrated into main parameter system - no separate basic_* inputs needed
 
 
 ########################################### Running the UI ###########################################
@@ -767,7 +766,11 @@ observeEvent(move_data(), {
     }
   })
 
-
+  observeEvent(input$advanced_mode, {
+    if (!is.null(input$prior_mtd_input)) {
+      updateNumericInput(session, "prior_mtd_input", value = input$prior_mtd_input)
+    }
+  })
 
   # This is clunky - needs to be changed to be more elegant.
   observeEvent(input$n_doses_inputt, {
