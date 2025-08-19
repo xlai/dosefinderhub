@@ -250,3 +250,35 @@ datasets <- list(tpt_participant = tpt_sim$treated_tab,
 
   output$scen_sim_output <- lappy(list(filtered_datasets, renderDT()))
   })
+
+
+  ########################### Example Simulation Outputs to Test other Functions ##############################
+
+  tpt_sim <- sim_tpt(5, 1/3, 50, 1, 15, c(0.05, 0.15, 1/3, 0.5, 0.8), TRUE, 12345)
+  crm_sim <- sim_crm(5, 1/3, 50, 1, 15, c(0.05, 0.15, 1/3, 0.5, 0.8), c(0.08,0.20,0.35,0.6,0.9), 0.8, FALSE, TRUE, 0.1, 0.7, 25)
+  boin_sim <- sim_boin(5, 1/3, 50, 1, 15, c(0.05, 0.15, 1/3, 0.5, 0.8), 4, 25, 1.4/3, 0.6/3, TRUE, 10)
+
+### PLOTS - To return to later. (Comments from Previous Version)
+#par(mfrow = c(1,3))
+#graph_accuracy <- hist(dist_accuracy$tpt,breaks=11) %>% abline(v=mean_accuracy$tpt, col = "red")
+#graph_overdose <- hist(dist_overdose$tpt,breaks=11) %>% abline(v=mean_overdose$tpt, col = "red")
+#graph_length <- hist(dist_length$tpt,breaks=11) %>% abline(v=mean_length$tpt, col = "red")
+
+# df for graphs:
+
+#a <- cbind("tpt",dist_accuracy$tpt)
+#b <- cbind("crm",dist_accuracy$crm)
+
+#c <- data.frame(rbind(a,b))
+
+#ggplot2::ggplot(data = c, aes(x=X2, y=X1)) + 
+#geom_bar(stat = 'identity') +
+#scale_fill_manual(values=c("#69b3a2", "#404080")) 
+
+## trial conduct WIP
+
+# assuming we get the following:
+# id
+# dose level
+# cohort size
+# number in the cohort that had DLT

@@ -41,7 +41,7 @@ server <- function(input, output, session){
 
     intro_server("intro", session)
     questionnaire_results <- mod_questionnaire_server("questionnaire", shared, session, move_data = move_data)
-    trial_design_server("trial_design", shared, move_data = move_data)
+    trial_design_server("trial_design", shared, move_data = move_data, session)
     sim_server("simulation", shared)
     con_server("conduct", shared = shared)
 
@@ -64,7 +64,7 @@ shinyApp(ui, server)
 
 ##### List of Shared Variables #####
 
-### Defined in trial_design_server ###
+### Defined in qusetionnaire_server ###
 
 # shared$q_n_doses: Number of doses response from questionnaire
 # shared$q_start_dose: Starting dose level response from questionnaire
@@ -72,11 +72,13 @@ shinyApp(ui, server)
 # shared$q_cohort: Cohort size response from questionnaire
 # shared$q_max_size: Maximum sample size response from questionnaire
 
-# shared$n_dosess: Number of doses
+### Defined in trial_design_server ###
+
+# shared$n_dosess: Number of doses (be careful of two 's's! n_doses is a different variable)
 # shared$ttl: ttl
 # shared$max_size: Maximum sample size
 # shared$start_dose: Starting dose level
-# shared$cohort: Cohort size
+# shared$cohort_size: Cohort size
 
 # shared$skip_esc_crm: Skip escalation in CRM
 # shared$skip_deesc_crm: Skip de-escalation in CRM
@@ -88,5 +90,10 @@ shinyApp(ui, server)
 # shared$stop_tox_x_crm: Stop toxicity x in CRM
 # shared$stop_tox_y_crm: Stop toxicity y in CRM
 
-# shared$skip_tpt: Skip de-escalation in 3+3
+# shared$boin_stopping_rule: Stopping rule in BOIN
+# shared$boin_cohorts: Number of cohorts in BOIN
+# shared$stop_n_mtd_boin: Early stopping value for BOIN
+
+# shared$phi_1: Escalation probability for BOIN
+# shared$phi_2: De-escalation probability for BOIN
 
