@@ -375,149 +375,27 @@ validation_state <- reactiveValues(
   selected_overdose <- {"Overdosing" %in% input$metric_selection_input},
   selected_duration <- {"Duration" %in% input$metric_selection_input})
  
-  if (n_scen == 0) {tables_ui <- NULL} else { for (j in 1:n_scen) {
+  if (n_scen == 0) {
+    tables_ui <- NULL
+  } else {
+    # Use the new utility function to process all simulations
+    simulation_results <- process_multiple_simulations(
+      selected_methods = model[selected_models],
+      selected_scenarios = selected_scenarios,
+      scenarios = scenarios,
+      shared = shared,
+      n_sims = n_sims(),
+      true_dlts = used_true_dlts,
+      selected_metric = selected_metric
+    )
+    
+    combined_list <- simulation_results$combined_list
+    title_list <- simulation_results$title_list
+    plot_list <- simulation_results$plot_list
+    median_overdose <- simulation_results$median_overdose
+    median_length <- simulation_results$median_length
 
-  # Design - only running simulations that are necessary to save time.
-  if ("3+3" %in% input$simulation_design_selection_input)
-      { tpt_sim <- sim_tpt(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), 12345)
-       tpt_modified_tab <- tpt_sim[-c(4,6)]
-
-      tpt_modified_tab$mean_accuracy <- as.data.frame(tpt_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
-      tpt_modified_tab$mean_overdose <- as.data.frame(tpt_modified_tab$mean_overdose, row.names = "Mean Overdose")
-      tpt_modified_tab$mean_length <- as.data.frame(tpt_modified_tab$mean_length, row.names = "Mean Trial Length")
-      colnames(tpt_modified_tab$mean_accuracy) <- ""
-      colnames(tpt_modified_tab$mean_length)<- ""
-      colnames(tpt_modified_tab$mean_overdose) <- ""
-
-      tpt_mean_accuracy <- tpt_sim$mean_accuracy
-      tpt_mean_overdose <- tpt_sim$mean_overdose
-      tpt_mean_length <- tpt_sim$mean_length
-
-      tpt_median_overdose <- median(tpt_sim$dist_overdose)
-      tpt_median_length <- median(tpt_sim$dist_length)
-
-      tpt_for_plots <- data_for_plotting(tpt_sim, shared$ttl())
-      } else {tpt_modified_tab <- NULL
-      tpt_for_plots <- rep(list(NULL), 5)
-      tpt_mean_accuracy <- NULL
-      tpt_mean_overdose <- NULL
-      tpt_mean_length <- NULL
-      tpt_median_overdose <- NULL
-      tpt_median_length <- NULL
-      }
-
-  if ("CRM" %in% input$simulation_design_selection_input)
-      { crm_sim <- sim_crm(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skeleton_crm(), shared$prior_var_crm(), shared$skip_esc_crm(), shared$skip_deesc_crm(), shared$stop_tox_x_crm(), shared$stop_tox_y_crm(), shared$stop_n_mtd_crm())
-      crm_modified_tab <- crm_sim[-c(4,6)]
-  
-
-      crm_modified_tab$mean_accuracy <- as.data.frame(crm_modified_tab$mean_accuracy, row.names = "Mean Accuracy", col.names = FALSE)
-      crm_modified_tab$mean_overdose <- as.data.frame(crm_modified_tab$mean_overdose, row.names = "Mean Overdose", col.names = FALSE)
-      crm_modified_tab$mean_length <- as.data.frame(crm_modified_tab$mean_length, row.names = "Mean Trial Length", col.names = FALSE)
-      colnames(crm_modified_tab$mean_accuracy) <- ""
-      colnames(crm_modified_tab$mean_length)<- ""
-      colnames(crm_modified_tab$mean_overdose) <- ""
-
-      crm_mean_accuracy <- crm_sim$mean_accuracy 
-      crm_mean_overdose <- crm_sim$mean_overdose
-      crm_mean_length <- crm_sim$mean_length
-
-      crm_median_overdose <- median(crm_sim$dist_overdose)
-      crm_median_length <- median(crm_sim$dist_length)
-
-      crm_for_plots <- data_for_plotting(crm_sim, shared$ttl())
-      } else {crm_modified_tab <- NULL
-      crm_for_plots <- rep(list(NULL), 5)
-      crm_mean_accuracy <- NULL
-      crm_mean_overdose <- NULL
-      crm_mean_length <- NULL
-      crm_median_overdose <- NULL
-      crm_median_length <- NULL
-      }
-
-   if ("BOIN" %in% input$simulation_design_selection_input)
-      { boin_sim <- sim_boin(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$boin_cohorts(), shared$stop_n_mtd_boin(), p_tox =  shared$phi_2, p_saf =  shared$phi_1, TRUE, 10) # testing with hard-coded values for now
-       boin_modified_tab <- boin_sim[-c(4,6)]
-
-      boin_modified_tab$mean_accuracy <- as.data.frame(boin_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
-      boin_modified_tab$mean_overdose <- as.data.frame(boin_modified_tab$mean_overdose, row.names = "Mean Overdose")
-      boin_modified_tab$mean_length <- as.data.frame(boin_modified_tab$mean_length, row.names = "Mean Trial Length")
-      colnames(boin_modified_tab$mean_accuracy) <- ""
-      colnames(boin_modified_tab$mean_length)<- ""
-      colnames(boin_modified_tab$mean_overdose) <- ""
-
-      boin_mean_accuracy <- boin_sim$mean_accuracy
-      boin_mean_overdose <- boin_sim$mean_overdose
-      boin_mean_length <- boin_sim$mean_length
-
-      boin_median_overdose <- median(boin_sim$dist_overdose)
-      boin_median_length <- median(boin_sim$dist_length)
-
-      boin_for_plots <- data_for_plotting(boin_sim, shared$ttl())
-      } else {boin_modified_tab <- NULL
-      boin_for_plots <- rep(list(NULL), 5)
-      boin_mean_accuracy <- NULL
-      boin_mean_overdose <- NULL
-      boin_mean_length <- NULL
-      boin_median_overdose <- NULL
-      boin_median_length <- NULL
-      }
-
-  # Giving Titles to Single Value Outputs
-
-  tpt_to_display <- tpt_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
-  crm_to_display <- crm_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display
-  boin_to_display <- boin_modified_tab[c(which(selected_metric == TRUE))] # A list of lists we want to display 
-
-  tpt_title <- as.character(rep("3+3 Simulation for ", 5))
-  crm_title <- as.character(rep("CRM Simulation for ", 5))
-  boin_title <- as.character(rep("BOIN Simulation for ", 5))
-  scenario_number <- as.character(rep(updated_scenarios[[j]], 5))
-  metric_names <- as.character(c(" - % Times Dose Was Selected as MTD", "- % Treated at Each Dose",  " - Mean Accuracy", " - Mean Overdose", " - Mean Trial Length"))
-
-  sim_list <- vector("list", 4) # initialising for use later
-
-  # Organising plot lists by metric
-  for (k in 1:4) {
-    sim_list[[k]] <- list(tpt_for_plots[[k]], crm_for_plots[[k]], boin_for_plots[[k]])
-  }
-
-  if ("3+3" %in% input$simulation_design_selection_input) {
-  full_tpt_titles <- paste(as.character(tpt_title), as.character(scenario_number), as.character(metric_names))
-  } else {full_tpt_titles <- NULL}
-
-  if("CRM" %in% input$simulation_design_selection_input) {
-  full_crm_titles <- paste(as.character(crm_title), as.character(scenario_number), as.character(metric_names))
-  } else {full_crm_titles <- NULL}
-
-   if("BOIN" %in% input$simulation_design_selection_input) {
-  full_boin_titles <- paste(as.character(boin_title), as.character(scenario_number), as.character(metric_names))
-  } else {full_boin_titles <- NULL}
-
- 
-  used_tpt_titles <- full_tpt_titles[c(which(selected_metric == TRUE))] # A list of titles we want to display
-  used_crm_titles <- full_crm_titles[c(which(selected_metric == TRUE))] # A list of titles we want to display
-  used_boin_titles <- full_boin_titles[c(which(selected_metric == TRUE))] # A list of titles we want to display
-
-  tpt_data_frames <- lapply(tpt_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
-  crm_data_frames <- lapply(crm_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
-  boin_data_frames <- lapply(boin_to_display, function(x) as.data.frame(x)) # Converting the list into a list of dataframes
-
-  combined_list[[j]]  <- cbind(tpt_data_frames, crm_data_frames, boin_data_frames)
-  cbind_titles <- cbind(used_tpt_titles, used_crm_titles, used_boin_titles)
-  title_list[[j]] <- unname(unlist(cbind_titles))
-  plot_list[[j]] <- sim_list
-
-  plot_tpt[[j]] <- tpt_for_plots
-  plot_crm[[j]] <- crm_for_plots
-  plot_boin[[j]] <- boin_for_plots
-
-  #mean_accuracy[[j]] <- c(tpt_mean_accuracy, crm_mean_accuracy, boin_mean_accuracy)
-  #mean_overdose[[j]] <- c(tpt_mean_overdose, crm_mean_overdose, boin_mean_overdose)
-  #mean_length[[j]] <- c(tpt_mean_length, crm_mean_length, boin_mean_length)
-  median_overdose[[j]] <- c(tpt_median_overdose, crm_median_overdose, boin_median_overdose)
-  median_length[[j]] <- c(tpt_median_length, crm_median_length, boin_median_length)
-  } # for loop end
+  } # end of simulation processing
 
 ## Tables
   combined_data_frames <- do.call(c, combined_list) 
@@ -584,181 +462,26 @@ validation_state <- reactiveValues(
   sim_titles <- sim_titles(combined_titles) # Updating the reactive values with the new data frames and titles
   }
   ########################## Plots #####################################
-
-   
-  metric_no_accuracy <- selected_metric[-3] # Removing accuracy from the list of selected metrics
-  if  ("Individually" %in% input$comparative_view) {
-    graphs <- vector("list", 4*n_scen*n_models) # initialising for use later
-     updated_model <- model[!sapply(selected_models, identical, FALSE)] 
-
-    for (j in 1:n_scen) {
-      data_scen <- plot_list[[j]]
- 
-
-      data_mod <- plot_by_scenario(data_scen, 4, 4, n_models) # Reordering data such that we have scenario, model, metric.
-      
-      used_data <- data_mod[!sapply(data_mod, identical, FALSE)] 
-
-      for (i in 1:n_models) {
-        data <- used_data[[i]]
-
-        mo <- median_overdose[[j]][i]
-        ml <- median_length[[j]][i]
-      
-       for (k in 1:4) {
-        met <- as.data.frame(data[[k]])
-
-       if (metric_no_accuracy[k] == FALSE) { next
-      } else if (!is.null(met$selection)) {
-      graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_bar_ind(met, Dose, selection, title = paste("% Times Dose Was Selected as MTD for", updated_model[[i]], updated_scenarios[[j]]), y_title = "% Times Dose Was Selected as MTD", col = "blue") # Using blue for MTD
-      } else if (!is.null(met$treatment)) {
-      graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_bar_ind(met, Dose_Level, treatment, title = paste("% Treated at Dose for", updated_model[[i]], updated_scenarios[[j]]), y_title = "% Treated at Dose", col = "blue") # Using blue for MTD
-      } else if (!is.null(met$overdose)) {
-      graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_dist_ind(met, overdose, mo, title = paste("Distribution of Overdoses for", updated_model[[i]], updated_scenarios[[j]]), x_title = "Overdose", col = "blue") # Using blue for median
-      } else if (!is.null(met$length)) {
-      graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_dist_ind(met, length, ml, title = paste("Distribution of Trial Duration for", updated_model[[i]], updated_scenarios[[j]]), x_title = "Trial Duration", col = "blue") # Using blue for median
-      } else {
-        graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- NULL
-      }
-    }
-      }
-    }
-
-     # Removing NULL values from the graphs list
-  filtered_graphs <- Filter(Negate(is.null), graphs)
-
-  names(filtered_graphs) <- sapply(filtered_graphs, function(x) x$labels$title)
-
-  output$generate_graphs_ui <- renderUI({selectInput(
-      ns("ind_graph"), "Select a plot to view",
-      choices = names(filtered_graphs), selected = names(filtered_graphs)[1], multiple = FALSE, width = "100%"
-    )})
-
-   sim_graphs <- sim_graphs(filtered_graphs) # Updating the reactive value with the new plots
-
-  } else if ("Comparatively by Design" %in% input$comparative_view) { # Focusing on "by model"
-  graphs <- vector("list", 4*n_scen*n_models) # initialising for use later
-
-   for (j in 1:n_scen) {
-    data <- plot_list[[j]]   #plot_list[[j]][[k]] = Scenario j, Metric k.
-    mo <- median_overdose[[j]]
-    ml <- median_length[[j]]
-
-    for (k in 1:4) {
-      met <- data[[k]]
-
-      if(is.null(met)) 
-      { next } else if (metric_no_accuracy[k] == FALSE) { next
-      } else if (!is.null(met[[1]]$selection) | !is.null(met[[2]]$selection) | !is.null(met[[3]]$selection)) {
-      graphs[[4*(j-1) + k]] <- plot_bar(met, Dose, selection, title = paste("% Times Dose Was Selected as MTD for", updated_scenarios[[j]]), y_title = "% Times Dose Was Selected as MTD", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for MTD
-      } else if (!is.null(met[[1]]$treatment) | !is.null(met[[2]]$treatment) | !is.null(met[[3]]$treatment)) {
-      graphs[[4*(j-1) + k]] <- plot_bar(met, Dose_Level, treatment, title = paste("% Treated at Dose for", updated_scenarios[[j]]), y_title = "% Treated at Dose", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for MTD
-      } else if (!is.null(met[[1]]$overdose) | !is.null(met[[2]]$overdose) | !is.null(met[[3]]$overdose)) {
-      graphs[[4*(j-1) + k]] <- plot_dist(met, overdose, mo, title = paste("Distribution of Overdoses for", updated_scenarios[[j]]), x_title = "Overdose", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
-      } else if (!is.null(met[[1]]$length) | !is.null(met[[2]]$length) | !is.null(met[[3]]$length)) {
-      graphs[[4*(j-1) + k]] <- plot_dist(met, length, ml, title = paste("Distribution of Trial Duration for", updated_scenarios[[j]]), x_title = "Trial Duration", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
-      } else {
-        graphs[[4*(j-1) + k]] <- NULL
-      } 
-    }
-   }
-
-  # Removing NULL values from the graphs list
-  filtered_graphs <- Filter(Negate(is.null), graphs)
-
-  names(filtered_graphs) <- sapply(filtered_graphs, function(x) x$labels$title)
-
-  output$generate_graphs_ui <- renderUI({selectInput(
-      ns("m_graph"), "Select a plot to view",
-      choices = names(filtered_graphs), selected = names(filtered_graphs)[1], multiple = FALSE, width = "100%"
-    )})
-
-   sim_graphs <- sim_graphs(filtered_graphs) # Updating the reactive value with the new plots
-
-  } else if ("Comparatively by Scenario" %in% input$comparative_view) {
-    # Focusing on "by scenario"
-  # Adding NULLs where necessary
-
-  plot_tpt_full <- vector("list", length = 3)
-  plot_crm_full <- vector("list", length = 3)
-  plot_boin_full <- vector("list", length = 3)
-
-   y <- 1
-   z <- 1
-   while(y < 4) {
-    if (selected_scenarios[y] == TRUE) {
-      plot_tpt_full[[y]] <- plot_tpt[[z]]
-      plot_crm_full[[y]] <- plot_crm[[z]]
-      plot_boin_full[[y]] <- plot_boin[[z]]
-      y <- y+1
-      z <- z+1
-    } else {
-      plot_tpt_full[[y]] <- rep(list(NULL), 5)
-      plot_crm_full[[y]] <- rep(list(NULL), 5)
-      plot_boin_full[[y]] <- rep(list(NULL), 5)
-      y <- y+1
-      z <- z
-    }
-  }
-
-  # Combining data for plotting
- 
-  tpt_by_scenario <- plot_by_scenario(plot_tpt_full, 5, 3, 4)
-  crm_by_scenario <- plot_by_scenario(plot_crm_full, 5, 3, 4)
-  boin_by_scenario <- plot_by_scenario(plot_boin_full, 5, 3, 4)
-
-  plot_list_by_scenario <- list(tpt_by_scenario, crm_by_scenario, boin_by_scenario)
-
-  median_ov_scen <- median_for_scen(median_overdose)
-  median_len_scen <- median_for_scen(median_length)
-
-    updated_model <- model[!sapply(selected_models, identical, FALSE)] 
-
-    graphs <- vector("list", 4*n_models) # initialising for use later
-
-    used_plots <- plot_list_by_scenario[!sapply(selected_models, identical, FALSE)] 
-
-   for (j in 1:n_models) {
-    data <- used_plots[[j]] 
   
-    mo <- median_ov_scen[[j]]
-    ml <- median_len_scen[[j]]
-
-    for (k in 1:4) {
-      met <- data[[k]]
-      
-      if(is.null(met)) 
-      { next } else if (metric_no_accuracy[k] == FALSE) { next
-      } else if (!is.null(met[[1]]$selection) | !is.null(met[[2]]$selection) | !is.null(met[[3]]$selection)) {
-      graphs[[4*(j-1) + k]] <- plot_bar(met, Dose, selection, title = paste("% Times Dose Was Selected as MTD for", updated_model[j]), y_title = "% Times Dose Was Selected as MTD", col = "blue", model_picked = 2, models = selected_models, scenarios = selected_scenarios) # Using blue for MTD
-      } else if (!is.null(met[[1]]$treatment) | !is.null(met[[2]]$treatment) | !is.null(met[[3]]$treatment)) {
-      graphs[[4*(j-1) + k]] <- plot_bar(met, Dose_Level, treatment, title = paste("% Treated at Dose for", updated_model[j]), y_title = "% Treated at Dose", col = "blue", model_picked = FALSE, models = selected_models, scenarios = selected_scenarios) # Using blue for MTD
-      } else if (!is.null(met[[1]]$overdose) | !is.null(met[[2]]$overdose) | !is.null(met[[3]]$overdose)) {
-      graphs[[4*(j-1) + k]] <- plot_dist(met, overdose, mo, title = paste("Distribution of Overdoses for", updated_model[j]), x_title = "Overdose", col = "blue", model_picked = FALSE, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
-      } else if (!is.null(met[[1]]$length) | !is.null(met[[2]]$length) | !is.null(met[[3]]$length)) {
-      graphs[[4*(j-1) + k]] <- plot_dist(met, length, ml, title = paste("Distribution of Trial Duration for", updated_model[j]), x_title = "Trial Duration", col = "blue", model_picked = FALSE, models = selected_models,  scenarios = selected_scenarios) # Using blue for mean
-      } else {
-        graphs[[4*(j-1) + k]] <- NULL
-      } # Using fixed values for means for now
-    }
-   }
-
-  # Removing NULL values from the graphs list
-  filtered_graphs <- Filter(Negate(is.null), graphs)
-
-  names(filtered_graphs) <- sapply(filtered_graphs, function(x) x$labels$title)
-
-  output$generate_graphs_ui <- renderUI({selectInput(
-      ns("s_graph"), "Select a plot to view",
-      choices = names(filtered_graphs), selected = names(filtered_graphs)[1], multiple = FALSE, width = "100%"
-    )})
-
-   sim_graphs <- sim_graphs(filtered_graphs) # Updating the reactive value with the new plots
-
-  } else {output$generate_graphs_ui <- NULL} # For now - will become individual plots later
+  # Use the new plotting utility function
+  plot_results <- generate_simulation_plots(
+    view_type = input$comparative_view,
+    plot_data = plot_list,
+    selected_metric = selected_metric,
+    selected_scenarios = selected_scenarios,
+    selected_models = selected_models,
+    scenarios = scenarios,
+    models = model,
+    median_overdose = median_overdose,
+    median_length = median_length,
+    ns = ns
+  )
+  
+  # Update reactive values and UI
+  sim_graphs(plot_results$filtered_graphs)
+  output$generate_graphs_ui <- plot_results$ui_element
 
   } # else (after for loop)
-  } # else (before for loop)
   } # else (for validation)
   }) # observe function
 
