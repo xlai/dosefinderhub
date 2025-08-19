@@ -691,18 +691,15 @@ plot_dist_ind <- function(data, category, median, title, x_title, col) {
   }
  
  find_model <- function(v) {
-   tpt <- v[grep("3+3", row.names(v))]
-   crm <- v[grep("CRM", row.names(v))]
-   boin <- v[grep("BOIN", row.names(v))]
+  if (grepl("3\\+3", v)) return("3+3")
+  if (grepl("CRM", v)) return("CRM")
+  if (grepl("BOIN", v)) return("BOIN")
+  return(NA)
+}
 
-   if (length(tpt) > 0) {
-     output <- "3+3"
-   } else if (length(crm) > 0){
-     output <- "CRM"
-   } else if (length(boin) > 0) {
-     output <- "BOIN"
-   } else {
-     output <- NULL
-   }
-    return(output)
- }
+find_scenario <- function(v, w) {
+  for (i in 1:length(w))  {
+  if (grepl(w[i], v)) return(paste(w[i]))
+  }
+  return(NA)
+}

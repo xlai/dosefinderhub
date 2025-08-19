@@ -43,9 +43,16 @@ sim_ui <- function(id) {
             uiOutput(ns("tables_ui")), # Individual view dropdown
             textOutput(ns("selected_ind_title"), container = h4), # Individual table titles
             tableOutput(ns("selected_ind_table")), # Individual table output
+            textOutput(ns("selected_title"), container = h3), # Scenario/Model title (Comparative view)
+            textOutput(ns("true_dlts_title"), container = h4), # True DLT probabilities table title
+            uiOutput(ns("true_dlts_table")), # True DLT probabilities table (Comparison by model)
+            tags$hr(),
+            textOutput(ns("treatment_title"), container = h4),
             tableOutput(ns("treatment_table")), # Comparative view - treatment
+            textOutput(ns("mtd_title"), container = h4), 
             tableOutput(ns("mtd_table")), # Comparative view - mtd
-            tableOutput(ns("mean_table"))
+            textOutput(ns("mean_title"), container = h4), 
+            tableOutput(ns("mean_table")) # Comparative view - mean values
           ),
           nav_panel("Simulation Output - Plots",
           h3("Simulation Output - Plots"),
@@ -297,6 +304,7 @@ validation_state <- reactiveValues(
  sim_df <- reactiveVal(NULL) # initialising
  sim_titles <- reactiveVal(NULL) # initialising
  sim_graphs <- reactiveVal(NULL) # initialising
+ scenario_list <- reactiveVal(NULL) # initialising
 
   observeEvent(input$run_simulation, {
 
@@ -342,6 +350,7 @@ validation_state <- reactiveValues(
     scen3 <- {"Scenario 3" %in% input$scen_output_input}
   )
   updated_scenarios <- scenarios[!sapply(selected_scenarios, identical, FALSE)] 
+  scenario_list <- scenario_list(updated_scenarios)
 
   model <- c("3+3", "CRM", "BOIN")
     selected_models <- c(("3+3" %in% input$simulation_design_selection_input),
@@ -533,20 +542,26 @@ validation_state <- reactiveValues(
   } else {
 
   if ("Individually" %in% input$comparative_view | n_data_frames == 1) {
+    output$selected_title <- NULL
+    output$true_dlts_title <- NULL
+    output$treatment_title <- NULL
+    output$mtd_title <- NULL
+    output$mean_title <- NULL
+    output$true_dlts_table <- NULL
+    output$treatment_table <- NULL
+    output$mtd_table <- NULL
+    output$mean_table <- NULL
+
     output$tables_ui <- renderUI({selectInput(
       ns("ind_tables"), "Select a table to view",
       choices = combined_titles, selected = combined_titles[1], multiple = FALSE, width = "100%"
     )})
 
-    output$titles1 <- NULL
-    output$titles2 <- NULL
-    output$tables1 <- NULL
-    output$tables2 <- NULL
-
    sim_df <- sim_df(combined_data_frames) 
    sim_titles <- sim_titles(combined_titles)
 
-  } else {output$tables_ui <- renderUI({selectInput(
+  } else if ("Comparatively by Design" %in% input$comparative_view) {
+      output$tables_ui <- renderUI({selectInput(
       ns("scenario_tables"), "Select a Scenario to view",
       choices = updated_scenarios, selected = updated_scenarios[1], multiple = FALSE, width = "100%"
     )})
@@ -554,13 +569,32 @@ validation_state <- reactiveValues(
   output$selected_ind_table <- NULL
   output$selected_ind_title <- NULL
 
-  output$titles1 <- renderText({combined_titles[[1]]})
-  output$titles2 <- renderText({combined_titles[[2]]})
-  output$tables1 <- renderTable({combined_data_frames[[1]]}, rownames = TRUE, colnames = TRUE)
-  output$tables2 <- renderTable({combined_data_frames[[2]]}, rownames = TRUE, colnames = TRUE)
-
   names(combined_data_frames) <- combined_titles # Naming the data frames with the titles
 
+  sim_df <- sim_df(combined_data_frames) 
+  sim_titles <- sim_titles(combined_titles) # Updating the reactive values with the new data frames and titles
+  } else {
+    output$tables_ui <- renderUI({selectInput(
+      ns("model_tables"), "Select a Design to view",
+      choices = updated_model, selected = updated_model[1], multiple = FALSE, width = "100%"
+    )})
+
+  output$selected_ind_table <- NULL
+  output$selected_ind_title <- NULL
+
+    scen_numbers <- as.numeric(gsub("Scenario ", "", scenario_list())) # Extracting the scenario number from the selected scenario string
+
+    true_dlts_wide <- reactive_df()[scen_numbers, ] 
+    true_dlts <- as.data.frame(true_dlts_wide[, -1]) 
+    row.names(true_dlts) <- paste("Scenario ", as.integer(true_dlts_wide$Scenario))
+
+
+    output$true_dlts_title <- renderText({"True DLT Probabilities Per Scenario"})
+    output$true_dlts_table <- renderTable({
+      true_dlts
+    }, rownames = TRUE, colnames = TRUE)
+
+  names(combined_data_frames) <- combined_titles # Naming the data frames with the titles
 
   sim_df <- sim_df(combined_data_frames) 
   sim_titles <- sim_titles(combined_titles) # Updating the reactive values with the new data frames and titles
@@ -737,15 +771,12 @@ validation_state <- reactiveValues(
 
    sim_graphs <- sim_graphs(filtered_graphs) # Updating the reactive value with the new plots
 
-  } else {output$generate_graphs_ui <- NULL} # For now - will become individual plots later
+  } else {output$generate_graphs_ui <- NULL} 
 
   } # else (after for loop)
   } # else (before for loop)
   } # else (for validation)
   }) # observe function
-
- current_table1 <- reactiveVal(1)
- current_table2 <- reactiveVal(2)
 
   # Individual table outputs
   observeEvent(input$ind_tables, {
@@ -776,9 +807,100 @@ validation_state <- reactiveValues(
     })
   })
 
+  # Comparative tables outputs
+  observeEvent(input$model_tables, {
+    selected_model_no_tpt <- input$model_tables
 
+    selected_model <- selected_model_no_tpt
 
-  # Comparative plots outputs
+    output$selected_title <- renderText({
+      paste("Simulation Results for", selected_model_no_tpt)
+    })
+
+     if (selected_model_no_tpt == "3+3") {
+      selected_model <- "3\\+3"
+    }
+
+    specific_model <- sim_df()[grep(selected_model, names(sim_df()))]
+
+    specific_mtd <- specific_model[grep("MTD", names(specific_model))]
+
+    if (length(specific_mtd) == 0) {
+      output$mtd_table <- NULL
+      output$mtd_title <- NULL
+    } else {
+      vector_mtd <- lapply(specific_mtd, function(x) x[-2, ])
+
+     mtd_output <- do.call(rbind, vector_mtd)
+  
+     rownames(mtd_output) <- sapply(rownames(mtd_output), function(x) find_scenario(x, scenario_list()))
+
+     output$mtd_table <- renderTable({
+      mtd_output
+    }, rownames = TRUE, colnames = TRUE)
+
+    output$mtd_title <- renderText({"% Times Dose Was Selected as MTD"})
+    }
+
+    specific_treatment <- specific_model[grep("Treated", names(specific_model))]
+
+    if (length(specific_treatment) == 0) {
+      output$treatment_table <- NULL
+      output$treatment_title <- NULL
+    } else {
+    vector_treatment <- lapply(specific_treatment, function(x) x[-2, ])
+
+    treatment_output <- do.call(rbind, vector_treatment)
+    
+    rownames(treatment_output) <- sapply(rownames(treatment_output), function(x) find_scenario(x, scenario_list()))
+    
+    output$treatment_table <- renderTable({
+      treatment_output
+    }, rownames = TRUE, colnames = TRUE)
+
+    output$treatment_title <- renderText({"% Treated at Each Dose"})
+    }
+
+    specific_mean <- specific_model[grep("Mean", names(specific_model))]
+
+    mean_vector <- do.call(rbind, specific_mean) # long vector of means
+
+    if (length(mean_vector) == 0) {
+      mean_output <- NULL
+      output$mean_title <- NULL
+    } else {
+       mean_data <- as.data.frame(mean_vector, colnames = TRUE)
+
+    colnames(mean_data) <- "Value"
+
+    # Converting to a table with rows as designs and column as means
+    mean_data <- mean_data %>%
+    rownames_to_column("Label")
+
+    scenario_for_pattern <- paste(scenario_list(), collapse = "|")
+
+   mean_data <- mean_data %>%
+   mutate(
+    Scenario = str_extract(Label, scenario_for_pattern),
+    Mean = str_extract(Label, "Mean Accuracy|Mean Trial Length|Mean Overdose")
+  )
+
+  mean_reshaped <- mean_data %>%
+  select(Scenario, Mean, Value) %>%
+  pivot_wider(names_from = Mean, values_from = Value)
+
+  mean_output <- as.data.frame(mean_reshaped[ , -1])
+  row.names(mean_output) <- mean_reshaped$Scenario
+
+  output$mean_title <- renderText({"Mean Values for Selected Metrics"})
+    }
+
+    output$mean_table <- renderTable({
+      mean_output
+    }, rownames = TRUE, colnames = TRUE)
+
+  })
+
   observeEvent(input$scenario_tables, {
     selected_scen <- input$scenario_tables
 
@@ -786,37 +908,67 @@ validation_state <- reactiveValues(
 
     true_dlts <- reactive_df()[scen_number, -1] # Exclude the first column (Scenario)
 
+    output$true_dlts_title <- renderText({
+      paste("True DLT Probabilities")
+    })
+
+    output$selected_title <- renderText({
+      paste("Simulation Results for", selected_scen)
+    })
+
+    output$true_dlts_table <- renderTable({
+      true_dlts
+    }, rownames = FALSE, colnames = TRUE)
+
     specific_scen <- sim_df()[grep(selected_scen, names(sim_df()))]
 
     specific_mtd <- specific_scen[grep("MTD", names(specific_scen))]
 
-    vector_mtd <- lapply(specific_mtd, function(x) x[-2, ])
+    if (length(specific_mtd) == 0) {
+      output$mtd_table <- NULL
+      output$mtd_title <- NULL
+    } else {
+      vector_mtd <- lapply(specific_mtd, function(x) x[-2, ])
 
-    mtd_output <- do.call(rbind, vector_mtd)
+     mtd_output <- do.call(rbind, vector_mtd)
 
-    #for (i in 1:length(mtd_output[, 1])) {
-     # row.names(mtd_output[i, ]) <- find_model(mtd_output[i, ])
-     # print(row.names(mtd_output[i, ]))
-    #}
+     rownames(mtd_output) <- sapply(rownames(mtd_output), find_model)
+
+     output$mtd_table <- renderTable({
+      mtd_output
+    }, rownames = TRUE, colnames = TRUE)
+
+    output$mtd_title <- renderText({"% Times Dose Was Selected as MTD"})
+    }
 
     specific_treatment <- specific_scen[grep("Treated", names(specific_scen))]
 
+    if (length(specific_treatment) == 0) {
+      output$treatment_table <- NULL
+      output$treatment_title <- NULL
+    } else {
     vector_treatment <- lapply(specific_treatment, function(x) x[-2, ])
 
     treatment_output <- do.call(rbind, vector_treatment)
 
-    output$mtd_table <- renderTable({
-      mtd_output
-    }, rownames = TRUE, colnames = TRUE)
+    rownames(treatment_output) <- sapply(rownames(treatment_output), find_model)
+
     output$treatment_table <- renderTable({
       treatment_output
     }, rownames = TRUE, colnames = TRUE)
+
+    output$treatment_title <- renderText({"% Treated at Each Dose"})
+    }
 
     specific_mean <- specific_scen[grep("Mean", names(specific_scen))]
 
     mean_vector <- do.call(rbind, specific_mean) # long vector of means
 
-    mean_data <- as.data.frame(mean_vector, colnames = TRUE)
+    if (length(mean_vector) == 0) {
+      mean_output <- NULL
+      output$mean_title <- NULL
+    } else {
+       mean_data <- as.data.frame(mean_vector, colnames = TRUE)
 
     colnames(mean_data) <- "Value"
 
@@ -830,18 +982,28 @@ validation_state <- reactiveValues(
     Mean = str_extract(Label, "Mean Accuracy|Mean Trial Length|Mean Overdose")
   )
 
-# Step 4: Reshape to wide format
-mean_reshaped <- mean_data %>%
+  mean_reshaped <- mean_data %>%
   select(Design, Mean, Value) %>%
   pivot_wider(names_from = Mean, values_from = Value)
 
   mean_output <- as.data.frame(mean_reshaped[, -1])
   row.names(mean_output) <- mean_reshaped$Design
 
+  output$mean_title <- renderText({"Mean Values for Selected Metrics"})
+    }
+
     output$mean_table <- renderTable({
       mean_output
     }, rownames = TRUE, colnames = TRUE)
 
+  })
+
+  observeEvent(input$s_graph, {
+    selected_plot <- input$s_graph
+    
+    output$selected_graph <- renderPlot({
+      sim_graphs()[[selected_plot]]
+    })
   })
 
   observeEvent(input$s_graph, {
