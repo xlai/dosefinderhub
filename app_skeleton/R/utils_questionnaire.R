@@ -32,10 +32,10 @@ generate_intelligent_recommendation <- function(user_responses) {
   
   # Define domain weights
   domain_weights <- list(
-    "Performance Metrics" = 0.30,
-    "Operational Constraints" = 0.25,
-    "Study Population" = 0.20,
-    "Infrastructure Capabilities" = 0.25
+    "Performance Metrics" = (0.30*20),
+    "Operational Constraints" = (0.25*20),
+    "Study Population" = (0.20*20),
+    "Infrastructure Capabilities" = (0.25*20)
   )
   
   # Initialize domain-wise score containers
@@ -49,12 +49,12 @@ generate_intelligent_recommendation <- function(user_responses) {
   # --- Performance Metrics ---
  if (!is.null(user_responses$ttl)) {
   ttl <- as.numeric(user_responses$ttl)
-  if (ttl > 0.28 && ttl < 0.38) {
-    domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] + c(CRM = 1, BOIN = 1, "3+3" = 1)
-  } else if (ttl < 0.28) {
+  if (ttl > 0.15 && ttl < 0.34) {
+    domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] + c(CRM = 2, BOIN = 2, "3+3" = 1)
+  } else if (ttl < 0.15) {
     domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] + c(CRM = 1, BOIN = 2, "3+3" = 0)
-  } else if (ttl > 0.38) {
-    domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] + c(CRM = 2, BOIN = 1, "3+3" = 0)
+  } else if (ttl > 0.34) {
+    domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] + c(CRM = 2, BOIN = 1, "3+3" = 0);
   }
  }
 
@@ -67,13 +67,21 @@ generate_intelligent_recommendation <- function(user_responses) {
              c(CRM = 0, BOIN = 0, "3+3" = 0))
   }
 
-  if (!is.null(user_responses$dlt_accuracy)) {
-    domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] +
-      switch(user_responses$dlt_accuracy,
-             "As much as possible" = c(CRM = 1, BOIN = 1, "3+3" = 0),
-             "Other things are the priority" = c(CRM = 1, BOIN = 1, "3+3" = 1),
-             c(CRM = 0, BOIN = 0, "3+3" = 0))
-  }
+#if (!is.null(user_responses$dlt_crucial)) {
+  #crucial <- as.numeric(user_responses$dlt_crucial)
+  #if (crucial == 1) {
+ #   domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] + c(CRM = 1, BOIN = 1, "3+3" = 1)
+ # } else if (crucial == 2) {
+ #   domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] + c(CRM = 1, BOIN = 2, "3+3" = 1)
+ # } else if (crucial == 3) {
+ #   domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] + c(CRM = 1, BOIN = 2, "3+3" = 0)
+ # } else if (crucial == 4) {
+ #   domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] + c(CRM = 2, BOIN = 2, "3+3" = 0)
+ # } else if (crucial == 5) {
+  #  domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] + c(CRM = 3, BOIN = 2, "3+3" = 0)
+ # }
+#}
+
 
   if (!is.null(user_responses$decision_transparency)) {
     domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] +
@@ -85,17 +93,24 @@ generate_intelligent_recommendation <- function(user_responses) {
   }
 
   # --- Operational Constraints ---
-  if (!is.null(user_responses$time_budget_availability)) {
+  if (!is.null(user_responses$time_resources)) {
     domain_scores[["Operational Constraints"]] <- domain_scores[["Operational Constraints"]] +
-      switch(user_responses$time_budget_availability,
-             "Not limited by time/budget" = c(CRM = 2, BOIN = 2, "3+3" = 1),
-             "Some availability in time/budget" = c(CRM = 1, BOIN = 2, "3+3" = 2),
-             "Limited by time/budget" = c(CRM = 0, BOIN = 0, "3+3" = 3),
+      switch(user_responses$time_resources,
+             "Not limited by time/resources" = c(CRM = 2, BOIN = 2, "3+3" = 1),
+             "Some availability in time/resources" = c(CRM = 1, BOIN = 2, "3+3" = 2),
+             "Limited by time/resources" = c(CRM = 0, BOIN = 0, "3+3" = 3),
              c(CRM = 0, BOIN = 0, "3+3" = 0))
   }
 
   # --- Study Population ---
-  ###need to add cohort size and maximum sample size
+  if (!is.null(user_responses$cohort_size)) {
+    cohort_size <- as.numeric(user_responses$cohort_size)
+    if (cohort_size == 3) {
+      domain_scores[["Study Population"]] <- domain_scores[["Study Population"]] + c(CRM = 1, BOIN = 1, "3+3" = 1)
+    } else if (cohort_size > 3 && cohort_size < 3) {
+      domain_scores[["Study Population"]] <- domain_scores[["Study Population"]] + c(CRM = 2, BOIN = 2, "3+3" = 0)
+    }
+  }
 
   # --- Infrastructure Capabilities ---
   if (!is.null(user_responses$statistical_support)) {
@@ -103,7 +118,8 @@ generate_intelligent_recommendation <- function(user_responses) {
       switch(user_responses$statistical_support,
              "Yes experienced with complex modeling" = c(CRM = 3, BOIN = 1, "3+3" = 0),
              "Yes but prefer simpler approaches" = c(CRM = 1, BOIN = 3, "3+3" = 1),
-             "Limited statistical support" = c(CRM = 0, BOIN = 1, "3+3" = 8),
+             "Limited statistical support" = c(CRM = 0, BOIN = 5, "3+3" = 8),
+              "No statistician" = c(CRM = 0, BOIN = 3, "3+3" = 15),
              c(CRM = 0, BOIN = 0, "3+3" = 0))
   }
 
@@ -118,11 +134,11 @@ generate_intelligent_recommendation <- function(user_responses) {
   second_score <- weighted_scores[ranked_methods[2]]
   score_gap <- max_score - second_score
 
-  confidence <- if (score_gap >= 3) "High" else if (score_gap >= 2) "Medium" else "Low"
+  confidence <- if (score_gap >= 7) "High" else if (score_gap >= 10) "Medium" else "Low"
 
   # Suitability logic
   suitability_model <- if (!is.null(user_responses$statistical_support) &&
-                           user_responses$statistical_support == "Limited statistical support") {
+                           user_responses$statistical_support == "Limited statistical support" && "No statistician" %in% ranked_methods) {
     "3+3"
   } else {
     ranked_methods[1]
@@ -174,105 +190,152 @@ generate_recommendation <- function(x) {
 generate_rationale <- function(user_responses, top_method, scores) {
   
   rationale_parts <- c()
-  
+  reasons <- c()
+  flag_message <- NULL
+
+  # --- Intro ---
   method_intro <- switch(top_method,
     "CRM" = "CRM (Continual Reassessment Method) is recommended because",
     "BOIN" = "BOIN (Bayesian Optimal Interval) is recommended because", 
     "3+3" = "The 3+3 design is recommended because"
   )
-  
   rationale_parts <- c(rationale_parts, method_intro)
-  reasons <- c()
-  flag_message <- NULL
 
   # --- Performance Metrics ---
   if (!is.null(user_responses$toxicity_confidence)) {
     reasons <- c(reasons, switch(user_responses$toxicity_confidence,
-      "Very confident (good historical data)" = if (top_method == "CRM") "you have strong historical toxicity data that CRM can leverage effectively",
-      "Somewhat confident" = if (top_method == "BOIN") "BOIN provides a good balance when toxicity confidence is moderate",
-      "Not confident/limited data" = if (top_method == "3+3") "with limited toxicity data, the 3+3 design provides a simple, well-understood approach",
-      NULL))
-  }
-
-  if (!is.null(user_responses$dlt_accuracy)) {
-    reasons <- c(reasons, switch(user_responses$dlt_accuracy,
-      "As much as possible" = if (top_method == "CRM") "you prioritize accurate DLT estimation, which CRM supports",
-      "Other things are the priority" = if (top_method == "3+3") "you prefer simplicity over detailed DLT modeling",
+      "Very confident (good historical data)" = if (top_method == "CRM") "you have strong historical toxicity data that CRM can leverage effectively" else NULL,
+      "Somewhat confident" = if (top_method == "BOIN") "BOIN provides a good balance when toxicity confidence is moderate" else NULL,
+      "Not confident/limited data" = if (top_method == "3+3") "with limited toxicity data, the 3+3 design provides a simple, well-understood approach" else NULL,
       NULL))
   }
 
   if (!is.null(user_responses$decision_transparency)) {
     reasons <- c(reasons, switch(user_responses$decision_transparency,
-      "Very important (regulatory/reproducibility)" = if (top_method == "BOIN") "BOIN provides transparent, pre-specified decision boundaries",
-      "Flexible adaptation preferred" = if (top_method == "CRM") "CRM allows flexible adaptation based on accumulating data",
-      "Simple fixed rules fine" = if (top_method == "3+3") "the 3+3 design uses simple, fixed escalation rules",
+      "Very important (regulatory/reproducibility)" = if (top_method == "BOIN") "BOIN provides transparent, pre-specified decision boundaries" else NULL,
+      "Flexible adaptation preferred" = if (top_method == "CRM") "CRM allows flexible adaptation based on accumulating data" else NULL,
+      "Simple fixed rules fine" = if (top_method == "3+3") "the 3+3 design uses simple, fixed escalation rules" else NULL,
       NULL))
   }
 
   # --- Operational Constraints ---
-  if (!is.null(user_responses$trial_priorities)) {
-    reasons <- c(reasons, switch(user_responses$trial_priorities,
-      "Finding the best dose efficiently" = if (top_method == "CRM") "CRM is most efficient at finding the maximum tolerated dose",
-      "Getting started quickly with simple rules" = if (top_method == "3+3") "the 3+3 design offers the simplest implementation with fixed decision rules",
-      "Balance of both" = if (top_method == "BOIN") "BOIN balances efficiency with simplicity",
-      NULL))
-  }
+ #if (!is.null(user_responses$dlt_crucial)) {
+ ## dlt_crucial <- suppressWarnings(as.numeric(user_responses$dlt_crucial))
+ # if (!is.na(dlt_crucial)) {
+ ##   if (dlt_crucial == 1 && top_method == "3+3") {
+#reasons <- c(reasons, "you’re not prioritizing DLT estimation, so the simplicity of 3+3 is suitable")
+ #   } else if (dlt_crucial == 2 && top_method == "BOIN") {
+ #     reasons <- c(reasons, "you want some DLT estimation ability without complexity, which BOIN supports")
+ #   } else if (dlt_crucial == 3 && top_method == "BOIN") {
+ #     reasons <- c(reasons, "BOIN offers a balance between DLT estimation and simplicity")
+  #  } else if (dlt_crucial == 4 && top_method == "CRM") {
+ #     reasons <- c(reasons, "you value accurate DLT estimation, and CRM provides strong modeling capabilities")
+ #   } else if (dlt_crucial == 5 && top_method == "CRM") {
+ #     reasons <- c(reasons, "you highly prioritize DLT estimation, and CRM is best suited for that goal")
+ #   }
+ # }
+#}
+#question taken out of csv
+#Y,8,slider,dlt_crucial,How crucial is DLT accuracy? (1 = not very, 5 = absolutely)?,numeric_bounded,min=1;max=5;step=1,
 
-  if (!is.null(user_responses$time_budget_availability)) {
-    reasons <- c(reasons, switch(user_responses$time_budget_availability,
-      "Limited by time/budget" = if (top_method == "3+3") "you are constrained by time or budget, making 3+3 a practical choice",
-      "Not limited by time/budget" = if (top_method == "CRM") "you have resources to support more complex modeling",
+  if (!is.null(user_responses$time_resources)) {
+    reasons <- c(reasons, switch(user_responses$time_resources,
+      "Limited by time/resources" = if (top_method == "3+3") "you are constrained by time or resources, making 3+3 a practical choice" else NULL,
+      "Some availability in time/resources" = switch(top_method,
+        "BOIN" = "BOIN offers a balance between modeling and practicality under moderate resource constraints",
+        "3+3" = "3+3 is simple and can work with moderate resources",
+        NULL),
+      "Not limited by time/resources" = switch(top_method,
+        "CRM" = "you have resources to support more complex modeling",
+        "BOIN" = "BOIN can be used effectively when resources are available",
+        NULL),
       NULL))
   }
 
   # --- Study Population ---
-  ####need to add cohort size and maximum sample size
+  if (!is.null(user_responses$cohort_size)) {
+    cohort_size <- as.numeric(user_responses$cohort_size)
+
+    if (cohort_size == 3) {
+      if (top_method == "3+3") {
+        reasons <- c(reasons, "the cohort size of 3 is optimal for the 3+3 design")
+      } else {
+        reasons <- c(reasons, "a cohort size of 3 is standard, but other designs like CRM and BOIN can still be used")
+      }
+    } else {
+      if (top_method == "CRM") {
+        reasons <- c(reasons, "CRM is well-suited for larger or variable cohort sizes")
+      } else if (top_method == "BOIN") {
+        reasons <- c(reasons, "BOIN can flexibly accommodate larger cohort sizes")
+      } else if (top_method == "3+3") {
+        reasons <- c(reasons, "the 3+3 design is typically used with cohorts of 3, so this size may be less optimal")
+      }
+    }
+  }
 
   # --- Infrastructure Capabilities ---
-  if (!is.null(user_responses$statistical_support)) {
+if (!is.null(user_responses$statistical_support)) {
   stat_support <- user_responses$statistical_support
-  
+
   if (stat_support == "Yes experienced with complex modeling" && top_method == "CRM") {
     reasons <- c(reasons, "your statistical expertise enables effective use of CRM's adaptive modeling")
-  } else if (stat_support == "Yes but prefer simpler approaches" && top_method == "BOIN") {
-    reasons <- c(reasons, "BOIN provides statistical rigor without excessive complexity")
-  } else if (stat_support == "Limited statistical support" && top_method == "3+3") {
-    reasons <- c(reasons, "the 3+3 design requires minimal statistical expertise to implement")
+  } else if (stat_support == "Yes but prefer simpler approaches") {
+    if (top_method == "BOIN") {
+      reasons <- c(reasons, "BOIN provides statistical rigor without excessive complexity")
+    } else if (top_method == "3+3") {
+      reasons <- c(reasons, "you prefer simpler approaches, and 3+3 offers the most straightforward implementation")
+    }
+  } else if (stat_support == "Limited statistical support") {
+    if (top_method == "3+3") {
+      reasons <- c(reasons, "the 3+3 design requires minimal statistical expertise to implement")
+    } else if (top_method == "BOIN") {
+      reasons <- c(reasons, "BOIN can be used with limited statistical support while maintaining rigor")
+    }
+  } else if (stat_support == "No statistician") {
+    if (top_method == "3+3") {
+      reasons <- c(reasons, "3+3 is the most feasible design when no statistician is available")
+    } else if (top_method == "BOIN") {
+      reasons <- c(reasons, "BOIN can still be implemented without a statistician, though support is recommended")
+    }
   }
 
-  if (stat_support == "Limited statistical support") {
-    flag_message <- "Your answer to the question about statistical support heavily influenced the outcome of this recommendation, in favour of 3+3. Consider consulting a statistician to gain the benefits of the other trial designs."
+  # Simple flag message condition
+  if (stat_support %in% c("Limited statistical support", "No statistician")) {
+    flag_message <- "⚠️ Your answer to the question about statistical support heavily influenced the outcome of this recommendation, in favour of 3+3. Consider consulting a statistician to gain the benefits of the other trial designs."
   }
 }
 
+# Display the flag message
 if (!is.null(flag_message)) {
-  flag_message <- paste("\n\n⚠️ ", flag_message)
+  cat(flag_message)
 }
 
 
-# Combine reasons
+
+  # --- Combine Reasoning ---
   if (length(reasons) > 0) {
     reason_text <- paste(reasons[!is.null(reasons)], collapse = ", and ")
     rationale_parts <- c(rationale_parts, reason_text)
   }
 
-  # Add method characteristics
+  # --- Method Description ---
   method_desc <- switch(top_method,
     "CRM" = "CRM continuously updates dose-toxicity estimates using Bayesian methods, making it highly efficient but requiring more statistical expertise.",
     "BOIN" = "BOIN uses pre-specified decision boundaries that balance efficiency with transparency, making it suitable for many regulatory contexts.",
     "3+3" = "The 3+3 design follows simple escalation rules (treat 3, escalate if 0/3 toxicities), making it the most straightforward to implement"
   )
 
-  # Add caveat if scores are close
+  # --- Caveat if Scores Are Close ---
   max_score <- max(scores)
   second_score <- sort(scores, decreasing = TRUE)[2]
-  caveat <- if (max_score - second_score <= 0.25) {
+  caveat <- if (max_score - second_score <= 5) {
     sprintf("\n\nNote: The scores are quite close (difference of %.2f), so %s could also be a reasonable choice depending on your specific context",
             max_score - second_score, names(sort(scores, decreasing = TRUE))[2])
   } else {
     ""
   }
 
+  # --- Final Output ---
   full_rationale <- paste(c(rationale_parts, method_desc, flag_message, caveat), collapse = ". ")
   return(full_rationale)
 }
