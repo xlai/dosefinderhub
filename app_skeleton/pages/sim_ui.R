@@ -98,13 +98,15 @@ sim_ui <- function(id) {
       tags$hr(), # Separator line
       h3("Download Results"),
       p("Want to save your simulation results? Click a button below to download them as a CSV file."),
-      downloadButton(ns("download_simulation_results"), "Download Simulation Results")
+      downloadButton(ns("download_simulation_results"), "Download Simulation Results"),
+      tags$hr(),
+      actionButton(ns("view_conduct"), "View Conduct Tab")
     )
   ) 
   )
 }
 
-sim_server <- function(id, shared) {
+sim_server <- function(id, shared, parent_session = NULL) {
   moduleServer(id, function(input, output, session) {
 ns <- session$ns
      ######################################## Configuration tab's simulation scenarios table code ########################################
@@ -848,9 +850,13 @@ validation_state <- reactiveValues(
       sim_graphs()[[selected_plot]]
     })
   })
-
-
-
+ 
+  
+  observeEvent(input$view_conduct, {
+      if (!is.null(parent_session)) {
+        updateNavbarPage(parent_session, "nav", selected = "Conduct")
+      }
+    })
 
   }) # End of moduleServer
 } # End of sever function

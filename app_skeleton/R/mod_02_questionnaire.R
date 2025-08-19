@@ -16,7 +16,6 @@ mod_questionnaire_ui <- function(id) {
   ns <- NS(id)
   
   bslib::page_sidebar(
-    title = "Questionnaire",
     
     # Sidebar with controls
     sidebar = bslib::sidebar(
