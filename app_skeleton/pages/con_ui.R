@@ -468,13 +468,16 @@ output$crm_results_table <- renderTable({
   results <- merge(results, dlt_counts, by = "Dose_Level", all.x = TRUE)
   results$No_of_DLTs[is.na(results$No_of_DLTs)] <- 0
 
-  # Add placeholder credible intervals
-  results$CI_Upper <- round(pmin(results$Posterior_DLT_Rate + 0.1, 1), 3)
-  results$CI_Lower <- round(pmax(results$Posterior_DLT_Rate - 0.1, 0), 3)
+  # 95% credible intervals
+  ci_lower <- fit %>% prob_tox_quantile(0.025)
+  ci_upper <- fit %>% prob_tox_quantile(0.975)
+
+  results$CI_Lower <- round(ci_lower, 3)
+  results$CI_Upper <- round(ci_upper, 3)
 
  #Name columns
-  results <- results[, c("Dose_Level","No_of_Patients", "No_of_DLTs",  "Posterior_DLT_Rate", "CI_Upper", "CI_Lower")]
-  colnames(results) <- c("Dose Level","No. of Patients", "No. of DLTs",  "Posterior DLT Rate", "CI Upper", "CI Lower")
+  results <- results[, c("Dose_Level","No_of_Patients", "No_of_DLTs",  "Posterior_DLT_Rate", "CI_Lower", "CI_Upper")]
+  colnames(results) <- c("Dose Level","No. of Patients", "No. of DLTs",  "Posterior DLT Rate", "CI Lower(95%)", "CI Upper(95%)")
   rownames(results) <- paste("Dose Level", results$`Dose Level`)
 
   results
@@ -530,13 +533,18 @@ output$boin_results_table <- renderTable({
   results <- merge(results, dlt_counts, by = "Dose_Level", all.x = TRUE)
   results$No_of_DLTs[is.na(results$No_of_DLTs)] <- 0
 
-  ######## Placeholder credible intervals!!!!!
-  results$CI_Upper <- round(pmin(results$Posterior_DLT_Rate + 0.1, 1), 3)
-  results$CI_Lower <- round(pmax(results$Posterior_DLT_Rate - 0.1, 0), 3)
+ 
+  # 95% credible intervals
+  ci_lower <- fit %>% prob_tox_quantile(0.025)
+  ci_upper <- fit %>% prob_tox_quantile(0.975)
+
+  results$CI_Lower <- round(ci_lower, 3)
+  results$CI_Upper <- round(ci_upper, 3)
+
 
   #Name columns
-  results <- results[, c("Dose_Level","No_of_Patients", "No_of_DLTs",  "Posterior_DLT_Rate", "CI_Upper", "CI_Lower")]
-  colnames(results) <- c("Dose Level","No. of Patients", "No. of DLTs",  "Posterior DLT Rate", "CI Upper", "CI Lower")
+  results <- results[, c("Dose_Level","No_of_Patients", "No_of_DLTs",  "Posterior_DLT_Rate", "CI_Lower", "CI_Upper")]
+  colnames(results) <- c("Dose Level","No. of Patients", "No. of DLTs",  "Posterior DLT Rate", "CI Lower(95%)", "CI Upper(95%)")
   rownames(results) <- paste("Dose Level", results$`Dose Level`)
 
   results
