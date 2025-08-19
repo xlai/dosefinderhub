@@ -53,6 +53,7 @@ sim_ui <- function(id) {
             tableOutput(ns("mtd_table")), # Comparative view - mtd
             textOutput(ns("mean_title"), container = h4), 
             tableOutput(ns("mean_table")) # Comparative view - mean values
+
           ),
           nav_panel("Simulation Output - Plots",
           h3("Simulation Output - Plots"),
@@ -305,6 +306,7 @@ validation_state <- reactiveValues(
  sim_titles <- reactiveVal(NULL) # initialising
  sim_graphs <- reactiveVal(NULL) # initialising
  scenario_list <- reactiveVal(NULL) # initialising
+
 
   observeEvent(input$run_simulation, {
 
@@ -643,7 +645,9 @@ validation_state <- reactiveValues(
      # Removing NULL values from the graphs list
   filtered_graphs <- Filter(Negate(is.null), graphs)
 
+
   names(filtered_graphs) <- sapply(filtered_graphs, function(x) x$labels$title)
+
 
   output$generate_graphs_ui <- renderUI({selectInput(
       ns("ind_graph"), "Select a plot to view",
@@ -772,6 +776,7 @@ validation_state <- reactiveValues(
    sim_graphs <- sim_graphs(filtered_graphs) # Updating the reactive value with the new plots
 
   } else {output$generate_graphs_ui <- NULL} 
+
 
   } # else (after for loop)
   } # else (before for loop)
@@ -1029,6 +1034,47 @@ validation_state <- reactiveValues(
       sim_graphs()[[selected_plot]]
     })
   })
+
+  # Individual table outputs
+  observeEvent(input$ind_tables, {
+    selected_table <- input$ind_tables
+    table_index <- which(sim_titles() == selected_table)
+  
+    output$selected_ind_table <- renderTable({
+      sim_df()[[table_index]]
+    }, rownames = TRUE, colnames = TRUE)
+    
+    output$selected_ind_title <- renderText({
+      selected_table
+    })
+  })
+
+  # Comparative plots outputs
+  observeEvent(input$m_graph, {
+    selected_plot <- input$m_graph
+    
+    output$selected_graph <- renderPlot({
+      sim_graphs()[[selected_plot]]
+    })
+  })
+
+  observeEvent(input$s_graph, {
+    selected_plot <- input$s_graph
+    
+    output$selected_graph <- renderPlot({
+      sim_graphs()[[selected_plot]]
+    })
+  })
+
+  observeEvent(input$ind_graph, {
+    selected_plot <- input$ind_graph
+
+    output$selected_graph <- renderPlot({
+      sim_graphs()[[selected_plot]]
+    })
+  })
+
+
 
 
   }) # End of moduleServer
