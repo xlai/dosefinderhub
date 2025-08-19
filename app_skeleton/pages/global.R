@@ -7,6 +7,7 @@ library(escalation)
 library(rlang)
 library(ggpattern)
 library(BOIN)
+library(tidyverse)
 
 #DUMMY DATA MANIPULATION
 here::i_am("app/modules/trial_design/ui.R")
@@ -689,3 +690,16 @@ plot_dist_ind <- function(data, category, median, title, x_title, col) {
     return(q)
   }
  
+ find_model <- function(v) {
+  if (grepl("3\\+3", v)) return("3+3")
+  if (grepl("CRM", v)) return("CRM")
+  if (grepl("BOIN", v)) return("BOIN")
+  return(NA)
+}
+
+find_scenario <- function(v, w) {
+  for (i in 1:length(w))  {
+  if (grepl(w[i], v)) return(paste(w[i]))
+  }
+  return(NA)
+}
