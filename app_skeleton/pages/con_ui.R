@@ -112,7 +112,7 @@ con_server <- function(id, shared) {
        Patient_Number = seq_len(initial_cohort_size),
        Cohort_Number = rep(1, initial_cohort_size),
        Dose_Level = rep(1, initial_cohort_size),
-       DLT = rep(FALSE, initial_cohort_size),
+       DLT = rep(0, initial_cohort_size),
        stringsAsFactors = FALSE
       )
      conduct_reactive_table_data(initial_rows)
@@ -167,7 +167,7 @@ con_server <- function(id, shared) {
         Patient_Number = integer(0),
         Cohort_Number = integer(0),
         Dose_Level = numeric(0),
-        DLT = logical(0),
+        DLT = numeric(0),
         stringsAsFactors = FALSE
       )
     )
@@ -180,7 +180,7 @@ con_server <- function(id, shared) {
         Patient_Number = seq_len(initial_cohort_size),
         Cohort_Number = rep(1, initial_cohort_size),
         Dose_Level = rep(1, initial_cohort_size),
-        DLT = rep(FALSE, initial_cohort_size),
+        DLT = rep(0, initial_cohort_size),
         stringsAsFactors = FALSE
       )
       conduct_reactive_table_data(initial_rows)
@@ -226,7 +226,7 @@ con_server <- function(id, shared) {
         Patient_Number = seq(from = start_patient, length.out = cohort_size),
         Cohort_Number = rep(new_cohort_number, cohort_size),
         Dose_Level = rep(recommended_dose, cohort_size),
-        DLT = rep(FALSE, cohort_size),
+        DLT = rep(0, cohort_size),
         stringsAsFactors = FALSE
       )
 
@@ -268,8 +268,11 @@ con_server <- function(id, shared) {
         new_value <- as.numeric(info$value)
         data$Dose_Level[data$Cohort_Number == cohort_number] <- new_value
       } else if (col_name == "DLT") {
-        new_value <- as.logical(info$value)
-        data[info$row, col_name] <- new_value
+        new_value <- as.numeric(info$value)
+        if (new_value %in% c(0, 1)) {
+          data[info$row, col_name] <- new_value
+        }
+
       } else {
         data[info$row, col_name] <- info$value
       }
@@ -280,7 +283,7 @@ con_server <- function(id, shared) {
     convert_table_to_crm_outcome <- function(data) {
       split_data <- split(data, data$Cohort_Number)
       outcome_str <- lapply(split_data, function(cohort) {
-        paste0(cohort$Dose_Level[1], paste(ifelse(cohort$DLT, "T", "N"), collapse = ""))
+        paste0(cohort$Dose_Level[1], paste(ifelse(cohort$DLT == 1, "T", "N"), collapse = ""))
       })
       paste(outcome_str, collapse = " ")
     }
