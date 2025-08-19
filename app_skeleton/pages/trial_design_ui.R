@@ -138,22 +138,13 @@ boin_ui_inputs_direct_boundaries <- tagList(
   direct_lambda_d
 )
 
-other_basic_inputs <- tagList(
-  numericInput(ns("basic_prior_mtd_input"), "What is your prior guess of the true MTD?", min = 1, value = 3, step = 1),
-  textOutput(ns("basic_prior_warning")),
-  radioButtons(ns("basic_skip_esc_input"),"Would you like to be able to skip doses when escalating? (For CRM models only)",
-                   choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE),
-  radioButtons(ns("basic_skip_deesc_input"),"Would you like to be able to skip doses when de-escalating? (For CRM models only)",
-                  choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE)
-)
+# Basic mode inputs integrated into main parameter system - no separate basic_* inputs needed
 
 
 ########################################### Running the UI ###########################################
 
 
   page_sidebar( 
-      radioButtons(ns("modes"), "Which mode would you prefer to use?", choices = c("Basic" = 1, "Advanced" = 2), selected = 2, inline = TRUE),
-      tags$hr(),
       textOutput(ns("mode_title"), container = h3),
    # General Trial Design Parameters
      layout_column_wrap(  
@@ -166,43 +157,51 @@ other_basic_inputs <- tagList(
       )),
 
       #Specific Trial Design Parameters
-       conditionalPanel(condition = sprintf("input['%s'] == 2", ns("modes")),
        layout_column_wrap(  
         card( full_screen = TRUE,
           card_header("CRM Parameters"),
           card_body(
            checkboxInput("display_crm", "Display parameters", value = FALSE),
-           conditionalPanel(condition = "input.display_crm==1", specific_ui_inputs_crm)
+           conditionalPanel(condition = "input.display_crm==1", 
+             # Basic mode: show only essential CRM parameters
+             conditionalPanel(condition = sprintf("!input['%s']", ns("advanced_mode")),
+               prior_mtd_input,
+               prior_mtd_warning_text,
+               skip_esc_crm_input,
+               skip_deesc_crm_input
+             ),
+             # Advanced mode: show all CRM parameters
+             conditionalPanel(condition = sprintf("input['%s']", ns("advanced_mode")),
+               specific_ui_inputs_crm
+             )
+           )
           )
         ),
-        card(full_screen = TRUE,
-          card_header("BOIN Parameters"),
-          card_body(
-            checkboxInput("display_boin", "Display parameters", value = FALSE),
-           conditionalPanel(condition = "input.display_boin == 1", boin_general_inputs),
-           conditionalPanel(condition = "input.display_boin == 1 && input.boin_input_choice == 1", boin_ui_inputs_multiple_ttl),
-           conditionalPanel(condition = "input.display_boin == 1 && input.boin_input_choice == 2", boin_ui_inputs_direct_tox_prob),
-           conditionalPanel(condition = "input.display_boin == 1 && input.boin_input_choice == 3", boin_ui_inputs_direct_boundaries),
+        conditionalPanel(condition = sprintf("input['%s']", ns("advanced_mode")),
+          card(full_screen = TRUE,
+            card_header("BOIN Parameters"),
+            card_body(
+              checkboxInput("display_boin", "Display parameters", value = FALSE),
+             conditionalPanel(condition = "input.display_boin == 1", boin_general_inputs),
+             conditionalPanel(condition = "input.display_boin == 1 && input.boin_input_choice == 1", boin_ui_inputs_multiple_ttl),
+             conditionalPanel(condition = "input.display_boin == 1 && input.boin_input_choice == 2", boin_ui_inputs_direct_tox_prob),
+             conditionalPanel(condition = "input.display_boin == 1 && input.boin_input_choice == 3", boin_ui_inputs_direct_boundaries),
+            )
           )
         )
-      )
-       ),
-       conditionalPanel(condition = sprintf("input['%s'] == 1", ns("modes")),
-       layout_column_wrap(  
-        card( full_screen = TRUE,
-          card_header("Model-Specific Basic Parameters"),
-          card_body(
-           checkboxInput("display_basic", "Display parameters", value = FALSE),
-           conditionalPanel(condition = "input.display_basic==1", other_basic_inputs)
-          )
-        ),
       ),
-        p("Once you've finished filling out the basic mode, press the button below to update the advanced parameters to 'general' results that match the basic inputs."),
-        actionButton(ns("transfer_advanced"), "Transfer Results to Advanced Mode")
-       ),
     sidebar = sidebar(
       h3("Trial Design"),
+      
+      # Advanced Mode Toggle
+      div(style = "margin-bottom: 15px;",
+        tags$label("Advanced Mode", style = "font-weight: bold; margin-bottom: 5px; display: block;"),
+        input_switch(ns("advanced_mode"), 
+                      label = "Enable", 
+                      value = TRUE)  # Default to FALSE (Basic mode)
+      ),
       tags$hr(), # Separator line
+      
       fileInput("config_file_upload", 
       "Saved a Trial Design file? Input it here to retrieve your configurations.", 
       accept = c(".csv", ".rds")),
@@ -225,20 +224,40 @@ trial_design_server <- function(id, shared, move_data, parent_session = NULL) {
 reactive_skeleton <- reactiveVal() # initalising a reactive value to store the data frame
 
  observeEvent({input$n_doses_inputt | input$prior_mtd_input}, {  
-    if (is.na(input$n_doses_inputt) | is.na(input$prior_mtd_input)) {  
+    # Add comprehensive validation to prevent crashes
+    if (is.null(input$n_doses_inputt) || is.na(input$n_doses_inputt) || 
+        is.null(input$prior_mtd_input) || is.na(input$prior_mtd_input)) {  
       reactive_skeleton(NULL)  
-    } else if (input$prior_mtd_input > input$n_doses_inputt)  {  
+      return()
+    }
+    
+    # Check if inputs are valid numbers and in correct range
+    if (input$n_doses_inputt < 1 || input$prior_mtd_input < 1) {
+      reactive_skeleton(NULL)
+      return()
+    }
+    
+    if (input$prior_mtd_input > input$n_doses_inputt) {  
       reactive_skeleton(NULL)  
-    } else {
-  dose <- as.integer(input$n_doses_inputt)  
-  Prior <- dfcrm::getprior(halfwidth = 0.25*input$ttl_inputt, target = input$ttl_inputt, nu = input$prior_mtd_input, nlevel = dose)
+      return()
+    }
+    
+    # Check if ttl is valid for dfcrm::getprior
+    if (is.null(input$ttl_inputt) || is.na(input$ttl_inputt) || 
+        input$ttl_inputt <= 0 ) {
+      reactive_skeleton(NULL)
+      return()
+    }
+    
+    # All validations passed - safe to generate skeleton
+    dose <- as.integer(input$n_doses_inputt)  
+    Prior <- dfcrm::getprior(halfwidth = 0.25*input$ttl_inputt, target = input$ttl_inputt, 
+                            nu = input$prior_mtd_input, nlevel = dose)
 
-  rownames_skel <-paste("d", 1:dose, sep = "")
-
-  df <- data.frame(Dose = rownames_skel, Prior = Prior)
-
-  reactive_skeleton(df) # Updating the reactive value with the new data frame
-   } })
+    rownames_skel <- paste("d", 1:dose, sep = "")
+    df <- data.frame(Dose = rownames_skel, Prior = Prior)
+    reactive_skeleton(df)
+   })
   
   output$skeleton_df <- renderDT({
     datatable(reactive_skeleton(), editable = TRUE, rownames = FALSE, options = list(searching = FALSE, paging = FALSE, info = FALSE, scrollX = TRUE)) #, scrollX = TRUE, scrollX="250px", paging = FALSE
@@ -481,9 +500,7 @@ observeEvent(move_data(), {
     ttl_multiple_phi_1_val = NULL,
     ttl_multiple_phi_2_val = NULL,
     direct_phi_1_val = NULL,
-    direct_phi_2_val = NULL,
-
-    basic_prior_val = NULL
+    direct_phi_2_val = NULL
   )
   val_length <- reactive({
     length(validation_state)
@@ -508,9 +525,7 @@ observeEvent(move_data(), {
     ttl_multiple_phi_1_val = list(min_val = 0, max_val = 1, integer_only = FALSE),
     ttl_multiple_phi_2_val = list(min_val = 1, max_val = NULL, integer_only = FALSE),
     direct_phi_1_val = list(min_val = 0, max_val = 0.999, integer_only = FALSE),
-    direct_phi_2_val = list(min_val = 0, max_val = 0.999, integer_only = FALSE),
-
-    basic_prior_val = list(min_val = 1, max_val = NULL, integer_only = TRUE)
+    direct_phi_2_val = list(min_val = 0, max_val = 0.999, integer_only = FALSE)
   )
   
   ##### Dynamic validation rules
@@ -531,9 +546,6 @@ observeEvent(move_data(), {
     # prior_mtd <= n_doses
     if (!is.null(input$n_doses_inputt) && !is.na(input$n_doses_inputt) && input$n_doses_inputt > 0) {
       rules$prior_mtd_val$max_val <- input$n_doses_inputt
-    }
-    if (!is.null(input$n_doses_inputt) && !is.na(input$n_doses_inputt) && input$n_doses_inputt > 0) {
-      rules$basic_prior_val$max_val <- input$n_doses_inputt
     }
     # boin_cohorts <= max_size/cohort
     if (!is.null(input$cohort_inputt) && !is.na(input$cohort_inputt) && input$cohort_inputt > 0) {
@@ -591,9 +603,6 @@ observeEvent(move_data(), {
     if (!is.null(input$prior_mtd_input)) {
       update_validation("prior_mtd_val", input$prior_mtd_input)
     }
-    if (!is.null(input$basic_prior_mtd_input)) {
-      update_validation("basic_prior_val", input$basic_prior_mtd_input)
-    }
   })
 
   observe({
@@ -627,13 +636,6 @@ observeEvent(move_data(), {
     }
   })
 
-  observe({
-    update_validation("basic_max_size_val", input$basic_max_size_inputt)
-    # When max_size changes, re-validate cohort and stop_n_mtd to show warning if needed
-    if (!is.null(input$basic_cohort_inputt)) {
-      update_validation("basic_cohort_val", input$basic_cohort_inputt)
-    }
-  })
 
   observe({
     update_validation("start_dose_val", input$start_dose_inputt)
@@ -648,9 +650,6 @@ observeEvent(move_data(), {
     update_validation("prior_var_val", input$prior_var_input)
   })
 
-  observe({
-    update_validation("basic_prior_val", input$basic_prior_mtd_input)
-  })
 
   observe({
     update_validation("stop_n_mtd_val", input$stop_n_mtd_input)
@@ -715,9 +714,6 @@ observeEvent(move_data(), {
     validation_state$prior_var_val_warning %||% ""
   })
 
-    output$basic_prior_warning <- renderText({
-    validation_state$basic_prior_val_warning %||% ""
-  })
 
   output$stop_n_mtd_warning <- renderText({
     validation_state$stop_n_mtd_val_warning %||% ""
@@ -764,37 +760,14 @@ observeEvent(move_data(), {
   ################################ Basic Mode ################################
 
   output$mode_title <- renderText({
-    if (input$modes == 1) {
-      "Trial Design - Basic Mode"
-    } else {
+    if (input$advanced_mode) {
       "Trial Design - Advanced Mode"
+    } else {
+      "Trial Design - Basic Mode"
     }
   })
 
-  observeEvent(input$transfer_advanced, {
-    if (!is.null(validation_state$basic_prior_val) | 
-        !is.null(validation_state$n_doses_val) |
-        !is.null(validation_state$ttl_val) |
-        !is.null(validation_state$max_size_val) |
-        !is.null(validation_state$start_dose_val) |
-        !is.null(validation_state$cohort_val) ) {
-      showNotification("Please correct the incorrect values before transferring to advanced mode.", type = "error")
-      return()
-    } else{
-    # Update model-specific shared variables with basic mode inputs
-    updateRadioButtons(session, "skip_esc_crm_input", selected = input$basic_skip_esc_input)
-    updateRadioButtons(session, "skip_deesc_crm_input", selected = input$basic_skip_deesc_input)
-    updateNumericInput(session, "prior_mtd_input", value = input$basic_prior_mtd_input)
 
-    # Updating other advanced inputs to make sense with basic mode variables
-    stop_number <- ceiling(shared$max_size()/2)
-    num_cohorts <- floor(shared$max_size()/shared$cohort_size())
-
-    updateNumericInput(session, "stop_n_mtd_input", value = stop_number)
-    updateNumericInput(session, "stop_n_mtd_boin", value = stop_number)
-    updateNumericInput(session, "boin_cohorts", value = num_cohorts)
-    }
-  })
 
   # This is clunky - needs to be changed to be more elegant.
   observeEvent(input$n_doses_inputt, {
@@ -825,6 +798,14 @@ observeEvent(move_data(), {
 
   # Remove elements whose names or values contain "warning"
   filtered <- validation_values[!grepl("warning", names(validation_values))]
+  
+  # In basic mode, exclude advanced-only parameter validation errors
+  if (!is.null(input$advanced_mode) && !input$advanced_mode) {
+    # Exclude advanced CRM parameters (but keep prior_mtd_val for skeleton generation)
+    filtered <- filtered[!grepl("prior_var_val|stop_n_mtd_val|stop_tox", names(filtered))]
+    # Exclude all BOIN parameters
+    filtered <- filtered[!grepl("boin|phi|lambda", names(filtered))]
+  }
 
   # Count how many of the remaining elements are not NULL
   shared$td_warnings <- sum(!sapply(filtered, is.null))
@@ -834,7 +815,15 @@ observeEvent(move_data(), {
     # Validate all inputs before proceeding
     validation_errors <- sapply(names(validation_state), function(x) validation_state[[x]])
     validation_errors <- validation_errors[!grepl("warning", names(validation_errors))]
-    validation_errors <- validation_errors[!grepl("basic", names(validation_errors))]
+    
+    # In basic mode, exclude advanced-only parameter validation errors
+    if (!is.null(input$advanced_mode) && !input$advanced_mode) {
+      # Exclude advanced CRM parameters (but keep prior_mtd_val for skeleton generation)
+      validation_errors <- validation_errors[!grepl("prior_var_val|stop_n_mtd_val|stop_tox", names(validation_errors))]
+      # Exclude all BOIN parameters
+      validation_errors <- validation_errors[!grepl("boin|phi|lambda", names(validation_errors))]
+    }
+    
     validation_errors <- Filter(Negate(is.null), validation_errors)
 
       if (length(validation_errors) > 0) {
@@ -869,16 +858,9 @@ observeEvent(move_data(), {
       }
       names <- Filter(Negate(is.null), names)
 
-       if (1 %in% input$modes & (length(crm_names_var) + length(crm_names_mtd) + length(boin_names) > 0)) {
-         showNotification(paste("Please click the 'Transfer Results to Advanced Mode' button to update the advanced parameters with the basic mode inputs."), type = "warning")
-      } else {
         showNotification(paste("Please change incorrect values, found in the following input areas:", paste(names, collapse = ", ")), type = "error")
-    } } else {
-      if (1 %in% input$modes & (input$basic_prior_mtd_input != input$prior_mtd_input | 
-                                       input$basic_skip_esc_input != input$skip_esc_crm_input |
-                                       input$basic_skip_deesc_input != input$skip_deesc_crm_input)) {
-        showNotification(paste("Please click the 'Transfer Results to Advanced Mode' button to update the advanced parameters with the basic mode inputs."), type = "warning")
-      } else if (!is.null(parent_session)) {
+    } else {
+      if (!is.null(parent_session)) {
         updateNavbarPage(parent_session, "nav", selected = "Simulation")
       }
     }
