@@ -43,7 +43,7 @@ server <- function(input, output, session){
     questionnaire_results <- mod_questionnaire_server("questionnaire", shared, session, move_data = move_data)
     trial_design_server("trial_design", shared, move_data = move_data)
     sim_server("simulation", shared)
-    con_server("conduct", shared)
+    con_server("conduct", shared = shared)
 
       observe({
     if (!is.null(questionnaire_results) && 
@@ -89,3 +89,4 @@ shinyApp(ui, server)
 # shared$stop_tox_y_crm: Stop toxicity y in CRM
 
 # shared$skip_tpt: Skip de-escalation in 3+3
+
