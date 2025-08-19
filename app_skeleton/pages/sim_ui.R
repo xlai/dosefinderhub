@@ -816,7 +816,27 @@ validation_state <- reactiveValues(
 
     mean_vector <- do.call(rbind, specific_mean) # long vector of means
 
-    mean_output <- as.data.frame(mean_vector)
+    mean_data <- as.data.frame(mean_vector, colnames = TRUE)
+
+    colnames(mean_data) <- "Value"
+
+    # Converting to a table with rows as designs and column as means
+   mean_data <- mean_data %>%
+  rownames_to_column("Label")
+
+   mean_data <- mean_data %>%
+  mutate(
+    Design = str_extract(Label, "3\\+3|CRM|BOIN"),
+    Mean = str_extract(Label, "Mean Accuracy|Mean Trial Length|Mean Overdose")
+  )
+
+# Step 4: Reshape to wide format
+mean_reshaped <- mean_data %>%
+  select(Design, Mean, Value) %>%
+  pivot_wider(names_from = Mean, values_from = Value)
+
+  mean_output <- as.data.frame(mean_reshaped[, -1])
+  row.names(mean_output) <- mean_reshaped$Design
 
     output$mean_table <- renderTable({
       mean_output
