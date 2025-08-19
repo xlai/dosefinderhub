@@ -41,15 +41,11 @@ sim_ui <- function(id) {
             h3("Simulation Output - Tables"),
             tags$hr(),
             uiOutput(ns("tables_ui")), # Individual view dropdown
-            textOutput(ns("titles1"), container = h4), # Comparative view - titles of table 1
-            tableOutput(ns("tables1")), # Comparative view - table 1
-            uiOutput(ns("buttons1")), # Comparative view - buttons for table 1
-            tags$hr(),
             textOutput(ns("selected_ind_title"), container = h4), # Individual table titles
             tableOutput(ns("selected_ind_table")), # Individual table output
-            textOutput(ns("titles2"), container = h4), # Comparative view - titles of table 2
-            tableOutput(ns("tables2")), # Comparative view - table 2
-            uiOutput(ns("buttons2")) # Comparative view - buttons for table 2
+            tableOutput(ns("treatment_table")), # Comparative view - treatment
+            tableOutput(ns("mtd_table")), # Comparative view - mtd
+            tableOutput(ns("mean_table"))
           ),
           nav_panel("Simulation Output - Plots",
           h3("Simulation Output - Plots"),
@@ -534,8 +530,6 @@ validation_state <- reactiveValues(
     output$titles2 <- NULL
     output$tables1 <- NULL
     output$tables2 <- NULL
-    output$buttons1 <- NULL
-    output$buttons2 <- NULL
   } else {
 
   if ("Individually" %in% input$comparative_view | n_data_frames == 1) {
@@ -548,13 +542,15 @@ validation_state <- reactiveValues(
     output$titles2 <- NULL
     output$tables1 <- NULL
     output$tables2 <- NULL
-    output$buttons1 <- NULL
-    output$buttons2 <- NULL
 
    sim_df <- sim_df(combined_data_frames) 
    sim_titles <- sim_titles(combined_titles)
 
-  } else {output$tables_ui <- NULL
+  } else {output$tables_ui <- renderUI({selectInput(
+      ns("scenario_tables"), "Select a Scenario to view",
+      choices = updated_scenarios, selected = updated_scenarios[1], multiple = FALSE, width = "100%"
+    )})
+
   output$selected_ind_table <- NULL
   output$selected_ind_title <- NULL
 
@@ -563,22 +559,8 @@ validation_state <- reactiveValues(
   output$tables1 <- renderTable({combined_data_frames[[1]]}, rownames = TRUE, colnames = TRUE)
   output$tables2 <- renderTable({combined_data_frames[[2]]}, rownames = TRUE, colnames = TRUE)
 
-  output$buttons1 <- renderUI({
-    if (n_data_frames > 0) {
-      tagList(
-        actionButton(ns("prev1"), "Previous", class = "btn btn-secondary"),
-        actionButton(ns("next1"), "Next", class = "btn btn-secondary")
-      )
-    }
-  })
-  output$buttons2 <- renderUI({
-    if (n_data_frames > 1) {
-      tagList(
-        actionButton(ns("prev2"), "Previous", class = "btn btn-secondary"),
-        actionButton(ns("next2"), "Next", class = "btn btn-secondary")
-      )
-    }
-  })
+  names(combined_data_frames) <- combined_titles # Naming the data frames with the titles
+
 
   sim_df <- sim_df(combined_data_frames) 
   sim_titles <- sim_titles(combined_titles) # Updating the reactive values with the new data frames and titles
@@ -765,51 +747,6 @@ validation_state <- reactiveValues(
  current_table1 <- reactiveVal(1)
  current_table2 <- reactiveVal(2)
 
-  observeEvent(input$next1, {
-    if (current_table1() < length(sim_df())) {
-      current_table1(current_table1() + 1)
-      output$tables1 <- renderTable({
-        sim_df()[[current_table1()]]
-      }, rownames = TRUE, colnames = TRUE)
-      output$titles1 <- renderText({
-        sim_titles()[[current_table1()]]
-      })
-    } 
-  })
-  observeEvent(input$prev1, {
-    if (current_table1() > 1) {
-      current_table1(current_table1() - 1)
-      output$tables1 <- renderTable({
-        sim_df()[[current_table1()]]
-      }, rownames = TRUE, colnames = TRUE)
-      output$titles1 <- renderText({
-        sim_titles()[[current_table1()]]
-      })
-    } 
-  })
-  observeEvent(input$next2, {
-    if (current_table2() < length(sim_df())) {
-      current_table2(current_table2() + 1)
-      output$tables2 <- renderTable({
-        sim_df()[[current_table2()]]
-      }, rownames = TRUE, colnames = TRUE)
-      output$titles2 <- renderText({
-        sim_titles()[[current_table2()]]
-      })
-    } 
-  })
-  observeEvent(input$prev2, {
-    if (current_table2() > 1) {
-      current_table2(current_table2() - 1)
-      output$tables2 <- renderTable({
-        sim_df()[[current_table2()]]
-      }, rownames = TRUE, colnames = TRUE)
-      output$titles2 <- renderText({
-        sim_titles()[[current_table2()]]
-      })
-    } 
-  })
-
   # Individual table outputs
   observeEvent(input$ind_tables, {
     selected_table <- input$ind_tables
@@ -824,17 +761,79 @@ validation_state <- reactiveValues(
     })
   })
 
+  # Comparative table outputs
+
+  observeEvent(input$ind_tables, {
+    selected_table <- input$ind_tables
+    table_index <- which(sim_titles() == selected_table)
+  
+    output$selected_ind_table <- renderTable({
+      sim_df()[[table_index]]
+    }, rownames = TRUE, colnames = TRUE)
+    
+    output$selected_ind_title <- renderText({
+      selected_table
+    })
+  })
+
+
+
   # Comparative plots outputs
-  observeEvent(input$m_graph, {
-    selected_plot <- input$m_graph
+  observeEvent(input$scenario_tables, {
+    selected_scen <- input$scenario_tables
+
+    scen_number <- as.numeric(gsub("Scenario ", "", selected_scen)) # Extracting the scenario number from the selected scenario string
+
+    true_dlts <- reactive_df()[scen_number, -1] # Exclude the first column (Scenario)
+
+    specific_scen <- sim_df()[grep(selected_scen, names(sim_df()))]
+
+    specific_mtd <- specific_scen[grep("MTD", names(specific_scen))]
+
+    vector_mtd <- lapply(specific_mtd, function(x) x[-2, ])
+
+    mtd_output <- do.call(rbind, vector_mtd)
+
+    #for (i in 1:length(mtd_output[, 1])) {
+     # row.names(mtd_output[i, ]) <- find_model(mtd_output[i, ])
+     # print(row.names(mtd_output[i, ]))
+    #}
+
+    specific_treatment <- specific_scen[grep("Treated", names(specific_scen))]
+
+    vector_treatment <- lapply(specific_treatment, function(x) x[-2, ])
+
+    treatment_output <- do.call(rbind, vector_treatment)
+
+    output$mtd_table <- renderTable({
+      mtd_output
+    }, rownames = TRUE, colnames = TRUE)
+    output$treatment_table <- renderTable({
+      treatment_output
+    }, rownames = TRUE, colnames = TRUE)
+
+    specific_mean <- specific_scen[grep("Mean", names(specific_scen))]
+
+    mean_vector <- do.call(rbind, specific_mean) # long vector of means
+
+    mean_output <- as.data.frame(mean_vector)
+
+    output$mean_table <- renderTable({
+      mean_output
+    }, rownames = TRUE, colnames = TRUE)
+
+  })
+
+  observeEvent(input$s_graph, {
+    selected_plot <- input$s_graph
     
     output$selected_graph <- renderPlot({
       sim_graphs()[[selected_plot]]
     })
   })
 
-  observeEvent(input$s_graph, {
-    selected_plot <- input$s_graph
+    observeEvent(input$m_graph, {
+    selected_plot <- input$m_graph
     
     output$selected_graph <- renderPlot({
       sim_graphs()[[selected_plot]]
@@ -848,8 +847,6 @@ validation_state <- reactiveValues(
       sim_graphs()[[selected_plot]]
     })
   })
-
-
 
 
   }) # End of moduleServer

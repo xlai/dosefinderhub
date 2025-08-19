@@ -689,3 +689,19 @@ plot_dist_ind <- function(data, category, median, title, x_title, col) {
     return(q)
   }
  
+ find_model <- function(v) {
+   tpt <- v[grep("3+3", row.names(v))]
+   crm <- v[grep("CRM", row.names(v))]
+   boin <- v[grep("BOIN", row.names(v))]
+
+   if (length(tpt) > 0) {
+     output <- "3+3"
+   } else if (length(crm) > 0){
+     output <- "CRM"
+   } else if (length(boin) > 0) {
+     output <- "BOIN"
+   } else {
+     output <- NULL
+   }
+    return(output)
+ }
