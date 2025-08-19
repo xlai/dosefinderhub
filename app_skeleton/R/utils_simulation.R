@@ -4,6 +4,90 @@
 #' and managing simulation configurations to eliminate code duplication
 #' in the simulation UI.
 
+# Define metric categories
+TABLE_METRICS <- c("selection", "treatment", "accuracy", "overdose", "duration")
+PLOT_METRICS <- c("selection", "treatment", "overdose", "duration")
+
+# Metric display names
+METRIC_NAMES <- list(
+  selection = "% times dose was selected as MTD",
+  treatment = "% participants treated at dose",
+  accuracy = "Accuracy", 
+  overdose = "Overdosing",
+  duration = "Duration"
+)
+
+#' Get Scenario Names
+#' 
+#' Generate scenario names based on number of scenarios
+#' 
+#' @param n_scenarios Number of scenarios
+#' @return Vector of scenario names
+#' @export
+get_scenario_names <- function(n_scenarios) {
+  paste0("Scenario ", seq_len(n_scenarios))
+}
+
+#' Get Method Names
+#' 
+#' Get available simulation method names
+#' 
+#' @return Vector of method names
+#' @export
+get_method_names <- function() {
+  c("3+3", "CRM", "BOIN")
+}
+
+#' Create Table Data Structure
+#' 
+#' Creates named list structure for table data (includes accuracy)
+#' Structure: tables[["Scenario 1"]][["CRM"]][["accuracy"]] = table_data
+#' 
+#' @param scenario_names Vector of scenario names
+#' @param method_names Vector of method names
+#' @return Named list structure for table data
+#' @export
+create_table_structure <- function(scenario_names, method_names) {
+  structure <- list()
+  
+  for (scenario in scenario_names) {
+    structure[[scenario]] <- list()
+    for (method in method_names) {
+      structure[[scenario]][[method]] <- list()
+      for (metric in TABLE_METRICS) {
+        structure[[scenario]][[method]][[metric]] <- NULL
+      }
+    }
+  }
+  
+  return(structure)
+}
+
+#' Create Plot Data Structure
+#' 
+#' Creates named list structure for plot data (excludes accuracy)
+#' Structure: plots[["Scenario 1"]][["selection"]][["CRM"]] = plot_data
+#' 
+#' @param scenario_names Vector of scenario names
+#' @param method_names Vector of method names
+#' @return Named list structure for plot data
+#' @export
+create_plot_structure <- function(scenario_names, method_names) {
+  structure <- list()
+  
+  for (scenario in scenario_names) {
+    structure[[scenario]] <- list()
+    for (metric in PLOT_METRICS) {
+      structure[[scenario]][[metric]] <- list()
+      for (method in method_names) {
+        structure[[scenario]][[metric]][[method]] <- NULL
+      }
+    }
+  }
+  
+  return(structure)
+}
+
 #' Get Simulation Method Configuration
 #' 
 #' Returns configuration for all supported simulation methods including
@@ -276,7 +360,7 @@ build_simulation_titles <- function(methods, scenarios, metrics) {
 
 #' Process Multiple Simulations
 #' 
-#' Runs and processes simulations for multiple methods and scenarios
+#' Runs and processes simulations for multiple methods and scenarios using named structures
 #' 
 #' @param selected_methods Vector of selected method names
 #' @param selected_scenarios Logical vector of selected scenarios
@@ -285,47 +369,102 @@ build_simulation_titles <- function(methods, scenarios, metrics) {
 #' @param n_sims Number of simulations
 #' @param true_dlts True DLT probabilities matrix
 #' @param selected_metric Logical vector of selected metrics
-#' @return List containing processed results for all methods and scenarios
+#' @return List containing table_data and plot_data with named structures
 #' @export
 process_multiple_simulations <- function(selected_methods, selected_scenarios, scenarios, 
                                        shared, n_sims, true_dlts, selected_metric) {
-  n_scen <- sum(selected_scenarios)
-  scenario_indices <- which(selected_scenarios)
-  updated_scenarios <- scenarios[selected_scenarios]
   
-  # Initialize result containers
-  combined_list <- vector("list", n_scen)
-  title_list <- vector("list", n_scen) 
-  plot_list <- vector("list", n_scen)
-  median_overdose <- vector("list", n_scen)
-  median_length <- vector("list", n_scen)
+  # Get actual names
+  all_scenarios <- get_scenario_names(length(scenarios))
+  scenario_names <- all_scenarios[selected_scenarios]
+  method_names <- selected_methods  # Already filtered method names
+  
+  # Create named structures
+  table_data <- create_table_structure(scenario_names, method_names)
+  plot_data <- create_plot_structure(scenario_names, method_names)
+  
+  # Create median storage with named structure
+  median_data <- list()
+  for (scenario_name in scenario_names) {
+    median_data[[scenario_name]] <- list(
+      overdose = list(),
+      duration = list()
+    )
+  }
   
   # Process each scenario
-  for (j in seq_len(n_scen)) {
-    scenario_idx <- scenario_indices[j]
+  scenario_indices <- which(selected_scenarios)
+  for (i in seq_along(scenario_names)) {
+    scenario_name <- scenario_names[i]
+    scenario_idx <- scenario_indices[i]
     
-    # Run simulations for all selected methods
-    method_results <- lapply(selected_methods, function(method) {
-      run_simulation_for_method(method, shared, n_sims, true_dlts, scenario_idx, selected_methods)
-    })
-    names(method_results) <- selected_methods
-    
-    # Extract results for this scenario
-    scenario_results <- extract_scenario_results(method_results, updated_scenarios[j], selected_metric, shared)
-    
-    combined_list[[j]] <- scenario_results$tables
-    title_list[[j]] <- scenario_results$titles
-    plot_list[[j]] <- scenario_results$plots
-    median_overdose[[j]] <- scenario_results$median_overdose
-    median_length[[j]] <- scenario_results$median_length
+    # Process each method
+    for (method_name in method_names) {
+      result <- run_simulation_for_method(method_name, shared, n_sims, true_dlts, scenario_idx, method_names)
+      
+      if (!is.null(result$modified_tab)) {
+        # Store table data (includes accuracy)
+        table_data[[scenario_name]][[method_name]][["selection"]] <- result$modified_tab$selection_tab
+        table_data[[scenario_name]][[method_name]][["treatment"]] <- result$modified_tab$treatment_tab  
+        table_data[[scenario_name]][[method_name]][["accuracy"]] <- result$modified_tab$mean_accuracy
+        table_data[[scenario_name]][[method_name]][["overdose"]] <- result$modified_tab$mean_overdose
+        table_data[[scenario_name]][[method_name]][["duration"]] <- result$modified_tab$mean_length
+      }
+      
+      if (!is.null(result$raw_result)) {
+        # Store plot data (no accuracy) and median values
+        plot_result <- data_for_plotting(result$raw_result, shared$ttl())
+        plot_data[[scenario_name]][["selection"]][[method_name]] <- plot_result$data_selection
+        plot_data[[scenario_name]][["treatment"]][[method_name]] <- plot_result$data_treatment
+        plot_data[[scenario_name]][["overdose"]][[method_name]] <- plot_result$overdose  
+        plot_data[[scenario_name]][["duration"]][[method_name]] <- plot_result$length
+        
+        # Store median values
+        median_data[[scenario_name]]$overdose[[method_name]] <- result$median_values$median_overdose
+        median_data[[scenario_name]]$duration[[method_name]] <- result$median_values$median_length
+      }
+    }
   }
   
   return(list(
-    combined_list = combined_list,
-    title_list = title_list, 
-    plot_list = plot_list,
-    median_overdose = median_overdose,
-    median_length = median_length
+    table_data = table_data,
+    plot_data = plot_data,
+    median_data = median_data
+  ))
+}
+
+#' Generate Simulation Tables
+#' 
+#' Creates table lists from named table data structure
+#' 
+#' @param table_data Named table data structure
+#' @param selected_metric Logical vector of selected metrics
+#' @return List with tables and titles
+#' @export
+generate_simulation_tables <- function(table_data, selected_metric) {
+  tables <- list()
+  titles <- list()
+  
+  # selected_metric is logical vector: [selection, treatment, accuracy, overdose, duration]
+  selected_metrics <- TABLE_METRICS[selected_metric]
+  
+  for (scenario_name in names(table_data)) {
+    for (method_name in names(table_data[[scenario_name]])) {
+      for (metric in selected_metrics) {
+        
+        table <- table_data[[scenario_name]][[method_name]][[metric]]
+        if (is.null(table)) next
+        
+        title <- sprintf("%s Simulation for %s - %s", method_name, scenario_name, METRIC_NAMES[[metric]])
+        tables <- c(tables, list(table))
+        titles <- c(titles, title)
+      }
+    }
+  }
+  
+  return(list(
+    tables = tables,
+    titles = titles
   ))
 }
 

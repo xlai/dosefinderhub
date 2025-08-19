@@ -378,7 +378,7 @@ validation_state <- reactiveValues(
   if (n_scen == 0) {
     tables_ui <- NULL
   } else {
-    # Use the new utility function to process all simulations
+    # Use the new utility function to process all simulations with named structures
     simulation_results <- process_multiple_simulations(
       selected_methods = model[selected_models],
       selected_scenarios = selected_scenarios,
@@ -389,11 +389,17 @@ validation_state <- reactiveValues(
       selected_metric = selected_metric
     )
     
-    combined_list <- simulation_results$combined_list
-    title_list <- simulation_results$title_list
-    plot_list <- simulation_results$plot_list
-    median_overdose <- simulation_results$median_overdose
-    median_length <- simulation_results$median_length
+    # Generate tables from named structure
+    table_results <- generate_simulation_tables(
+      table_data = simulation_results$table_data,
+      selected_metric = selected_metric
+    )
+    
+    combined_list <- list(table_results$tables)
+    title_list <- list(table_results$titles)
+    plot_list <- simulation_results$plot_data
+    median_overdose <- simulation_results$median_data
+    median_length <- simulation_results$median_data
 
   } # end of simulation processing
 
@@ -463,17 +469,13 @@ validation_state <- reactiveValues(
   }
   ########################## Plots #####################################
   
-  # Use the new plotting utility function
+  # Use the new plotting utility function with named structures
   plot_results <- generate_simulation_plots(
     view_type = input$comparative_view,
     plot_data = plot_list,
-    selected_metric = selected_metric,
     selected_scenarios = selected_scenarios,
     selected_models = selected_models,
-    scenarios = scenarios,
-    models = model,
-    median_overdose = median_overdose,
-    median_length = median_length,
+    median_data = median_overdose,
     ns = ns
   )
   
