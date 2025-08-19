@@ -81,7 +81,9 @@ con_ui <- function(id) {
         )
       ),
       uiOutput(ns("crm_results_card_ui")),
-      uiOutput(ns("boin_results_card_ui"))
+      uiOutput(ns("crm_plot_card_ui")),
+      uiOutput(ns("boin_results_card_ui")),
+      uiOutput(ns("boin_plot_card_ui"))
     )
   )
 }
@@ -157,6 +159,7 @@ con_server <- function(id, shared) {
        boin_model(NULL)
        tpt_model(model)
       }
+
      show_crm_card(input$choice == "CRM")
      show_boin_card(input$choice == "BOIN")
     })
@@ -423,9 +426,56 @@ con_server <- function(id, shared) {
       updateTextInput(session, "plot_title", value = "Cohort Grouped Patient Dose Level with DLT's")
     })
     
-    ###### CRM results card logic ###################
+    ###### CRM results card logic #######################
    show_crm_card <- reactiveVal(FALSE)
+   
+   ## Reactive Results for CRM
+    crm_results_data <- reactive({
+     model <- crm_model()
+     data <- conduct_reactive_table_data()
 
+     if (is.null(model) || nrow(data) == 0) return(NULL)
+
+     outcome_str <- convert_table_to_crm_outcome(data)
+     fit <- tryCatch(model %>% fit(outcome_str), error = function(e) NULL)
+     if (is.null(fit)) return(NULL)
+
+     treated <- fit %>% n_at_dose()
+     posterior <- fit %>% mean_prob_tox()
+     ci_lower <- fit %>% prob_tox_quantile(0.025)
+     ci_upper <- fit %>% prob_tox_quantile(0.975)
+
+     dlt_counts <- aggregate(DLT ~ Dose_Level, data = data, FUN = function(x) sum(x, na.rm = TRUE))
+     colnames(dlt_counts) <- c("Dose_Level", "No_of_DLTs")
+
+     dose_levels <- seq_along(posterior)
+     results <- data.frame(
+       Dose_Level = dose_levels,
+       No_of_Patients = treated,
+       Posterior_DLT_Rate = round(posterior, 3),
+       CI_Lower = round(ci_lower, 3),
+       CI_Upper = round(ci_upper, 3),
+       stringsAsFactors = FALSE
+     )
+
+     results <- merge(results, dlt_counts, by = "Dose_Level", all.x = TRUE)
+     results$No_of_DLTs[is.na(results$No_of_DLTs)] <- 0
+     results$No_of_DLTs <- as.integer(results$No_of_DLTs)
+
+     results
+    })
+    ## Results table for CRM
+    output$crm_results_table <- renderTable({
+     results <- crm_results_data()
+     if (is.null(results)) return(NULL)
+
+     results <- results[, c("Dose_Level", "No_of_Patients", "No_of_DLTs", "Posterior_DLT_Rate", "CI_Lower", "CI_Upper")]
+     colnames(results) <- c("Dose Level", "No. of Patients", "No. of DLTs", "Posterior DLT Rate", "CI Lower(95%)", "CI Upper(95%)")
+     rownames(results) <- paste("Dose Level", results$`Dose Level`)
+     results
+    })
+
+    ## CRM results card UI
    output$crm_results_card_ui <- renderUI({
      if (!show_crm_card()) return(NULL)
      card(
@@ -438,121 +488,159 @@ con_server <- function(id, shared) {
         )
       )
     })
-    
-output$crm_results_table <- renderTable({
-  model <- crm_model()
-  data <- conduct_reactive_table_data()
 
-  if (is.null(model) || nrow(data) == 0) return(NULL)
+    ## Crm DLT Plot
+   output$crm_dlt_plot <- renderPlot({
+     results <- crm_results_data()
+     if (is.null(results)) return(NULL)
 
-  outcome_str <- convert_table_to_crm_outcome(data)
-  fit <- tryCatch(model %>% fit(outcome_str), error = function(e) NULL)
-  if (is.null(fit)) return(NULL)
+     dose_levels <- results$Dose_Level
+     posterior <- results$Posterior_DLT_Rate
+     ci_lower <- results$CI_Lower
+     ci_upper <- results$CI_Upper
+     patients <- results$No_of_Patients
 
-  # Get number of patients treated at each dose
-  treated <- fit %>% n_at_dose()
+     plot(
+       dose_levels, posterior,
+       pch = 19, col = "blue", cex = 1.5,
+       xlab = "Dose Level", ylab = "Posterior DLT Rate",
+       main = "Posterior DLT Rates by Dose Level (CRM)",
+       ylim = c(0, max(ci_upper) + 0.1)
+      )
 
-  # Get posterior DLT rates
-  posterior <- fit %>% mean_prob_tox()
+     polygon(
+       x = c(dose_levels, rev(dose_levels)),
+       y = c(ci_lower, rev(ci_upper)),
+       col = adjustcolor("skyblue", alpha.f = 0.4),
+       border = NA
+      )
 
-  # Get number of DLTs per dose from the data table
-  dlt_counts <- aggregate(DLT ~ Dose_Level, data = data, FUN = function(x) sum(x, na.rm = TRUE))
-  colnames(dlt_counts) <- c("Dose_Level", "No_of_DLTs")
+     text(dose_levels, posterior + 0.05, labels = paste(patients, "pts"), cex = 0.8)
+     grid()
+    })
 
-  #base table from model output
-  dose_levels <- seq_along(posterior)
-  results <- data.frame(
-    Dose_Level = dose_levels,
-    No_of_Patients = treated,
-    Posterior_DLT_Rate = round(posterior, 3),
-    stringsAsFactors = FALSE
-  )
+    ## CRM plot card UI
+    output$crm_plot_card_ui <- renderUI({
+      if (!show_crm_card()) return(NULL)
+     card(
+       full_screen = TRUE,
+       card_header("CRM Posterior DLT Plot"),
+       card_body(
+          p("This plot shows posterior DLT rates with 95% credible intervals shaded."),
+          plotOutput(ns("crm_dlt_plot"), height = "400px")
+        )
+       )
+    })
 
-  # Merge in DLT counts
-  results <- merge(results, dlt_counts, by = "Dose_Level", all.x = TRUE)
-  results$No_of_DLTs[is.na(results$No_of_DLTs)] <- 0
-
-  # 95% credible intervals
-  ci_lower <- fit %>% prob_tox_quantile(0.025)
-  ci_upper <- fit %>% prob_tox_quantile(0.975)
-
-  results$CI_Lower <- round(ci_lower, 3)
-  results$CI_Upper <- round(ci_upper, 3)
-
- #Name columns
-  results <- results[, c("Dose_Level","No_of_Patients", "No_of_DLTs",  "Posterior_DLT_Rate", "CI_Lower", "CI_Upper")]
-  colnames(results) <- c("Dose Level","No. of Patients", "No. of DLTs",  "Posterior DLT Rate", "CI Lower(95%)", "CI Upper(95%)")
-  rownames(results) <- paste("Dose Level", results$`Dose Level`)
-
-  results
-})
-
-
-    #### BOIN results card logic ####
+   #### BOIN results card logic ####
     show_boin_card <- reactiveVal(FALSE)
 
-    output$boin_results_card_ui <- renderUI({
-      if (!show_boin_card()) return(NULL)
-      card(
-        full_screen = TRUE,
-        card_header("BOIN Results"),
-        card_body(
-          p("This table summarises DLTs and posterior estimates by dose level."),
-          h5("BOIN Summary Table"),
-          tableOutput(ns("boin_results_table"))
+   ## Reactive Results for BOIN
+    boin_results_data <- reactive({
+     model <- boin_model()
+     data <- conduct_reactive_table_data()
+
+     if (is.null(model) || nrow(data) == 0) return(NULL)
+
+     outcome_str <- convert_table_to_crm_outcome(data)
+     fit <- tryCatch(model %>% fit(outcome_str), error = function(e) NULL)
+     if (is.null(fit)) return(NULL)
+
+     treated <- fit %>% n_at_dose()
+     posterior <- fit %>% mean_prob_tox()
+     ci_lower <- fit %>% prob_tox_quantile(0.025)
+     ci_upper <- fit %>% prob_tox_quantile(0.975)
+
+     dlt_counts <- aggregate(DLT ~ Dose_Level, data = data, FUN = function(x) sum(x, na.rm = TRUE))
+     colnames(dlt_counts) <- c("Dose_Level", "No_of_DLTs")
+
+     dose_levels <- seq_along(posterior)
+     results <- data.frame(
+       Dose_Level = dose_levels,
+       No_of_Patients = treated,
+       Posterior_DLT_Rate = round(posterior, 3),
+       CI_Lower = round(ci_lower, 3),
+       CI_Upper = round(ci_upper, 3),
+       stringsAsFactors = FALSE
+     )
+
+     results <- merge(results, dlt_counts, by = "Dose_Level", all.x = TRUE)
+     results$No_of_DLTs[is.na(results$No_of_DLTs)] <- 0
+     results$No_of_DLTs <- as.integer(results$No_of_DLTs)
+
+     results
+    })
+    
+    ## Results table for BOIN
+    output$boin_results_table <- renderTable({
+     results <- boin_results_data()
+     if (is.null(results)) return(NULL)
+
+     results <- results[, c("Dose_Level", "No_of_Patients", "No_of_DLTs", "Posterior_DLT_Rate", "CI_Lower", "CI_Upper")]
+     colnames(results) <- c("Dose Level", "No. of Patients", "No. of DLTs", "Posterior DLT Rate", "CI Lower(95%)", "CI Upper(95%)")
+     rownames(results) <- paste("Dose Level", results$`Dose Level`)
+     results
+    })
+
+    ## BOIN results card UI
+   output$boin_results_card_ui <- renderUI({
+     if (!show_boin_card()) return(NULL)
+     card(
+       full_screen = TRUE,
+       card_header("BOIN Results"),
+       card_body(
+         p("This table summarises DLTs and posterior estimates by dose level."),
+         h5("BOIN Summary Table"),
+         tableOutput(ns("boin_results_table"))
         )
       )
     })
-    
-output$boin_results_table <- renderTable({
-  model <- boin_model()
-  data <- conduct_reactive_table_data()
 
-  if (is.null(model) || nrow(data) == 0) return(NULL)
+    ## BOIN DLT Plot
+   output$boin_dlt_plot <- renderPlot({
+     results <- boin_results_data()
+     
+     validate(
+       need(!is.null(results), "Please reach status: complete to see the plot.")
+      )
 
-  outcome_str <- convert_table_to_crm_outcome(data)
-  fit <- tryCatch(model %>% fit(outcome_str), error = function(e) NULL)
-  if (is.null(fit)) return(NULL)
+     dose_levels <- results$Dose_Level
+     posterior <- results$Posterior_DLT_Rate
+     ci_lower <- results$CI_Lower
+     ci_upper <- results$CI_Upper
+     patients <- results$No_of_Patients
 
-  #  number of patients treated at each dose
-  treated <- fit %>% n_at_dose()
+     plot(
+       dose_levels, posterior,
+       pch = 19, col = "blue", cex = 1.5,
+       xlab = "Dose Level", ylab = "Posterior DLT Rate",
+       main = "Posterior DLT Rates by Dose Level (BOIN)",
+       ylim = c(0, max(ci_upper) + 0.1)
+      )
 
-  # posterior DLT rates
-  posterior <- fit %>% mean_prob_tox()
+     polygon(
+       x = c(dose_levels, rev(dose_levels)),
+       y = c(ci_lower, rev(ci_upper)),
+       col = adjustcolor("skyblue", alpha.f = 0.4),
+       border = NA
+      )
 
-  # number of DLTs per dose from the data table
-  dlt_counts <- aggregate(DLT ~ Dose_Level, data = data, FUN = function(x) sum(x, na.rm = TRUE))
-  colnames(dlt_counts) <- c("Dose_Level", "No_of_DLTs")
+     text(dose_levels, posterior + 0.05, labels = paste(patients, "pts"), cex = 0.8)
+     grid()
+    })
 
-  # base table 
-  dose_levels <- seq_along(posterior)
-  results <- data.frame(
-    Dose_Level = dose_levels,
-    No_of_Patients = treated,
-    Posterior_DLT_Rate = round(posterior, 3),
-    stringsAsFactors = FALSE
-  )
-
-  # Merge in DLT counts
-  results <- merge(results, dlt_counts, by = "Dose_Level", all.x = TRUE)
-  results$No_of_DLTs[is.na(results$No_of_DLTs)] <- 0
-
- 
-  # 95% credible intervals
-  ci_lower <- fit %>% prob_tox_quantile(0.025)
-  ci_upper <- fit %>% prob_tox_quantile(0.975)
-
-  results$CI_Lower <- round(ci_lower, 3)
-  results$CI_Upper <- round(ci_upper, 3)
-
-
-  #Name columns
-  results <- results[, c("Dose_Level","No_of_Patients", "No_of_DLTs",  "Posterior_DLT_Rate", "CI_Lower", "CI_Upper")]
-  colnames(results) <- c("Dose Level","No. of Patients", "No. of DLTs",  "Posterior DLT Rate", "CI Lower(95%)", "CI Upper(95%)")
-  rownames(results) <- paste("Dose Level", results$`Dose Level`)
-
-  results
-})
+    ## BOIN plot card UI
+    output$boin_plot_card_ui <- renderUI({
+      if (!show_boin_card()) return(NULL)
+     card(
+       full_screen = TRUE,
+       card_header("BOIN Posterior DLT Plot"),
+       card_body(
+          p("This plot shows posterior DLT rates with 95% credible intervals shaded."),
+          plotOutput(ns("boin_dlt_plot"), height = "400px")
+        )
+       )
+    })
 
 
     ################################### Rmd file generation #########################################################
