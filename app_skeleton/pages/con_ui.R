@@ -405,10 +405,11 @@ con_server <- function(id, shared) {
          ylab = "Dose Level",
          main = input$plot_title,
          xaxt = "n",
+         yaxt = "n",
          ylim = ylim
        )
        grid(nx = NULL, ny = NULL, col = "lightgray", lty = "dashed", lwd = 0.5)  # Add grid lines
-
+       axis(2, at = seq(1, max(data$Dose_Level), by = 1), las = 2)  # Y-axis with dose levels
        axis(1, at = sort(unique(data$Cohort_Number)), labels = sort(unique(data$Cohort_Number)))
        text(data$X, data$Dose_Level + 0.3, labels = paste0("P", data$Patient), cex = 0.8)
        # Legend area
