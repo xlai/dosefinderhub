@@ -491,33 +491,44 @@ con_server <- function(id, shared) {
 
     ## Crm DLT Plot
    output$crm_dlt_plot <- renderPlot({
-     results <- crm_results_data()
-     if (is.null(results)) return(NULL)
+  results <- crm_results_data()
+  if (is.null(results)) return(NULL)
 
-     dose_levels <- results$Dose_Level
-     posterior <- results$Posterior_DLT_Rate
-     ci_lower <- results$CI_Lower
-     ci_upper <- results$CI_Upper
-     patients <- results$No_of_Patients
+  dose_levels <- results$Dose_Level
+  posterior <- results$Posterior_DLT_Rate
+  ci_lower <- results$CI_Lower
+  ci_upper <- results$CI_Upper
+  patients <- results$No_of_Patients
 
-     plot(
-       dose_levels, posterior,
-       pch = 19, col = "blue", cex = 1.5,
-       xlab = "Dose Level", ylab = "Posterior DLT Rate",
-       main = "Posterior DLT Rates by Dose Level (CRM)",
-       ylim = c(0, max(ci_upper) + 0.1)
-      )
+  plot(
+    dose_levels, posterior,
+    pch = 19, col = "blue", cex = 1.5,
+    xlab = "Dose Level", ylab = "Posterior DLT Rate",
+    main = "Posterior DLT Rates by Dose Level (CRM)",
+    ylim = c(0, max(ci_upper) + 0.1)
+  )
 
-     polygon(
-       x = c(dose_levels, rev(dose_levels)),
-       y = c(ci_lower, rev(ci_upper)),
-       col = adjustcolor("skyblue", alpha.f = 0.4),
-       border = NA
-      )
+  # Add shaded CI region (optional)
+  polygon(
+    x = c(dose_levels, rev(dose_levels)),
+    y = c(ci_lower, rev(ci_upper)),
+    col = adjustcolor("skyblue", alpha.f = 0.4),
+    border = NA
+  )
 
-     text(dose_levels, posterior + 0.05, labels = paste(patients, "pts"), cex = 0.8)
-     grid()
-    })
+  # Add whiskers (error bars)
+  arrows(
+    x0 = dose_levels, y0 = ci_lower,
+    x1 = dose_levels, y1 = ci_upper,
+    angle = 90, code = 3, length = 0.05, col = "darkblue"
+  )
+
+  # Add patient count labels
+  text(dose_levels, posterior + 0.05, labels = paste(patients, "pts"), cex = 0.8)
+
+  grid()
+})
+
 
     ## CRM plot card UI
     output$crm_plot_card_ui <- renderUI({
