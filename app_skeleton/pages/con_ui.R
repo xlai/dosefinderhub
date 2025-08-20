@@ -490,7 +490,7 @@ con_server <- function(id, shared) {
     })
 
     ## Crm DLT Plot
-   output$crm_dlt_plot <- renderPlot({
+output$crm_dlt_plot <- renderPlot({
   results <- crm_results_data()
   if (is.null(results)) return(NULL)
 
@@ -507,6 +507,9 @@ con_server <- function(id, shared) {
     main = "Posterior DLT Rates by Dose Level (CRM)",
     ylim = c(0, max(ci_upper) + 0.1)
   )
+
+  # Add dashed line connecting points
+  lines(dose_levels, posterior, col = "blue", lty = 2, lwd = 1.5)
 
   # Add shaded CI region (optional)
   polygon(
