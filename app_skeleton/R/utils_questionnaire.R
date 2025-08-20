@@ -134,7 +134,7 @@ generate_intelligent_recommendation <- function(user_responses) {
   second_score <- weighted_scores[ranked_methods[2]]
   score_gap <- max_score - second_score
 
-  confidence <- if (score_gap >= 7) "High" else if (score_gap >= 10) "Medium" else "Low"
+  confidence <- if (score_gap >= 5) "High" else if (score_gap >= 2) "Medium" else "Low"
 
   # Suitability logic
   suitability_model <- if (!is.null(user_responses$statistical_support) &&
@@ -260,7 +260,7 @@ generate_rationale <- function(user_responses, top_method, scores) {
       if (top_method == "3+3") {
         reasons <- c(reasons, "the cohort size of 3 is optimal for the 3+3 design")
       } else {
-        reasons <- c(reasons, "a cohort size of 3 is standard, but other designs like CRM and BOIN can still be used")
+        reasons <- c(reasons, "While a cohort size of 3 is standard for 3+3, other designs like CRM and BOIN can still be used")
       }
     } else {
       if (top_method == "CRM") {
