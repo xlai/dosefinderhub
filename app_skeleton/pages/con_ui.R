@@ -666,9 +666,9 @@ con_server <- function(id, shared) {
   content = function(file) {
     data <- conduct_reactive_table_data()
 
-    # Generate cohort plot
-    plot_file <- tempfile(fileext = ".png")
-    png(plot_file, width = 800, height = 600)
+    # --- Generate cohort plot ---
+    cohort_plot_file <- tempfile(fileext = ".png")
+    png(cohort_plot_file, width = 800, height = 600)
     data$Patient <- data$Patient_Number
     data$Cohort_Position <- ave(data$Cohort_Number, data$Cohort_Number, FUN = seq_along)
     data$X <- data$Cohort_Number + (data$Cohort_Position - 2) * 0.2
@@ -692,17 +692,35 @@ con_server <- function(id, shared) {
     legend("bottom", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19)
     dev.off()
 
-    # Get model results
+    # --- Generate CRM plot ---
+    crm_plot_file <- tempfile(fileext = ".png")
     crm_data <- NULL
     boin_data <- NULL
 
     if (input$choice == "CRM") {
       crm_data <- get_crm_results()
+      png(crm_plot_file, width = 800, height = 600)
+      plot(
+        crm_data$`Dose Level`, crm_data$`Posterior DLT Rate`,
+        pch = 19, col = "blue", cex = 1.5,
+        xlab = "Dose Level", ylab = "Posterior DLT Rate",
+        main = "Posterior DLT Rates by Dose Level (CRM)",
+        ylim = c(0, max(crm_data$`CI Upper`) + 0.1)
+      )
+      arrows(
+        x0 = crm_data$`Dose Level`, y0 = crm_data$`CI Lower`,
+        x1 = crm_data$`Dose Level`, y1 = crm_data$`CI Upper`,
+        angle = 90, code = 3, length = 0.05, col = "darkblue"
+      )
+      text(crm_data$`Dose Level`, crm_data$`Posterior DLT Rate` + 0.05,
+           labels = paste(crm_data$`No. of Patients`, "pts"), cex = 0.8)
+      grid()
+      dev.off()
     } else if (input$choice == "BOIN") {
       boin_data <- get_boin_results()
     }
 
-    # Generate RMD content
+    # --- Rmd content ---
     table_section <- NULL
     if (!is.null(crm_data)) {
       table_section <- c(
@@ -755,13 +773,19 @@ con_server <- function(id, shared) {
       "kable(data)",
       "```",
       "",
-      "## Dose Plot",
+      "## Cohort Dose Plot",
       paste0("!"),
+      "",
+      if (!is.null(crm_data)) {
+        c("## CRM Posterior DLT Plot", paste0("!"))
+      } else {
+        NULL
+      },
       "",
       table_section
     )
 
-    # Handle export types
+    # --- Export ---
     if (input$export_type == "PDF") {
       rmd_file <- tempfile(fileext = ".Rmd")
       writeLines(rmd_content, rmd_file)
@@ -771,22 +795,27 @@ con_server <- function(id, shared) {
       openxlsx::addWorksheet(wb, "Cohort Table")
       openxlsx::writeData(wb, "Cohort Table", data)
 
-      openxlsx::addWorksheet(wb, "Dose Plot")
-      openxlsx::insertImage(wb, "Dose Plot", plot_file, startRow = 2, startCol = 2, width = 6, height = 6)
+      openxlsx::addWorksheet(wb, "Cohort Plot")
+      openxlsx::insertImage(wb, "Cohort Plot", cohort_plot_file, startRow = 2, startCol = 2, width = 6, height = 6)
 
       if (!is.null(crm_data)) {
         openxlsx::addWorksheet(wb, "CRM Summary")
         openxlsx::writeData(wb, "CRM Summary", crm_data)
+        openxlsx::addWorksheet(wb, "CRM Plot")
+        openxlsx::insertImage(wb, "CRM Plot", crm_plot_file, startRow = 2, startCol = 2, width = 6, height = 6)
       } else if (!is.null(boin_data)) {
         openxlsx::addWorksheet(wb, "BOIN Summary")
         openxlsx::writeData(wb, "BOIN Summary", boin_data)
       }
 
       openxlsx::saveWorkbook(wb, file, overwrite = TRUE)
-    } else if (input$export_type == "RMD") {
+    } else if (input$export_type == "Rmd") {
       rmd_file <- tempfile(fileext = ".Rmd")
       writeLines(rmd_content, rmd_file)
       file.copy(rmd_file, file)
-    }})
+    }
+  }
+)
+
   })
 }
