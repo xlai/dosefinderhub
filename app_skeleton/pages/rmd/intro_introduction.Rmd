@@ -26,7 +26,11 @@ Compare method performance across safety, accuracy, and efficiency metrics.
 
 <h4>✅ Step 5: Select Design</h4>
 Use results to make informed decisions for your Phase I trial.
+
+<h4>📊 Step 6: Explore Conduct</h4>
+Conduct a trial with recorded DLT's, including dose allocation, toxicity rates, and more.
 </div>
+
 
 
 
