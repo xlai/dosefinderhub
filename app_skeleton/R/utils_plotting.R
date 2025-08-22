@@ -17,9 +17,9 @@
 #' @param ns Namespace function for generating input IDs
 #' @return List containing filtered graphs and UI elements
 #' @export
-generate_simulation_plots <- function(view_type, plot_data, selected_scenarios, selected_models, 
+generate_simulation_plots <- function(view_type, plot_data, q, selected_scenarios, selected_models, 
                                     median_data, ns) {
-  
+
   scenario_names <- names(plot_data)
   method_names <- get_method_names()[selected_models]
   graphs <- list()
@@ -27,9 +27,10 @@ generate_simulation_plots <- function(view_type, plot_data, selected_scenarios, 
   if (view_type == "Individually") {
     for (scenario_name in scenario_names) {
       for (method_name in method_names) {
-        for (metric in PLOT_METRICS) {
+        for (metric in q) {
           
           data <- plot_data[[scenario_name]][[metric]][[method_name]]
+          
           if (is.null(data)) next
           
           # Get median value for this scenario/method combination
@@ -60,7 +61,36 @@ generate_simulation_plots <- function(view_type, plot_data, selected_scenarios, 
     })
     
   } else if (view_type == "Comparatively by Design") {
-    # TODO: Implement comparative plotting for other view types
+    for (scenario_name in scenario_names) {
+      for (method_name in method_names) {
+        for (metric in PLOT_METRICS) {
+          
+          data <- plot_data[[scenario_name]][[metric]]
+          print(data)
+          print("AAAAAAAAAAAAAAAAAAAAAAAAAAA")
+          if (is.null(data)) next
+          
+          # Get median value for this scenario/method combination
+          median_vector <- if (metric == "overdose") {
+            median_data[[scenario_name]]$overdose
+          } else if (metric == "duration") {
+            median_data[[scenario_name]]$duration
+          } else {
+            NULL
+          }
+          
+          title <- sprintf("%s for %s", METRIC_NAMES[[metric]], scenario_name)
+          graph_key <- paste(scenario_name, metric, sep = "_")
+          
+          graph <- create_comparative_plot_simple(data, metric,title, median_vector, view_type, 
+                                                  selected_models, selected_scenarios)
+          if (!is.null(graph)) {
+            graphs[[graph_key]] <- graph
+          }
+        }
+      }
+    }
+
     ui_element <- renderUI({
       selectInput(ns("m_graph"), "Select a plot to view",
                   choices = names(graphs),
@@ -490,5 +520,32 @@ create_individual_plot_simple <- function(data, metric, title, median_val) {
                         x_title = x_title, col = "blue"))
   }
   
+  
   return(NULL)
+}
+
+create_comparative_plot_simple <- function(data, metric, title, median_vector, view_type, selected_models, selected_scenarios) {
+  
+  if (is.null(data)) return(NULL)
+  
+  if (view_type == "Comparatively by Design") {
+    print(metric)
+  if (metric %in% c("selection", "treatment")) {
+    # Bar chart
+    if (metric == "selection") {
+      return(plot_bar(data, Dose, selection, title = title, 
+                         y_title = "% Times Dose Was Selected as MTD", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios))
+    } else {
+      return(plot_bar(data, Dose_Level, treatment, title = title, 
+                         y_title = "% Treated at Dose", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios))  
+    }
+  } else if (metric %in% c("overdose", "duration")) {
+    # Distribution plot
+    data_col <- if (metric == "overdose") "overdose" else "length"
+    x_title <- if (metric == "overdose") "Overdose" else "Trial Duration"
+    
+    return(plot_dist(data, !!sym(data_col), median_vector, title = title, 
+                        x_title = x_title, col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios))
+  }
+} else {return(NULL)}
 }

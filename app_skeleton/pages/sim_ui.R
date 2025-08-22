@@ -379,6 +379,14 @@ validation_state <- reactiveValues(
     tables_ui <- NULL
   } else {
     # Use the new utility function to process all simulations with named structures
+
+    # Changing format of selected_metric to fit plots
+
+    p_mets <- selected_metric[-3]
+  
+
+    selected_plot_metrics <- PLOT_METRICS[p_mets]
+
     simulation_results <- process_multiple_simulations(
       selected_methods = model[selected_models],
       selected_scenarios = selected_scenarios,
@@ -386,7 +394,6 @@ validation_state <- reactiveValues(
       shared = shared,
       n_sims = n_sims(),
       true_dlts = used_true_dlts,
-      selected_metric = selected_metric
     )
     
     # Generate tables from named structure
@@ -470,13 +477,15 @@ validation_state <- reactiveValues(
   ########################## Plots #####################################
   
   # Use the new plotting utility function with named structures
+  
   plot_results <- generate_simulation_plots(
     view_type = input$comparative_view,
     plot_data = plot_list,
     selected_scenarios = selected_scenarios,
     selected_models = selected_models,
     median_data = median_overdose,
-    ns = ns
+    ns = ns,
+    q = selected_plot_metrics
   )
   
   # Update reactive values and UI
