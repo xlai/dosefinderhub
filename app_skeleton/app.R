@@ -13,6 +13,8 @@ source("app_skeleton/pages/global.R")
 source("app_skeleton/pages/trial_design_ui.R")
 source("app_skeleton/pages/sim_ui.R")
 source("app_skeleton/pages/con_ui.R")
+source("app_skeleton/R/utils_plotting.R")
+source("app_skeleton/R/utils_simulation.R")
 
 # Define UI for the application
 ui <- navbarPage(
