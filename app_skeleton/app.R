@@ -5,15 +5,14 @@ library(bslib)
 library(htmltools)
 library(markdown)
 
-here::i_am("app_skeleton/app.R")
-
-source("app_skeleton/R/default_design.R")
-source("app_skeleton/pages/intro_ui.R")
-source("app_skeleton/R/mod_02_questionnaire.R")
-source("app_skeleton/pages/global.R")
-source("app_skeleton/pages/trial_design_ui.R")
-source("app_skeleton/pages/sim_ui.R")
-source("app_skeleton/pages/con_ui.R")
+# Run with shiny::runApp("app_skeleton"). Shiny sources the files in R/ itself
+# and runs this file from the app folder, so paths are relative to it.
+# local = TRUE lets the pages see what R/ defines, such as default_design.
+source("pages/intro_ui.R", local = TRUE)
+source("pages/global.R", local = TRUE)
+source("pages/trial_design_ui.R", local = TRUE)
+source("pages/sim_ui.R", local = TRUE)
+source("pages/con_ui.R", local = TRUE)
 
 # Define UI for the application
 ui <- navbarPage(
