@@ -35,6 +35,8 @@ Some branches will not be part of this release:
 - Choosing an app framework (rhino, golem or leprechaun), and deciding how parameters are stored and shared between tabs, including the master variable list (https://github.com/xlai/dosefinderhub/issues/12, https://github.com/xlai/dosefinderhub/issues/72).
 - A single shared way of building the models for all tabs, and running all simulations through one `simulate_compare()` call.
 - Interactive plots (with ggiraph), saving and loading designs, and a progress bar for long simulations.
+- Rethinking how simulation results are tabulated and presented, including DLTs by dose level (https://github.com/xlai/dosefinderhub/issues/103).
+- A true overdosing measure (patients treated above the MTD).
 - Creating the default scenarios automatically from the number of doses and the target, and allowing more than three scenarios (https://github.com/xlai/dosefinderhub/issues/95).
 - Evidence for how the questionnaire should score its method recommendation (https://github.com/xlai/dosefinderhub/issues/64). In v0.1.0 the recommendation is shown, and the preview notice covers that its scoring is still based on expert opinion.
 
@@ -61,7 +63,7 @@ Trial Design and Simulation:
 - [ ] The same inputs always give the same results, whichever other designs are selected. The seed is shown.
 - [ ] The BOIN boundary settings you enter are used, they are updated when the target changes, and the app explains the problem instead of crashing when they don't fit the target.
 - [ ] Editing the CRM skeleton no longer breaks the CRM simulation. The skeleton is checked before it is used, and it updates when the target changes.
-- [ ] When every dose is above the target, choosing no dose counts as a correct result in "Accuracy". "Overdose" is renamed to what it really shows: the average number of DLTs.
+- [ ] When every dose is above the target, choosing no dose counts as a correct result in "Accuracy". The metric labelled "Overdose" is replaced by what it measured, shown as the % of patients with a DLT in each trial.
 - [ ] The cohort size is no longer reset when the app starts.
 - [ ] Saving and loading the trial design settings works.
 - [ ] "View Conduct Tab" opens the Conduct tab.
