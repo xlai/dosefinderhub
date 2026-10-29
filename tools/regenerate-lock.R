@@ -40,7 +40,8 @@ if (!requireNamespace("renv", quietly = TRUE)) {
   stop("renv must be installed in the R installation's own library.")
 }
 
-options(repos = repos)
+# Without the renv cache, so no package built earlier on this machine is reused.
+options(repos = repos, renv.config.cache.enabled = FALSE)
 renv::install(packages, library = lib, repos = repos, prompt = FALSE)
 
 renv::snapshot(
