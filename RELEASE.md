@@ -88,7 +88,7 @@ Questionnaire:
 
 ### Deployment
 
-- [ ] The app is published on GitHub Pages using Shinylive, set up the same way as dtptite-shiny.
+- [ ] The app is published on GitHub Pages using Shinylive.
 - [ ] The published app loads and runs a simulation for each of CRM, BOIN and 3+3.
 
 ### History and documentation
