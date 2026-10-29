@@ -52,3 +52,15 @@ renv::snapshot(
   repos = repos,
   prompt = FALSE
 )
+
+# renv installs Linux binaries from a platform-specific URL and records that
+# URL for each package. Record the repository name instead, so the lockfile
+# also restores on macOS and Windows.
+lock <- renv::lockfile_read("renv.lock")
+for (name in names(lock$Packages)) {
+  if (grepl("^https://packagemanager\\.posit\\.co/cran/__linux__/",
+            lock$Packages[[name]]$Repository %||% "")) {
+    lock$Packages[[name]]$Repository <- "CRAN"
+  }
+}
+renv::lockfile_write(lock, "renv.lock")
