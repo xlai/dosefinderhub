@@ -1,6 +1,6 @@
 # 0003. Export reports as HTML and tables as CSV
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10-29
 - Release: v0.1.0
 - Discussion: https://github.com/xlai/dosefinderhub/pull/88

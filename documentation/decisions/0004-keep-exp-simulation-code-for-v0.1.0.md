@@ -1,6 +1,6 @@
 # 0004. Keep the simulation code from exp for v0.1.0
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10-29
 - Release: v0.1.0
 - Discussion: https://github.com/xlai/dosefinderhub/pull/81, https://github.com/xlai/dosefinderhub/issues/85

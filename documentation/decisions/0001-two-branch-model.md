@@ -1,6 +1,6 @@
 # 0001. Two long-lived branches: main and dev
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10-29
 - Release: v0.1.0
 - Discussion: https://github.com/xlai/dosefinderhub/pull/88

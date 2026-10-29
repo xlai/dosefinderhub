@@ -1,6 +1,6 @@
 # 0002. Publish the app with Shinylive on GitHub Pages
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10-29
 - Release: v0.1.0
 - Discussion: https://github.com/xlai/dosefinderhub/pull/88
