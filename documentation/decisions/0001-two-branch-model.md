@@ -31,5 +31,5 @@ To start, `dev` was brought up to date with `exp` and then with `main`. Both ste
 
 ## Consequences
 
-- Open pull requests that target other branches, such as https://github.com/xlai/dosefinderhub/pull/81 and https://github.com/xlai/dosefinderhub/pull/79, need to be pointed at `dev` before they can be merged.
+- Open pull requests that targeted other branches have been pointed at `dev`. https://github.com/xlai/dosefinderhub/pull/81 and https://github.com/xlai/dosefinderhub/pull/79 are kept as drafts until after v0.1.0, so they are not merged by mistake.
 - Branches whose work is now in `dev` can be retired.
