@@ -35,7 +35,7 @@ Some branches will not be part of this release:
 - Choosing an app framework (rhino, golem or leprechaun), and deciding how parameters are stored and updated, including the master variable list (https://github.com/xlai/dosefinderhub/issues/12).
 - A single shared way of building the models for all tabs, and running all simulations through one `simulate_compare()` call.
 - Interactive plots (with ggiraph), more than three scenarios, and saving and loading designs.
-- Finding evidence for how the questionnaire should score its recommendation.
+- The questionnaire's method recommendation. In v0.1.0 the questionnaire still fills in the trial design settings, but it does not show a recommended method. The recommendation comes back in the next release, once we have evidence for how it should be scored.
 
 ## Release criteria
 
@@ -71,13 +71,14 @@ Conduct:
 Questionnaire:
 
 - [ ] The Reset and Save buttons work without closing the session.
+- [ ] The method recommendation is hidden.
 
 ### Reports and downloads
 
 - [ ] You can download the simulation results and the Conduct results as a single HTML report with tables and plots. This doesn't need LaTeX.
 - [ ] Each report starts with the design settings used, including the seed and the number of simulations. The questionnaire answers and package versions go at the end.
 - [ ] The main tables can also be downloaded as CSV.
-- [ ] We drop the PDF, Rmd and Excel downloads unless someone needs them.
+- [ ] The PDF, Rmd and Excel downloads are removed. HTML and CSV are the only formats.
 
 ### Tests and CI
 
