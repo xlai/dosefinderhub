@@ -1,5 +1,3 @@
-source('app_skeleton/R/utils_questionnaire.R')
-
 # File: app_skeleton/R/mod_questionnaire.R
 # Questionnaire Module
 
@@ -135,8 +133,7 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
 
     # Load questions data 
     questions <- tryCatch({
-      input_directory <- here::here('app_skeleton', 'Inputs')
-      read.csv(file.path(input_directory, "questions.csv"))
+      read.csv(file.path("Inputs", "questions.csv"))
     }, error = function(e) {
       # Fallback data for testing
       shiny::showNotification(
