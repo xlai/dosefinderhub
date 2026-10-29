@@ -2,7 +2,7 @@ sim_ui <- function(id) {
   ns <- NS(id)
 
   # Simulation-Specific Inputs
-    n_sims_input <- numericInput(ns("n_sims_input"), "How many simulations would you like to run per design per scenario?", value = 10)
+    n_sims_input <- numericInput(ns("n_sims_input"), "How many simulations would you like to run per design per scenario?", value = default_design$n_sims)
     n_scenarios_input <- numericInput(ns("n_scenarios_input"), "How many scenarios would you like to simulate?", min = 1, max = 3, value = 3) # Capping the number of scenarios at 3 (for now)
 
   n_sims_warning_text <- textOutput(ns("sims_warning"))
@@ -69,7 +69,7 @@ sim_ui <- function(id) {
             ################################ Simulation tab UI ################################
       # This code is copied from the Simulation tab UI in trial_design/ui.R
       selectizeInput(ns("simulation_design_selection_input"), "Select which designs' simulation outputs to see",
-        choices = pretty_ranking,
+        choices = design_names,
         multiple = TRUE,
         options = list(plugins = list('remove_button'))),
       
@@ -121,11 +121,8 @@ ns <- session$ns
 
   ############## Reactive True DLT Probabilities Table ##############
  
-  scen_1_init <- c(1, example_scenarios(0.3, 3, 5))
-  scen_2_init <- c(2, example_scenarios(0.3, 2, 5))
-  scen_3_init <- c(3, example_scenarios(0.3, 4, 5))
-  matrix <- rbind(scen_1_init, scen_2_init, scen_3_init)
-  colnames(matrix) <- list("Scenario", "d1", "d2", "d3", "d4", "d5")
+  matrix <- cbind(seq_len(nrow(default_design$scenarios)), default_design$scenarios)
+  colnames(matrix) <- c("Scenario", paste("d", 1:default_design$n_doses, sep = ""))
   matrix_df <- as.data.frame(matrix)
 
   reactive_df <- reactiveVal(matrix_df) # initalising a reactive value to store the data frame
@@ -388,7 +385,7 @@ validation_state <- reactiveValues(
 
   # Design - only running simulations that are necessary to save time.
   if ("3+3" %in% input$simulation_design_selection_input)
-      { tpt_sim <- sim_tpt(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), 12345)
+      { tpt_sim <- sim_tpt(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), default_design$seed)
        tpt_modified_tab <- tpt_sim[-c(4,6)]
 
       tpt_modified_tab$mean_accuracy <- as.data.frame(tpt_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
