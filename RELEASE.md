@@ -2,106 +2,102 @@
 
 ## Target: v0.1.0
 
-First tagged release. Its main goal is to bring the work spread across many unmerged branches back into one consistent `main`, resolving the conflicts between them. This is not a 1.0 stability commitment: interfaces may still change between 0.x releases.
+v0.1.0 will be our first tagged release. The main aim is to bring together the work that is currently spread across many unmerged branches into one consistent `main`. It is not a 1.0 release, so interfaces may still change in later 0.x versions.
 
-v0.1.0 is a **preview release** as a whole. All five tabs ship, with one app-wide notice that results should be checked by a statistician and that interfaces may change. Individual tabs are not marked separately.
+We will treat the whole of v0.1.0 as a preview. All five tabs will be included, and the app will show a single notice saying that results should be checked by a statistician and that things may still change.
 
 ## Scope
 
-v0.1.0 is limited to the dose-finding methods already implemented. No new methods are added.
+This release covers the three methods we already have: CRM, BOIN and 3+3. We won't add any new methods.
 
-- CRM
-- BOIN
-- 3+3
-
-The app is the integrated bslib app now in `app_skeleton/`, with five tabs: Introduction, Questionnaire, Trial Design, Simulation and Conduct.
+The app is the bslib version in `app_skeleton/`, with five tabs: Introduction, Questionnaire, Trial Design, Simulation and Conduct.
 
 ### Branches
 
-`main` holds stable releases. `dev` holds release-candidate work, and every PR targets `dev`.
+From now on we keep two long-lived branches: `main` for stable releases and `dev` for work towards the next release. All pull requests go to `dev`.
 
-In v0.1.0:
+To get started:
 
-- [ ] `exp` lands on `dev` as one fast-forward. `dev` is an ancestor of `exp`, so no history is rewritten.
-- [ ] `main` is merged into `dev`, so `dev` has this file, `NEWS.md` and `documentation/decisions/`.
-- [ ] Every fix after that goes to `dev` as its own small PR.
+- [ ] Merge `exp` into `dev`. This keeps all existing history.
+- [ ] Merge `main` into `dev`, so that `dev` also has this file, `NEWS.md` and `documentation/decisions/`.
+- [ ] After that, make each fix as its own small pull request to `dev`.
 
-Left out of v0.1.0:
+Some branches will not be part of this release:
 
-- `xlai/issue80` (simulation refactor, https://github.com/xlai/dosefinderhub/pull/81): merging it empties the comparative tables and brings a scenario row-index bug. Revisit after v0.1.0.
-- `xlai/issue78` (basic mode, https://github.com/xlai/dosefinderhub/pull/79): unfinished. Revisit after v0.1.0.
-- `doc/variablelist` (https://github.com/xlai/dosefinderhub/pull/13): kept as input for the parameter design after v0.1.0. Not used in v0.1.0.
-- Fully merged, superseded or obsolete, so nothing to bring in: `a-working-simulations-tab`, `feature/readme`, `feature/trial_interface2`, `misc/add_reactive_output_to_ui`, `setting-up-the-bslib-dashboard`, `revert-47-hotfix/namespace-issue`.
+- `xlai/issue80`, the simulation refactor (https://github.com/xlai/dosefinderhub/pull/81). Merging it now would empty the comparison tables and bring in a bug with scenario selection. We will come back to it after v0.1.0.
+- `xlai/issue78`, basic mode (https://github.com/xlai/dosefinderhub/pull/79). It isn't finished yet, so it will wait until after v0.1.0.
+- `doc/variablelist` (https://github.com/xlai/dosefinderhub/pull/13). We will keep it for when we redesign how parameters are handled, after v0.1.0.
+- `a-working-simulations-tab`, `feature/readme`, `feature/trial_interface2`, `misc/add_reactive_output_to_ui`, `setting-up-the-bslib-dashboard` and `revert-47-hotfix/namespace-issue` are already merged, replaced by later work, or no longer needed.
 
-### Not in v0.1.0
+### What waits until after v0.1.0
 
-- No refactoring unless it is needed to fix a release-blocking problem.
-- Framework choice (rhino, golem or leprechaun), and how parameters are stored, read and updated (master variable list, https://github.com/xlai/dosefinderhub/issues/12).
-- One shared model builder for all tabs, and Simulation through a single `simulate_compare()` call.
-- Interactive plots (ggiraph), more than 3 scenarios, and upload and download of designs.
-- Evidence-based scoring for the questionnaire recommendation.
+- Refactoring, unless something is broken and blocks the release.
+- Choosing an app framework (rhino, golem or leprechaun), and deciding how parameters are stored and updated, including the master variable list (https://github.com/xlai/dosefinderhub/issues/12).
+- A single shared way of building the models for all tabs, and running all simulations through one `simulate_compare()` call.
+- Interactive plots (with ggiraph), more than three scenarios, and saving and loading designs.
+- Finding evidence for how the questionnaire should score its recommendation.
 
 ## Release criteria
 
-v0.1.0 is ready to tag when all of these are true on `dev`, and `dev` has been merged into `main` through a release PR.
+We will tag v0.1.0 once everything below is done on `dev` and `dev` has been merged into `main`.
 
-### App
+### The app
 
-- [ ] The app starts from a single self-contained app folder, with no paths into the old `app/` tree.
-- [ ] The app opens with a default design loaded, replacing the random dummy data, so it is ready to simulate without any input.
-- [ ] With the default design, each of CRM, BOIN and 3+3 runs in Trial Design, Simulation and Conduct without an error or a lost session.
-- [ ] The app-wide preview notice is shown.
+- [ ] The app runs from a single folder and no longer depends on the old `app/` folder.
+- [ ] The app opens with a sensible default design instead of random dummy data, so you can run a simulation straight away.
+- [ ] With that default design, CRM, BOIN and 3+3 all work in Trial Design, Simulation and Conduct without errors.
+- [ ] The preview notice is shown.
 
-### Known bugs fixed
+### Known bugs to fix
 
-Simulation and Trial Design:
+Trial Design and Simulation:
 
-- [ ] Individual plots show the correct design label for every combination of selected designs.
-- [ ] Cohort size from the inputs is used by all three designs.
-- [ ] The BOIN stopping-rule input is used, not a hard-coded value.
-- [ ] Each simulation run sets its own seed, so results repeat for the same inputs and do not depend on which other designs are selected. The seed is shown.
-- [ ] BOIN boundaries are recomputed when the target changes, and a run is blocked with a message unless p.saf < target < p.tox.
-- [ ] Editing the CRM skeleton does not break CRM runs. The skeleton is checked for length, increasing order and range (0, 1), and is rebuilt when the target changes.
-- [ ] "Accuracy" is correct when no dose is at or below target. "Overdose" is relabelled to what it measures (mean number of DLTs).
-- [ ] BOIN lambda inputs reach the simulation.
-- [ ] Cohort size is not overwritten at startup.
-- [ ] Input ids are namespaced, so the Trial Design configuration download and upload work.
+- [ ] Plots show the right design names, whichever designs are selected.
+- [ ] The cohort size you enter is used by all three designs.
+- [ ] The BOIN stopping rule you choose is actually used.
+- [ ] The same inputs always give the same results, whichever other designs are selected. The seed is shown.
+- [ ] Changing the target updates the BOIN boundaries, and the app explains the problem instead of crashing when the boundaries don't fit the target.
+- [ ] Editing the CRM skeleton no longer breaks the CRM simulation. The skeleton is checked before it is used, and it updates when the target changes.
+- [ ] "Accuracy" is correct even when every dose is above the target, and "Overdose" is renamed to what it really shows: the average number of DLTs.
+- [ ] The BOIN lambda values you enter are used in the simulation.
+- [ ] The cohort size is no longer reset when the app starts.
+- [ ] Saving and loading the trial design settings works.
 
 Conduct:
 
-- [ ] Conduct builds each design from the same inputs as Simulation (no hard-coded stopping rule, CRM uses the prior variance, no target for 3+3).
-- [ ] The BOIN plot works.
+- [ ] Conduct uses the same design settings as Simulation.
+- [ ] The BOIN plot shows correctly.
 
 Questionnaire:
 
-- [ ] Reset and Save work without ending the session.
+- [ ] The Reset and Save buttons work without closing the session.
 
-### Exports
+### Reports and downloads
 
-- [ ] The operating characteristics (OC) report and the Conduct report download as a self-contained HTML file, with tables and plots. They need no LaTeX or pandoc.
-- [ ] Both reports start with the parameter specification (design, target, doses, start dose, skeleton, stopping rules, scenarios, number of simulations, seed). Questionnaire answers and package versions are appendices.
-- [ ] The OC tables and the Conduct patient table also download as CSV.
-- [ ] PDF, Rmd and Excel export are removed, unless users ask for them.
+- [ ] You can download the simulation results and the Conduct results as a single HTML report with tables and plots. This doesn't need LaTeX.
+- [ ] Each report starts with the design settings used, including the seed and the number of simulations. The questionnaire answers and package versions go at the end.
+- [ ] The main tables can also be downloaded as CSV.
+- [ ] We drop the PDF, Rmd and Excel downloads unless someone needs them.
 
 ### Tests and CI
 
-- [ ] testthat tests cover the bugs fixed above, as far as they can be tested outside the browser.
-- [ ] A smoke test starts the app and runs one simulation for each design.
-- [ ] CI runs the tests on every PR to `dev`.
-- [ ] `dev` has one `renv.lock`, regenerated in a dedicated PR.
+- [ ] Automated tests check the bugs above, as far as they can be tested outside the browser.
+- [ ] A quick test starts the app and runs one simulation for each design.
+- [ ] Tests run automatically on every pull request to `dev`.
+- [ ] `dev` has one up-to-date `renv.lock`, updated in its own pull request.
 
 ### Deployment
 
-- [ ] The app is exported with Shinylive and deployed to GitHub Pages from `main`, copying the dtptite-shiny setup (trialr stub, export script, workflow) and changing only what must differ.
-- [ ] The deployed app loads and runs one simulation for each of CRM, BOIN and 3+3.
+- [ ] The app is published on GitHub Pages using Shinylive, set up the same way as dtptite-shiny.
+- [ ] The published app loads and runs a simulation for each of CRM, BOIN and 3+3.
 
 ### History and documentation
 
-- [ ] Before the old `app/` tree is removed, the current `main` is tagged as the prototype archive. The PR that removes it credits the earlier contributors and links the tag.
-- [ ] `app_skeleton/` is moved into place with `git mv` in its own commit, so file history is kept.
-- [ ] README says what the app does, how to run it locally and the link to the deployed app.
-- [ ] NEWS.md lists the changes in v0.1.0 and states that it is a preview release.
-- [ ] The main v0.1.0 decisions are recorded in `documentation/decisions/`.
+- [ ] Before removing the old `app/` folder, we tag the current `main` so the earlier work stays easy to find, and we credit the people who built it.
+- [ ] `app_skeleton/` is renamed in a way that keeps its file history.
+- [ ] The README explains what the app does, how to run it and where to find it online.
+- [ ] NEWS.md lists what changed in v0.1.0 and says it is a preview.
+- [ ] The main decisions for v0.1.0 are written up in `documentation/decisions/`.
 
 ## Decisions and assumptions
 
