@@ -97,12 +97,29 @@ boin_boundaries <- function(target, ncohort, cohortsize, n.earlystop, p.saf, p.t
 
 ### This is a rewrite of the basesim.r file as a set of functions that can be used reactively to simulate data.
 
+# The dose a trial should recommend: the highest dose with a true DLT rate at or below the target.
+# NA when every dose is above the target, so no dose is the right answer.
+find_best_dose_level <- function(true_dlt_ss, ttl) {
+  if (!any(true_dlt_ss <= ttl)) return(NA)
+  match(max(true_dlt_ss[true_dlt_ss <= ttl]), true_dlt_ss)
+}
+
+# Proportion of trials that recommend the right dose, taken from escalation's prob_recommend().
+# "No dose" is the right answer when every dose is above the target.
+find_accuracy <- function(sims, best_dose_level) {
+  prob_recommend(sims)[[if (is.na(best_dose_level)) "NoDose" else as.character(best_dose_level)]]
+}
+
+# Percentage of patients in each simulated trial who had a DLT.
+find_pct_dlt <- function(sims) {
+  100 * num_tox(sims) / num_patients(sims)
+}
+
 ########################### 3+3 Simulation Function ###########################
 sim_tpt <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss, current_seed) {
 
 # Best dose and level
-best_dose <- max(true_dlt_ss[true_dlt_ss<=ttl])
-best_dose_level <- match(best_dose,true_dlt_ss)
+best_dose_level <- find_best_dose_level(true_dlt_ss, ttl)
 
 ## lists
 
@@ -171,12 +188,11 @@ rownames(treatment_tab$tpt) <- c("% of Patients Treated at Dose", "True Toxicity
 
 # i) accuracy
 
-dist_accuracy$tpt <- recommended_dose(sims$tpt)
-mean_accuracy$tpt <- length(subset(dist_accuracy$tpt,dist_accuracy$tpt == best_dose_level)) / n_sims
+mean_accuracy$tpt <- find_accuracy(sims$tpt, best_dose_level)
 
-# ii) risk of overdosing
+# ii) % of patients with a DLT in each trial (previously labelled "overdose")
 
-dist_overdose$tpt <- num_tox(sims$tpt)
+dist_overdose$tpt <- find_pct_dlt(sims$tpt)
 mean_overdose$tpt <- mean(dist_overdose$tpt)
 
 # iii) trial length
@@ -232,8 +248,7 @@ mean_length <- list()
 
 # Best dose and level
 
-best_dose <- max(true_dlt_ss[true_dlt_ss<=ttl])
-best_dose_level <- match(best_dose,true_dlt_ss)
+best_dose_level <- find_best_dose_level(true_dlt_ss, ttl)
 
 # Model itself
 
@@ -279,12 +294,11 @@ rownames(treatment_tab$crm) <- c("% of Patients Treated at Dose", "True Toxicity
 
 # i) accuracy - needs to be revisited
 
-dist_accuracy$crm <- recommended_dose(sims$crm)
-mean_accuracy$crm <- length(subset(dist_accuracy$crm,dist_accuracy$crm == best_dose_level)) / n_sims
+mean_accuracy$crm <- find_accuracy(sims$crm, best_dose_level)
 
-# ii) risk of overdosing
+# ii) % of patients with a DLT in each trial (previously labelled "overdose")
 
-dist_overdose$crm <- num_tox(sims$crm)
+dist_overdose$crm <- find_pct_dlt(sims$crm)
 mean_overdose$crm <- mean(dist_overdose$crm)
 
 # iii) trial length
@@ -313,8 +327,7 @@ sim_boin <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss, cohor
 
 
 
-best_dose <- max(true_dlt_ss[true_dlt_ss <= ttl])
-best_dose_level <- match(best_dose, true_dlt_ss)
+best_dose_level <- find_best_dose_level(true_dlt_ss, ttl)
 
 model <- get_boin(num_doses = n_doses, target = ttl, use_stopping_rule = use_stopping_rule, p.saf = p_saf, p.tox = p_tox,
                        cutoff.eli = 0.95, extrasafe = FALSE, offset = 0.05) %>%
@@ -363,12 +376,11 @@ rownames(treatment_tab) <- c("% of Patients Treated at Dose", "True Toxicity Pro
 
 # i) accuracy - needs to be revisited
 
-dist_accuracy <- recommended_dose(sims)
-mean_accuracy <- length(subset(dist_accuracy, dist_accuracy == best_dose_level)) / n_sims
+mean_accuracy <- find_accuracy(sims, best_dose_level)
 
-# ii) risk of overdosing
+# ii) % of patients with a DLT in each trial (previously labelled "overdose")
 
-dist_overdose <- num_tox(sims)
+dist_overdose <- find_pct_dlt(sims)
 mean_overdose <- mean(dist_overdose)
 
 # iii) trial length
@@ -573,8 +585,7 @@ plot_dist_ind <- function(data, category, median, title, x_title, col) {
 ########################### Functions to Format Data for Plotting###########################
  data_for_plotting <- function(sim, ttl) {
   true_dlts <- sim$treatment_tab[2,] # True DLTs from treatment table
-  best_dose <- max(true_dlts[true_dlts <= ttl])
-  mtd <- match(best_dose, true_dlts)
+  mtd <- find_best_dose_level(true_dlts, ttl)
 
   selection <- as.vector(sim$selection_tab[1,])
   treatment <- as.vector(sim$treatment_tab[1,])
