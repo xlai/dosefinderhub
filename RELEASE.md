@@ -34,7 +34,8 @@ Some branches will not be part of this release:
 - Refactoring, unless something is broken and blocks the release.
 - Choosing an app framework (rhino, golem or leprechaun), and deciding how parameters are stored and updated, including the master variable list (https://github.com/xlai/dosefinderhub/issues/12).
 - A single shared way of building the models for all tabs, and running all simulations through one `simulate_compare()` call.
-- Interactive plots (with ggiraph), more than three scenarios, and saving and loading designs.
+- Interactive plots (with ggiraph), and saving and loading designs.
+- Creating the default scenarios automatically from the number of doses and the target, and allowing more than three scenarios (https://github.com/xlai/dosefinderhub/issues/95).
 - The questionnaire's method recommendation. In v0.1.0 the questionnaire still fills in the trial design settings, but it does not show a recommended method. The recommendation comes back in the next release, once we have evidence for how it should be scored.
 
 ## Release criteria
