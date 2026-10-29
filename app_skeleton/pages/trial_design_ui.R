@@ -8,11 +8,11 @@ trial_design_ui <- function(id) {
 
 
 # Non-specific UI inputs for trial design
-  n_doses_output <- numericInput(ns("n_doses_inputt"), "How many dose levels are being tested?", min = 1, value = "5", step = 1)
-  ttl_output <- numericInput(ns("ttl_inputt"), "What is the target toxicity level for this trial, as a decimal?", min = 0, max = 0.999, value = "0.3", step = 0.01)
-  max_size_output <- numericInput(ns("max_size_inputt"), "What is the maximum sample size for this trial?", min = 1, value = "30", step = 1)
-  start_dose_output <- numericInput(ns("start_dose_inputt"), "What is the starting dose level?", min = 1, value = "1", step = 1)
-  cohort_output <- numericInput(ns("cohort_inputt"), "What size will the cohorts be?", min = 1, value = "5", step = 1)
+  n_doses_output <- numericInput(ns("n_doses_inputt"), "How many dose levels are being tested?", min = 1, value = default_design$n_doses, step = 1)
+  ttl_output <- numericInput(ns("ttl_inputt"), "What is the target toxicity level for this trial, as a decimal?", min = 0, max = 0.999, value = default_design$ttl, step = 0.01)
+  max_size_output <- numericInput(ns("max_size_inputt"), "What is the maximum sample size for this trial?", min = 1, value = default_design$max_size, step = 1)
+  start_dose_output <- numericInput(ns("start_dose_inputt"), "What is the starting dose level?", min = 1, value = default_design$start_dose, step = 1)
+  cohort_output <- numericInput(ns("cohort_inputt"), "What size will the cohorts be?", min = 1, value = default_design$cohort_size, step = 1)
 
   n_doses_warning_text <- textOutput(ns("n_doses_warning"))
   ttl_warning_text <- textOutput(ns("ttl_warning"))
@@ -36,20 +36,20 @@ trial_design_ui <- function(id) {
 # Specific UI inputs for trial design
 # CRM specific inputs
 skip_esc_crm_input <- radioButtons(ns("skip_esc_crm_input"),"Would you like to be able to skip doses when escalating?",
-choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE)
+choices = c("Yes" = TRUE, "No" = FALSE), selected = default_design$crm$skip_esc, inline = TRUE)
 skip_deesc_crm_input <- radioButtons(ns("skip_deesc_crm_input"),"Would you like to be able to skip doses when de-escalating?",
-choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
+choices = c("Yes" = TRUE, "No" = FALSE), selected = default_design$crm$skip_deesc, inline = TRUE)
 above_target_input <- radioButtons(ns("above_target_input"),
 "Do you want to prevent escalation of doses if the overall observed DLT rate at the current dose level is above the target DLT rate?",
-choices = c("Yes" = TRUE, "No" = FALSE), selected = TRUE, inline = TRUE)
-prior_var_input <- numericInput(ns("prior_var_input"), "What is the estimate of the prior variance?", min = 0, value = 0.1)
-stop_n_mtd_input <- numericInput(ns("stop_n_mtd_input"), "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = 24)
+choices = c("Yes" = TRUE, "No" = FALSE), selected = default_design$crm$above_target, inline = TRUE)
+prior_var_input <- numericInput(ns("prior_var_input"), "What is the estimate of the prior variance?", min = 0, value = default_design$crm$prior_var)
+stop_n_mtd_input <- numericInput(ns("stop_n_mtd_input"), "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = default_design$crm$stop_n_mtd)
 
 skeleton_table <- DT::DTOutput(ns("skeleton_df"))
 
-prior_mtd_input <- numericInput(ns("prior_mtd_input"), "What is your prior guess of the MTD?", min = 1, value = 3)
-stop_tox_x_input <- numericInput(ns("stop_tox_x_input"), "When using the this Bayesian safety early criterion: p(true DLT rate at lowest dose > target DLT rate + x | data) > y, what would you like x to be? This is the excess toxicity above the target DLT.", min = 0, value = 0.09)
-stop_tox_y_input <- numericInput(ns("stop_tox_y_input"), "What would you like y to be? This is the confidence level for safety stopping.", min = 0, max = 1, value = 0.77)
+prior_mtd_input <- numericInput(ns("prior_mtd_input"), "What is your prior guess of the MTD?", min = 1, value = default_design$crm$prior_mtd)
+stop_tox_x_input <- numericInput(ns("stop_tox_x_input"), "When using the this Bayesian safety early criterion: p(true DLT rate at lowest dose > target DLT rate + x | data) > y, what would you like x to be? This is the excess toxicity above the target DLT.", min = 0, value = default_design$crm$stop_tox_x)
+stop_tox_y_input <- numericInput(ns("stop_tox_y_input"), "What would you like y to be? This is the confidence level for safety stopping.", min = 0, max = 1, value = default_design$crm$stop_tox_y)
 
 prior_var_warning_text <- textOutput(ns("prior_var_warning"))
 stop_n_mtd_warning_text <- textOutput(ns("stop_n_mtd_warning"))
@@ -83,19 +83,19 @@ choices = c("Enter the toxicity probability threshold as a multiple of the targe
               selected = NULL, inline = TRUE)
 
 boin_stopping_rule <- radioButtons(ns("boin_stopping_rule"), "Would you like to use the BOIN toxicity stopping rule?",
-choices = c("Yes" = TRUE, "No" = FALSE), selected = FALSE, inline = TRUE)
+choices = c("Yes" = TRUE, "No" = FALSE), selected = default_design$boin$stopping_rule, inline = TRUE)
 
-boin_cohorts <- numericInput(ns("boin_cohorts"), "How many cohorts would you like to use?", min = 1, value = 3)
-stop_n_mtd_boin <- numericInput(ns("stop_n_mtd_boin"), "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = 24)
+boin_cohorts <- numericInput(ns("boin_cohorts"), "How many cohorts would you like to use?", min = 1, value = default_design$boin$n_cohorts)
+stop_n_mtd_boin <- numericInput(ns("stop_n_mtd_boin"), "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = default_design$boin$stop_n_mtd)
 
-ttl_multiple_phi_1 <- numericInput(ns("ttl_multiple_phi_1"), "What is the highest multiple of the target toxicity level such that dose escalation should be made?", min = 0, max = 1, value = 0.6)
-ttl_multiple_phi_2 <- numericInput(ns("ttl_multiple_phi_2"), "What is the lowest multiple of the target toxicity level such that dose de-escalation should be made?", min = 0, max = 1, value = 1.4)
+ttl_multiple_phi_1 <- numericInput(ns("ttl_multiple_phi_1"), "What is the highest multiple of the target toxicity level such that dose escalation should be made?", min = 0, max = 1, value = default_design$boin$phi_1_multiple)
+ttl_multiple_phi_2 <- numericInput(ns("ttl_multiple_phi_2"), "What is the lowest multiple of the target toxicity level such that dose de-escalation should be made?", min = 0, max = 1, value = default_design$boin$phi_2_multiple)
 
-direct_phi_1 <- numericInput(ns("direct_phi_1"), "What is the highest toxicity probability below the target toxicity level such that dose escalation should be made?", min = 0, max = 1, value = 0.18)
-direct_phi_2 <- numericInput(ns("direct_phi_2"), "What is the lowest toxicity probability above the target toxicity level such that dose de-escalation should be made?", min = 0, max = 1, value = 0.42)
+direct_phi_1 <- numericInput(ns("direct_phi_1"), "What is the highest toxicity probability below the target toxicity level such that dose escalation should be made?", min = 0, max = 1, value = default_design$boin$phi_1)
+direct_phi_2 <- numericInput(ns("direct_phi_2"), "What is the lowest toxicity probability above the target toxicity level such that dose de-escalation should be made?", min = 0, max = 1, value = default_design$boin$phi_2)
 
-direct_lambda_e <- numericInput(ns("direct_lambda_e"), "What is the escalation boundary, lambda_e?", min = 0, value = 0.9)
-direct_lambda_d <- numericInput(ns("direct_lambda_d"), "What is the de-escalation boundary, lambda_d?", min = 0, value = 0.1)
+direct_lambda_e <- numericInput(ns("direct_lambda_e"), "What is the escalation boundary, lambda_e?", min = 0, value = default_design$boin$lambda_e)
+direct_lambda_d <- numericInput(ns("direct_lambda_d"), "What is the de-escalation boundary, lambda_d?", min = 0, value = default_design$boin$lambda_d)
 
 boin_general_inputs <- tagList(
   boin_input_choice,
@@ -264,30 +264,30 @@ observeEvent(move_data(), {
   if (length(shared$q_n_doses()) > 0) {
     updateNumericInput(session, "n_doses_inputt", value = shared$q_n_doses())
   } else {
-    updateNumericInput(session, "n_doses_inputt", value = 5) # Default value if not set
+    updateNumericInput(session, "n_doses_inputt", value = default_design$n_doses) # Default value if not set
   }
   if (length(shared$q_ttl()) > 0) {
     updateNumericInput(session, "ttl_inputt", value = shared$q_ttl())
   } else {
-    updateNumericInput(session, "ttl_inputt", value = 0.3) # Default value if not set
+    updateNumericInput(session, "ttl_inputt", value = default_design$ttl) # Default value if not set
   }
   if (length(shared$q_max_size()) > 0) {
     updateNumericInput(session, "max_size_inputt", value = shared$q_max_size())
   }
   else {
-    updateNumericInput(session, "max_size_inputt", value = 30) # Default value if not set
+    updateNumericInput(session, "max_size_inputt", value = default_design$max_size) # Default value if not set
   }
   if (length(shared$q_start_dose()) > 0) {
     updateNumericInput(session, "start_dose_inputt", value = shared$q_start_dose())
   }
   else {
-    updateNumericInput(session, "start_dose_inputt", value = 1) # Default value if not set
+    updateNumericInput(session, "start_dose_inputt", value = default_design$start_dose) # Default value if not set
   }
   if (length(shared$q_cohort()) > 0) {
     updateNumericInput(session, "cohort_inputt", value = shared$q_cohort())
   }
   else {
-    updateNumericInput(session, "cohort_inputt", value = 3) # Default value if not set
+    updateNumericInput(session, "cohort_inputt", value = default_design$cohort_size) # Default value if not set
   }
 
   # Need to make move_data FALSE again so that it doesn't keep transferring data
@@ -330,7 +330,7 @@ observeEvent(move_data(), {
     },
 
     content = function(file) {
-        input_ids_for_df <- c((questions$trial)$q_variable, (questions$method)$q_variable, (questions$ranking)$q_variable)
+        input_ids_for_df <- config_variables
 
         inputs_for_df <- c()
         for (input.i in 1:length(input_ids_for_df)){
@@ -398,8 +398,8 @@ observeEvent(move_data(), {
   shared$boin_cohorts <- reactive({as.numeric(input$boin_cohorts)})
   shared$stop_n_mtd_boin <- reactive({as.numeric(input$stop_n_mtd_boin)})
   
-  shared$phi_1 <- 0.18
-  shared$phi_2 <- 0.42
+  shared$phi_1 <- default_design$boin$phi_1
+  shared$phi_2 <- default_design$boin$phi_2
 
   observeEvent(input$ttl_multiple_phi_1, {
     shared$phi_1 <- as.numeric(input$ttl_multiple_phi_1) * shared$ttl()
@@ -497,7 +497,7 @@ observeEvent(move_data(), {
     start_dose_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
     cohort_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
 
-    prior_var_val = list(min_val = 0, max_val = 1, integer_only = FALSE),
+    prior_var_val = list(min_val = 0, max_val = 5, integer_only = FALSE),
     stop_n_mtd_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
     prior_mtd_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
     stop_tox_x_val = list(min_val = 0, max_val = 1, integer_only = FALSE),

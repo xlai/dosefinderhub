@@ -7,6 +7,7 @@ library(markdown)
 
 here::i_am("app_skeleton/app.R")
 
+source("app_skeleton/R/default_design.R")
 source("app_skeleton/pages/intro_ui.R")
 source("app_skeleton/R/mod_02_questionnaire.R")
 source("app_skeleton/pages/global.R")
