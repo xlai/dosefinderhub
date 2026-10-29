@@ -1,6 +1,6 @@
 # Test script for intelligent recommendation system
 # Load the functions
-source('app_skeleton/R/utils_questionnaire.R')
+source('app/R/utils_questionnaire.R')
 
 # Test Case 1: CRM scenario
 # High confidence + efficiency priority + statistical support → Should recommend CRM first

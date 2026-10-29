@@ -5,7 +5,7 @@ library(bslib)
 library(htmltools)
 library(markdown)
 
-# Run with shiny::runApp("app_skeleton"). Shiny sources the files in R/ itself
+# Run with shiny::runApp("app"). Shiny sources the files in R/ itself
 # and runs this file from the app folder, so paths are relative to it.
 # local = TRUE lets the pages see what R/ defines, such as default_design.
 source("pages/intro_ui.R", local = TRUE)

@@ -1,4 +1,4 @@
-# File: app_skeleton/R/mod_questionnaire.R
+# File: app/R/mod_02_questionnaire.R
 # Questionnaire Module
 
 #' Questionnaire UI Function
