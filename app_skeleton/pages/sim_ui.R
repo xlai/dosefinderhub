@@ -80,7 +80,7 @@ sim_ui <- function(id) {
           "% times dose was selected as MTD",
           "Accuracy",
           "Duration",
-          "Number of DLTs"),
+          "% patients with a DLT"),
         multiple = TRUE,
         list(plugins = list('remove_button'))),
 
@@ -378,7 +378,7 @@ validation_state <- reactiveValues(
   selected_mtd <- {"% times dose was selected as MTD" %in% input$metric_selection_input},
   selected_participant <- {"% participants treated at dose" %in% input$metric_selection_input},
   selected_accuracy <- {"Accuracy" %in% input$metric_selection_input},
-  selected_overdose <- {"Number of DLTs" %in% input$metric_selection_input},
+  selected_overdose <- {"% patients with a DLT" %in% input$metric_selection_input},
   selected_duration <- {"Duration" %in% input$metric_selection_input})
  
   if (n_scen == 0) {tables_ui <- NULL} else { for (j in 1:n_scen) {
@@ -389,7 +389,7 @@ validation_state <- reactiveValues(
        tpt_modified_tab <- tpt_sim[-c(4,6)]
 
       tpt_modified_tab$mean_accuracy <- as.data.frame(tpt_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
-      tpt_modified_tab$mean_overdose <- as.data.frame(tpt_modified_tab$mean_overdose, row.names = "Mean Number of DLTs")
+      tpt_modified_tab$mean_overdose <- as.data.frame(tpt_modified_tab$mean_overdose, row.names = "Mean % Patients with a DLT")
       tpt_modified_tab$mean_length <- as.data.frame(tpt_modified_tab$mean_length, row.names = "Mean Trial Length")
       colnames(tpt_modified_tab$mean_accuracy) <- ""
       colnames(tpt_modified_tab$mean_length)<- ""
@@ -418,7 +418,7 @@ validation_state <- reactiveValues(
   
 
       crm_modified_tab$mean_accuracy <- as.data.frame(crm_modified_tab$mean_accuracy, row.names = "Mean Accuracy", col.names = FALSE)
-      crm_modified_tab$mean_overdose <- as.data.frame(crm_modified_tab$mean_overdose, row.names = "Mean Number of DLTs", col.names = FALSE)
+      crm_modified_tab$mean_overdose <- as.data.frame(crm_modified_tab$mean_overdose, row.names = "Mean % Patients with a DLT", col.names = FALSE)
       crm_modified_tab$mean_length <- as.data.frame(crm_modified_tab$mean_length, row.names = "Mean Trial Length", col.names = FALSE)
       colnames(crm_modified_tab$mean_accuracy) <- ""
       colnames(crm_modified_tab$mean_length)<- ""
@@ -446,7 +446,7 @@ validation_state <- reactiveValues(
        boin_modified_tab <- boin_sim[-c(4,6)]
 
       boin_modified_tab$mean_accuracy <- as.data.frame(boin_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
-      boin_modified_tab$mean_overdose <- as.data.frame(boin_modified_tab$mean_overdose, row.names = "Mean Number of DLTs")
+      boin_modified_tab$mean_overdose <- as.data.frame(boin_modified_tab$mean_overdose, row.names = "Mean % Patients with a DLT")
       boin_modified_tab$mean_length <- as.data.frame(boin_modified_tab$mean_length, row.names = "Mean Trial Length")
       colnames(boin_modified_tab$mean_accuracy) <- ""
       colnames(boin_modified_tab$mean_length)<- ""
@@ -479,7 +479,7 @@ validation_state <- reactiveValues(
   crm_title <- as.character(rep("CRM Simulation for ", 5))
   boin_title <- as.character(rep("BOIN Simulation for ", 5))
   scenario_number <- as.character(rep(updated_scenarios[[j]], 5))
-  metric_names <- as.character(c(" - % Times Dose Was Selected as MTD", "- % Treated at Each Dose",  " - Mean Accuracy", " - Mean Number of DLTs", " - Mean Trial Length"))
+  metric_names <- as.character(c(" - % Times Dose Was Selected as MTD", "- % Treated at Each Dose",  " - Mean Accuracy", " - Mean % Patients with a DLT", " - Mean Trial Length"))
 
   sim_list <- vector("list", 4) # initialising for use later
 
@@ -631,7 +631,7 @@ validation_state <- reactiveValues(
       } else if (!is.null(met$treatment)) {
       graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_bar_ind(met, Dose_Level, treatment, title = paste("% Treated at Dose for", updated_model[[i]], updated_scenarios[[j]]), y_title = "% Treated at Dose", col = "blue") # Using blue for MTD
       } else if (!is.null(met$overdose)) {
-      graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_dist_ind(met, overdose, mo, title = paste("Distribution of the Number of DLTs for", updated_model[[i]], updated_scenarios[[j]]), x_title = "Number of DLTs", col = "blue") # Using blue for median
+      graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_dist_ind(met, overdose, mo, title = paste("Distribution of % Patients with a DLT for", updated_model[[i]], updated_scenarios[[j]]), x_title = "% Patients with a DLT", col = "blue") # Using blue for median
       } else if (!is.null(met$length)) {
       graphs[[4*n_models*(j-1) + 4*(i-1) + k]] <- plot_dist_ind(met, length, ml, title = paste("Distribution of Trial Duration for", updated_model[[i]], updated_scenarios[[j]]), x_title = "Trial Duration", col = "blue") # Using blue for median
       } else {
@@ -673,7 +673,7 @@ validation_state <- reactiveValues(
       } else if (!is.null(met[[1]]$treatment) | !is.null(met[[2]]$treatment) | !is.null(met[[3]]$treatment)) {
       graphs[[4*(j-1) + k]] <- plot_bar(met, Dose_Level, treatment, title = paste("% Treated at Dose for", updated_scenarios[[j]]), y_title = "% Treated at Dose", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for MTD
       } else if (!is.null(met[[1]]$overdose) | !is.null(met[[2]]$overdose) | !is.null(met[[3]]$overdose)) {
-      graphs[[4*(j-1) + k]] <- plot_dist(met, overdose, mo, title = paste("Distribution of the Number of DLTs for", updated_scenarios[[j]]), x_title = "Number of DLTs", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
+      graphs[[4*(j-1) + k]] <- plot_dist(met, overdose, mo, title = paste("Distribution of % Patients with a DLT for", updated_scenarios[[j]]), x_title = "% Patients with a DLT", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
       } else if (!is.null(met[[1]]$length) | !is.null(met[[2]]$length) | !is.null(met[[3]]$length)) {
       graphs[[4*(j-1) + k]] <- plot_dist(met, length, ml, title = paste("Distribution of Trial Duration for", updated_scenarios[[j]]), x_title = "Trial Duration", col = "blue", model_picked = 1, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
       } else {
@@ -753,7 +753,7 @@ validation_state <- reactiveValues(
       } else if (!is.null(met[[1]]$treatment) | !is.null(met[[2]]$treatment) | !is.null(met[[3]]$treatment)) {
       graphs[[4*(j-1) + k]] <- plot_bar(met, Dose_Level, treatment, title = paste("% Treated at Dose for", updated_model[j]), y_title = "% Treated at Dose", col = "blue", model_picked = FALSE, models = selected_models, scenarios = selected_scenarios) # Using blue for MTD
       } else if (!is.null(met[[1]]$overdose) | !is.null(met[[2]]$overdose) | !is.null(met[[3]]$overdose)) {
-      graphs[[4*(j-1) + k]] <- plot_dist(met, overdose, mo, title = paste("Distribution of the Number of DLTs for", updated_model[j]), x_title = "Number of DLTs", col = "blue", model_picked = FALSE, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
+      graphs[[4*(j-1) + k]] <- plot_dist(met, overdose, mo, title = paste("Distribution of % Patients with a DLT for", updated_model[j]), x_title = "% Patients with a DLT", col = "blue", model_picked = FALSE, models = selected_models, scenarios = selected_scenarios) # Using blue for mean
       } else if (!is.null(met[[1]]$length) | !is.null(met[[2]]$length) | !is.null(met[[3]]$length)) {
       graphs[[4*(j-1) + k]] <- plot_dist(met, length, ml, title = paste("Distribution of Trial Duration for", updated_model[j]), x_title = "Trial Duration", col = "blue", model_picked = FALSE, models = selected_models,  scenarios = selected_scenarios) # Using blue for mean
       } else {
@@ -886,7 +886,7 @@ validation_state <- reactiveValues(
    mean_data <- mean_data %>%
    mutate(
     Scenario = str_extract(Label, scenario_for_pattern),
-    Mean = str_extract(Label, "Mean Accuracy|Mean Trial Length|Mean Number of DLTs")
+    Mean = str_extract(Label, "Mean Accuracy|Mean Trial Length|Mean % Patients with a DLT")
   )
 
   mean_reshaped <- mean_data %>%
@@ -983,7 +983,7 @@ validation_state <- reactiveValues(
    mean_data <- mean_data %>%
   mutate(
     Design = str_extract(Label, "3\\+3|CRM|BOIN"),
-    Mean = str_extract(Label, "Mean Accuracy|Mean Trial Length|Mean Number of DLTs")
+    Mean = str_extract(Label, "Mean Accuracy|Mean Trial Length|Mean % Patients with a DLT")
   )
 
   mean_reshaped <- mean_data %>%

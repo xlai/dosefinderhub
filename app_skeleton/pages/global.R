@@ -104,9 +104,15 @@ find_best_dose_level <- function(true_dlt_ss, ttl) {
   match(max(true_dlt_ss[true_dlt_ss <= ttl]), true_dlt_ss)
 }
 
-# Proportion of trials that recommend the right dose, counting "no dose" as right when every dose is above the target.
-find_accuracy <- function(recommended, best_dose_level) {
-  if (is.na(best_dose_level)) mean(is.na(recommended)) else mean(recommended %in% best_dose_level)
+# Proportion of trials that recommend the right dose, taken from escalation's prob_recommend().
+# "No dose" is the right answer when every dose is above the target.
+find_accuracy <- function(sims, best_dose_level) {
+  prob_recommend(sims)[[if (is.na(best_dose_level)) "NoDose" else as.character(best_dose_level)]]
+}
+
+# Percentage of patients in each simulated trial who had a DLT.
+find_pct_dlt <- function(sims) {
+  100 * num_tox(sims) / num_patients(sims)
 }
 
 ########################### 3+3 Simulation Function ###########################
@@ -182,12 +188,11 @@ rownames(treatment_tab$tpt) <- c("% of Patients Treated at Dose", "True Toxicity
 
 # i) accuracy
 
-dist_accuracy$tpt <- recommended_dose(sims$tpt)
-mean_accuracy$tpt <- find_accuracy(dist_accuracy$tpt, best_dose_level)
+mean_accuracy$tpt <- find_accuracy(sims$tpt, best_dose_level)
 
-# ii) number of DLTs per trial (previously labelled "overdose")
+# ii) % of patients with a DLT in each trial (previously labelled "overdose")
 
-dist_overdose$tpt <- num_tox(sims$tpt)
+dist_overdose$tpt <- find_pct_dlt(sims$tpt)
 mean_overdose$tpt <- mean(dist_overdose$tpt)
 
 # iii) trial length
@@ -289,12 +294,11 @@ rownames(treatment_tab$crm) <- c("% of Patients Treated at Dose", "True Toxicity
 
 # i) accuracy - needs to be revisited
 
-dist_accuracy$crm <- recommended_dose(sims$crm)
-mean_accuracy$crm <- find_accuracy(dist_accuracy$crm, best_dose_level)
+mean_accuracy$crm <- find_accuracy(sims$crm, best_dose_level)
 
-# ii) number of DLTs per trial (previously labelled "overdose")
+# ii) % of patients with a DLT in each trial (previously labelled "overdose")
 
-dist_overdose$crm <- num_tox(sims$crm)
+dist_overdose$crm <- find_pct_dlt(sims$crm)
 mean_overdose$crm <- mean(dist_overdose$crm)
 
 # iii) trial length
@@ -372,12 +376,11 @@ rownames(treatment_tab) <- c("% of Patients Treated at Dose", "True Toxicity Pro
 
 # i) accuracy - needs to be revisited
 
-dist_accuracy <- recommended_dose(sims)
-mean_accuracy <- find_accuracy(dist_accuracy, best_dose_level)
+mean_accuracy <- find_accuracy(sims, best_dose_level)
 
-# ii) number of DLTs per trial (previously labelled "overdose")
+# ii) % of patients with a DLT in each trial (previously labelled "overdose")
 
-dist_overdose <- num_tox(sims)
+dist_overdose <- find_pct_dlt(sims)
 mean_overdose <- mean(dist_overdose)
 
 # iii) trial length
