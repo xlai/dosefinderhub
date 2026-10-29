@@ -63,4 +63,4 @@ for (name in names(lock$Packages)) {
     lock$Packages[[name]]$Repository <- "CRAN"
   }
 }
-renv::lockfile_write(lock, "renv.lock")
+invisible(renv::lockfile_write(lock, "renv.lock"))
