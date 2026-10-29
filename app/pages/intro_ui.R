@@ -1,7 +1,6 @@
 #library(shiny)
 #library(shiny.semantic)
 
-library(rmarkdown)
 library(shiny)
 library(bslib)
 

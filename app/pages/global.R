@@ -1,13 +1,15 @@
 library(shiny)
 library(DT)
 library(ggplot2)
-library(here)
 library(magrittr)
 library(escalation)
 library(rlang)
 library(ggpattern)
 library(BOIN)
-library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(tibble)
 
 ##Function to change parameter strings in preparation for extracting UI specs
 parse_params <- function(params_str) {

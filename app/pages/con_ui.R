@@ -1,7 +1,6 @@
 library(shiny)
 library(bslib)
 library(DT)
-library(shinydashboard)
 library(shinyjs)
 
 # ---------------- UI MODULE ----------------
