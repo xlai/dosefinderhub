@@ -47,6 +47,17 @@ test_that("every tab loads without errors", {
   }
 })
 
+test_that("the View Conduct Tab button opens the Conduct tab", {
+  app <- AppDriver$new(test_path("..", ".."), name = "view-conduct",
+                       load_timeout = 60 * 1000, timeout = 20 * 1000)
+  on.exit(app$stop(), add = TRUE)
+
+  app$set_inputs(nav = "Simulation")
+  app$click("simulation-view_conduct")
+  app$wait_for_idle()
+  expect_equal(app$get_value(input = "nav"), "Conduct")
+})
+
 test_that("the default design runs one simulation for each design", {
   app <- AppDriver$new(test_path("..", ".."), name = "simulation",
                        load_timeout = 60 * 1000, timeout = 20 * 1000)
