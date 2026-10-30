@@ -1,12 +1,22 @@
 # Run the app's tests on every pull request to dev, and on dev itself.
 # Packages come from the test profile's lockfile (renv/profiles/test/renv.lock).
+# Changes that only touch documentation skip the tests. Anything else, the
+# app's own .Rmd pages included, runs them.
 name: Tests
 
 on:
   pull_request:
     branches: [dev]
+    paths-ignore:
+      - "**.md"
+      - "documentation/**"
+      - "LICENSE"
   push:
     branches: [dev]
+    paths-ignore:
+      - "**.md"
+      - "documentation/**"
+      - "LICENSE"
   workflow_dispatch:
 
 permissions:
