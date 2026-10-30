@@ -155,9 +155,11 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
     current_question <- reactiveVal(1)
     user_responses <- reactiveValues()
     questions_shown <- reactiveVal(c())  # Track which questions have been displayed
+    redraw <- reactiveVal(0)  # Bumped by Upload and Reset to draw the question again
     
     # Render question UI using conditional logic
     output$questions_ui <- renderUI({
+      redraw()
       current_q_num <- current_question()
       if (current_q_num <= nrow(questions)) {
         # Find question by q_number (your approach)
@@ -174,20 +176,26 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
           question_ns <- question
           question_ns$q_variable <- ns(question$q_variable)
           
-          # Create question input wrapped in bslib card
+          # Create question input wrapped in bslib card. A saved answer
+          # (from earlier, or from an uploaded file) is shown instead of the minimum.
           params <- parse_params(question$params)
+          saved <- isolate(user_responses[[question$q_variable]])
+          start_value <- if (question$q_type %in% c("numeric", "slider")) {
+            if (is.null(saved)) as.numeric(params[["min"]]) else as.numeric(saved)
+          }
           question_input <- switch(question$q_type,
             radioButtons = shiny::radioButtons(
               inputId = ns(question$q_variable),
               label = question$q_text,
               choices = strsplit(params[["choices"]], ",")[[1]],
+              selected = saved,
               width = "100%"
             ),
             numeric = shiny::numericInput(
               inputId = ns(question$q_variable),
               label = question$q_text,
               min = as.numeric(params[["min"]]),
-              value = as.numeric(params[["min"]]),
+              value = start_value,
               width = "100%"
             ),
             slider = shiny::sliderInput(
@@ -195,7 +203,7 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
               label = question$q_text,
               min = as.numeric(params[["min"]]),
               max = as.numeric(params[["max"]]),
-              value = as.numeric(params[["min"]]),
+              value = start_value,
               width = "100%"
             ),
             text = shiny::textInput(
@@ -280,23 +288,6 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
       }
     }
     
-    # Alternative helper to save ALL current responses (only for shown questions)
-    save_all_responses <- function() {
-      shown_q_numbers <- questions_shown()
-      
-      for (q_num in shown_q_numbers) {
-        question <- questions[questions$q_number == q_num, ]
-        if (nrow(question) > 0) {
-          original_var <- question$q_variable
-          
-          # Save response using non-namespaced input name
-          if (original_var %in% names(input) && !is.null(input[[original_var]])) {
-            user_responses[[original_var]] <- input[[original_var]]
-          }
-        }
-      }
-    }
-    
     # Previous button logic
     observeEvent(input$prev_button, {
       if (current_question() > 1) {
@@ -311,7 +302,10 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
     # Next button logic with conditional navigation
     observeEvent(input$next_button, {
       
-      # Save current response
+      # Save current response. The answer on screen is also saved here because
+      # the browser sends no change when a question is drawn again at the
+      # value it last sent.
+      save_current_response()
       if(!is.null(current_question())) {
       current_q_num <- current_question()
 
@@ -373,9 +367,6 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
 
     # Helper function to show recommendation modal using intelligent recommendation
     show_recommendation_modal <- function() {
-      # Save all responses before generating recommendation
-      save_all_responses()
-      
       # Use the new intelligent recommendation function
       recommendation_result <- generate_intelligent_recommendation(reactiveValuesToList(user_responses))
       
@@ -599,20 +590,13 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
       )
     })
     
-    # Continuously save responses as they change (only for shown questions)
-    observe({
-      current_q_num <- current_question()
-      if (current_q_num <= nrow(questions)) {
-        question <- questions[questions$q_number == current_q_num, ]
-        if (nrow(question) > 0) {
-          original_var <- question$q_variable
-          
-          # Save response using non-namespaced input name
-          if (original_var %in% names(input) && !is.null(input[[original_var]])) {
-            user_responses[[original_var]] <- input[[original_var]]
-          }
-        }
-      }
+    # Save each answer when the user changes it. Only a change counts: inputs of
+    # questions not on screen keep their last value, which can be older than an
+    # uploaded answer or a reset.
+    lapply(questions$q_variable, function(var) {
+      observeEvent(input[[var]], {
+        user_responses[[var]] <- input[[var]]
+      })
     })
     
     # Dynamic button states
@@ -661,21 +645,26 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
           readRDS(input$file_upload$datapath)
         }
         
-        # Load responses using existing approach but with namespace handling
+        # Store every answer that matches a question. The answers also go
+        # into question_responses, which is what reaches Trial Design.
+        all_question_responses <- question_responses$list
+        shown <- questions_shown()
         for (i in seq_len(nrow(uploaded_responses))) {
           original_input_id <- uploaded_responses$inputId[i]
-          namespaced_input_id <- ns(original_input_id)
+          question <- questions[questions$q_variable %in% original_input_id, ]
+          if (nrow(question) != 1) next
           value <- uploaded_responses$value[i]
+          if (question$q_type != "radioButtons") value <- as.numeric(value)
           
-          # Store in user_responses
           user_responses[[original_input_id]] <- value
-          
-          # Update UI inputs using existing approach
-          shiny::updateTextInput(session, original_input_id, value = value)
-          shiny::updateNumericInput(session, original_input_id, value = as.numeric(value))
-          shiny::updateSliderInput(session, original_input_id, value = as.numeric(value))
-          shiny::updateRadioButtons(session, original_input_id, selected = value)
+          all_question_responses[[question$q_number]] <- value
+          shown <- union(shown, question$q_number)
         }
+        question_responses$list <- all_question_responses
+        questions_shown(shown)
+        
+        # Draw the current question again, now with its uploaded answer
+        redraw(redraw() + 1)
         
         shiny::showNotification(
           "Responses loaded successfully!", 
@@ -700,8 +689,7 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
         paste0("responses-", Sys.Date(), ".csv")
       },
       content = function(file) {
-        # Save all responses from shown questions before downloading
-        save_all_responses()
+        save_current_response()
         
         # Only get variables from questions that were actually shown
         shown_q_numbers <- questions_shown()
@@ -733,7 +721,7 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
         # Show notification
         showNotification(
           paste("Saved", nrow(df_filtered), "responses from", length(shown_q_numbers), "questions shown!"), 
-          type = "success"
+          type = "message"
         )
       }
     )
@@ -747,8 +735,13 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
       for (var in questions$q_variable) {
         user_responses[[var]] <- NULL
       }
+      question_responses$list <- vector("list", length = nrow(questions))
+      questions_shown(c())
       
-      showNotification("Responses have been reset.", type = "info")
+      # Draw the first question again, now without an answer
+      redraw(redraw() + 1)
+      
+      showNotification("Responses have been reset.", type = "message")
     })
     
     # Return reactive values for use by parent modules
