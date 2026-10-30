@@ -113,6 +113,16 @@ mod_questionnaire_ui <- function(id) {
   )
 }
 
+# The questions that start at a default design value: question variable =
+# name in default_design (R/default_design.R).
+questionnaire_defaults <- c(
+  n_doses = "n_doses",
+  ttl = "ttl",
+  max_n = "max_size",
+  start_dose = "start_dose",
+  cohort_size = "cohort_size"
+)
+
 #' Questionnaire Server Function
 #'
 #' @description Server logic for questionnaire module
@@ -177,11 +187,15 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
           question_ns$q_variable <- ns(question$q_variable)
           
           # Create question input wrapped in bslib card. A saved answer
-          # (from earlier, or from an uploaded file) is shown instead of the minimum.
+          # (from earlier, or from an uploaded file) is shown first, then the
+          # default design's value, then the minimum.
           params <- parse_params(question$params)
           saved <- isolate(user_responses[[question$q_variable]])
+          default_value <- default_design[[questionnaire_defaults[question$q_variable]]]
           start_value <- if (question$q_type %in% c("numeric", "slider")) {
-            if (is.null(saved)) as.numeric(params[["min"]]) else as.numeric(saved)
+            if (!is.null(saved)) as.numeric(saved)
+            else if (!is.null(default_value)) default_value
+            else as.numeric(params[["min"]])
           }
           question_input <- switch(question$q_type,
             radioButtons = shiny::radioButtons(
