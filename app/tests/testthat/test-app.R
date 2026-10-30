@@ -462,3 +462,31 @@ test_that("Conduct uses the same designs as Simulation", {
   }
   expect_equal(count_errors(app), 0)
 })
+
+test_that("Remove Cohort keeps the first cohort, whatever the cohort size", {
+  app <- AppDriver$new(test_path("..", ".."), name = "conduct-remove-cohort",
+                       load_timeout = 60 * 1000, timeout = 20 * 1000)
+  on.exit(app$stop(), add = TRUE)
+
+  patients <- function() app$get_value(output = "conduct-patient_count")
+  click <- function(id) {
+    app$click(paste0("conduct-", id))
+    app$wait_for_idle()
+  }
+
+  # With cohorts of 4, the old check (3 patients or fewer) removed the first cohort.
+  app$set_inputs(nav = "Trial Design")
+  app$set_inputs(`trial_design-cohort_inputt` = 4)
+  app$wait_for_idle()
+  app$set_inputs(nav = "Conduct")
+  app$set_inputs(`conduct-choice` = "CRM")
+  click("update_design")
+  expect_equal(patients(), "4")
+  click("remove_cohort")
+  expect_equal(patients(), "4")
+  click("add_cohort")
+  expect_equal(patients(), "8")
+  click("remove_cohort")
+  expect_equal(patients(), "4")
+  expect_equal(count_errors(app), 0)
+})
