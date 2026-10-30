@@ -49,7 +49,7 @@ generate_intelligent_recommendation <- function(user_responses) {
   # --- Performance Metrics ---
  if (!is.null(user_responses$ttl)) {
   ttl <- as.numeric(user_responses$ttl)
-  if (ttl > 0.15 && ttl < 0.34) {
+  if (ttl >= 0.15 && ttl <= 0.34) {
     domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] + c(CRM = 2, BOIN = 2, "3+3" = 1)
   } else if (ttl < 0.15) {
     domain_scores[["Performance Metrics"]] <- domain_scores[["Performance Metrics"]] + c(CRM = 1, BOIN = 2, "3+3" = 0)
@@ -107,7 +107,7 @@ generate_intelligent_recommendation <- function(user_responses) {
     cohort_size <- as.numeric(user_responses$cohort_size)
     if (cohort_size == 3) {
       domain_scores[["Study Population"]] <- domain_scores[["Study Population"]] + c(CRM = 1, BOIN = 1, "3+3" = 1)
-    } else if (cohort_size > 3 && cohort_size < 3) {
+    } else if (cohort_size != 3) {
       domain_scores[["Study Population"]] <- domain_scores[["Study Population"]] + c(CRM = 2, BOIN = 2, "3+3" = 0)
     }
   }
@@ -138,7 +138,7 @@ generate_intelligent_recommendation <- function(user_responses) {
 
   # Suitability logic
   suitability_model <- if (!is.null(user_responses$statistical_support) &&
-                           user_responses$statistical_support == "Limited statistical support" && "No statistician" %in% ranked_methods) {
+                           user_responses$statistical_support == "No statistician") {
     "3+3"
   } else {
     ranked_methods[1]
@@ -260,7 +260,7 @@ generate_rationale <- function(user_responses, top_method, scores) {
       if (top_method == "3+3") {
         reasons <- c(reasons, "the cohort size of 3 is optimal for the 3+3 design")
       } else {
-        reasons <- c(reasons, "While a cohort size of 3 is standard for 3+3, other designs like CRM and BOIN can still be used")
+        reasons <- c(reasons, "while a cohort size of 3 is standard for 3+3, other designs like CRM and BOIN can still be used")
       }
     } else {
       if (top_method == "CRM") {
@@ -299,8 +299,8 @@ if (!is.null(user_responses$statistical_support)) {
     }
   }
 
-  # Simple flag message condition
-  if (stat_support %in% c("Limited statistical support", "No statistician")) {
+  # Simple flag message condition (only when the answer did tip it to 3+3)
+  if (stat_support %in% c("Limited statistical support", "No statistician") && top_method == "3+3") {
     flag_message <- "⚠️ Your answer to the question about statistical support heavily influenced the outcome of this recommendation, in favour of 3+3. Consider consulting a statistician to gain the benefits of the other trial designs."
   }
 }
@@ -315,7 +315,9 @@ if (!is.null(flag_message)) {
   # --- Combine Reasoning ---
   if (length(reasons) > 0) {
     reason_text <- paste(reasons[!is.null(reasons)], collapse = ", and ")
-    rationale_parts <- c(rationale_parts, reason_text)
+    rationale_parts <- paste(method_intro, reason_text)
+  } else {
+    rationale_parts <- sub(" because$", "", method_intro)
   }
 
   # --- Method Description ---
@@ -328,7 +330,8 @@ if (!is.null(flag_message)) {
   # --- Caveat if Scores Are Close ---
   max_score <- max(scores)
   second_score <- sort(scores, decreasing = TRUE)[2]
-  caveat <- if (max_score - second_score <= 5) {
+  # Below 5, the same gap at which the confidence is no longer "High"
+  caveat <- if (max_score - second_score < 5) {
     sprintf("\n\nNote: The scores are quite close (difference of %.2f), so %s could also be a reasonable choice depending on your specific context",
             max_score - second_score, names(sort(scores, decreasing = TRUE))[2])
   } else {
@@ -336,6 +339,10 @@ if (!is.null(flag_message)) {
   }
 
   # --- Final Output ---
-  full_rationale <- paste(c(rationale_parts, method_desc, flag_message, caveat), collapse = ". ")
+  # Each part is one sentence; drop empty parts and their own full stops so
+  # every sentence ends with exactly one.
+  parts <- c(rationale_parts, method_desc, flag_message, caveat)
+  parts <- sub("\\.$", "", parts[nzchar(parts)])
+  full_rationale <- paste0(paste(parts, collapse = ". "), ".")
   return(full_rationale)
 }
