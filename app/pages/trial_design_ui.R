@@ -423,17 +423,26 @@ observeEvent(move_data(), {
   shared$phi_1 <- default_design$boin$phi_1
   shared$phi_2 <- default_design$boin$phi_2
 
-  # Updates an input only when its value really changes, so the inputs that
-  # follow each other do not keep updating one another.
+  # The server keeps these inputs in step by updating them, and each update
+  # comes back from the browser as an input change. The values the server
+  # sent are remembered, so that echo is ignored instead of starting another
+  # round of updates.
+  sent_to_input <- new.env()
   update_if_changed <- function(id, value) {
-    if (is.na(value) || !isTRUE(all.equal(as.numeric(input[[id]]), value, tolerance = 1e-6))) {
+    if (!is.na(value) && !isTRUE(all.equal(as.numeric(input[[id]]), value, tolerance = 1e-6))) {
+      sent_to_input[[id]] <- value
       updateNumericInput(session, id, value = value)
     }
+  }
+  is_echo <- function(id) {
+    sent <- sent_to_input[[id]]
+    !is.null(sent) && isTRUE(all.equal(as.numeric(input[[id]]), sent, tolerance = 1e-9))
   }
 
   boin_ttl <- function() as.numeric(input$ttl_inputt)
 
-  set_boin_phis <- function(phi_1 = shared$phi_1, phi_2 = shared$phi_2) {
+  # typed_lambda names a boundary the user just typed, which is left as typed.
+  set_boin_phis <- function(phi_1 = shared$phi_1, phi_2 = shared$phi_2, typed_lambda = NULL) {
     ttl <- boin_ttl()
     if (is.na(ttl) || is.na(phi_1) || is.na(phi_2)) return()
     shared$phi_1 <- phi_1
@@ -444,8 +453,8 @@ observeEvent(move_data(), {
     update_if_changed("direct_phi_2", phi_2)
     if (is.null(validate_boin_phis(ttl, phi_1, phi_2))) {
       lambda <- boin_lambdas(ttl, phi_1, phi_2)
-      update_if_changed("direct_lambda_e", lambda$lambda_e)
-      update_if_changed("direct_lambda_d", lambda$lambda_d)
+      if (!identical(typed_lambda, "e")) update_if_changed("direct_lambda_e", lambda$lambda_e)
+      if (!identical(typed_lambda, "d")) update_if_changed("direct_lambda_d", lambda$lambda_d)
     }
   }
 
@@ -454,35 +463,42 @@ observeEvent(move_data(), {
                   phi_2 = as.numeric(input$ttl_multiple_phi_2) * boin_ttl())
   }, ignoreInit = TRUE)
   observeEvent(input$ttl_multiple_phi_1, {
+    if (is_echo("ttl_multiple_phi_1")) return()
     set_boin_phis(phi_1 = as.numeric(input$ttl_multiple_phi_1) * boin_ttl())
   })
   observeEvent(input$ttl_multiple_phi_2, {
+    if (is_echo("ttl_multiple_phi_2")) return()
     set_boin_phis(phi_2 = as.numeric(input$ttl_multiple_phi_2) * boin_ttl())
   })
   observeEvent(input$direct_phi_1, {
+    if (is_echo("direct_phi_1")) return()
     set_boin_phis(phi_1 = as.numeric(input$direct_phi_1))
   })
   observeEvent(input$direct_phi_2, {
+    if (is_echo("direct_phi_2")) return()
     set_boin_phis(phi_2 = as.numeric(input$direct_phi_2))
   })
-  # A boundary is turned back into a probability only when it differs from
-  # the one implied by the current probabilities.
+  # A boundary is turned back into a probability only when the user changes it
+  # and it differs from the one implied by the current probabilities. At
+  # startup the probabilities set the boundaries, not the other way round.
   observeEvent(input$direct_lambda_e, {
+    if (is_echo("direct_lambda_e")) return()
     lambda_e <- as.numeric(input$direct_lambda_e)
     current <- boin_lambdas(boin_ttl(), shared$phi_1, shared$phi_2)$lambda_e
     if (!is.na(lambda_e) && !isTRUE(all.equal(lambda_e, current, tolerance = 1e-4))) {
       phi_1 <- tryCatch(boin_probs(boin_ttl(), lambda_e, 1), error = function(e) NA)
-      set_boin_phis(phi_1 = phi_1)
+      set_boin_phis(phi_1 = phi_1, typed_lambda = "e")
     }
-  })
+  }, ignoreInit = TRUE)
   observeEvent(input$direct_lambda_d, {
+    if (is_echo("direct_lambda_d")) return()
     lambda_d <- as.numeric(input$direct_lambda_d)
     current <- boin_lambdas(boin_ttl(), shared$phi_1, shared$phi_2)$lambda_d
     if (!is.na(lambda_d) && !isTRUE(all.equal(lambda_d, current, tolerance = 1e-4))) {
       phi_2 <- tryCatch(boin_probs(boin_ttl(), lambda_d, 2), error = function(e) NA)
-      set_boin_phis(phi_2 = phi_2)
+      set_boin_phis(phi_2 = phi_2, typed_lambda = "d")
     }
-  })
+  }, ignoreInit = TRUE)
 
   # Shown in the BOIN card; a run that includes BOIN is blocked in Simulation.
   output$boin_phi_warning <- renderText({
