@@ -110,18 +110,13 @@ validate_boin_phis <- function(target, p.saf, p.tox) {
   return(NULL) # No error
 }
 
-# BOIN escalation and de-escalation boundaries from BOIN::get.boundary().
-# lambda_e and lambda_d depend only on the target, p.saf and p.tox, so fixed
-# cohort values are passed; this keeps the boundaries available while the
-# cohort inputs are being edited.
+# BOIN escalation and de-escalation boundaries (Liu and Yuan, 2015), the same
+# formulas as in BOIN::get.boundary(); a test checks them against it.
 boin_lambdas <- function(target, p.saf, p.tox) {
-  if (is.na(target) || is.na(p.saf) || is.na(p.tox) ||
-      !is.null(validate_boin_phis(target, p.saf, p.tox))) {
-    return(list(lambda_e = NA_real_, lambda_d = NA_real_)) # get.boundary() would stop
-  }
-  boundary <- BOIN::get.boundary(target = target, ncohort = 10, cohortsize = 3,
-                                 p.saf = p.saf, p.tox = p.tox)
-  list(lambda_e = boundary$lambda_e, lambda_d = boundary$lambda_d)
+  list(
+    lambda_e = log((1 - p.saf) / (1 - target)) / log(target * (1 - p.saf) / (p.saf * (1 - target))),
+    lambda_d = log((1 - target) / (1 - p.tox)) / log(p.tox * (1 - target) / (target * (1 - p.tox)))
+  )
 }
 
 boin_boundaries <- function(target, ncohort, cohortsize, n.earlystop, p.saf, p.tox) { # Generating boundaries
