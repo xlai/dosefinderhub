@@ -62,7 +62,10 @@ test_that("an edited skeleton is checked, and CRM runs after a valid edit", {
     app$set_inputs(`trial_design-skeleton_df_cell_edit` = list(row = 2, col = 1, value = value),
                    allow_no_input_binding_ = TRUE)
   }
+  # The skeleton and its warning are only drawn once the CRM parameters are
+  # displayed, as when a user edits them.
   app$set_inputs(nav = "Trial Design")
+  app$set_inputs(display_crm = TRUE)
   edit_dose_2("0.5")
   expect_match(app$get_value(output = "trial_design-skeleton_warning"), "increase")
   edit_dose_2("0.15")
