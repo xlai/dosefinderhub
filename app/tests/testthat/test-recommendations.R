@@ -56,3 +56,66 @@ test_that("missing answers still give a full ranking", {
   expect_setequal(result$ranked_methods, c("CRM", "BOIN", "3+3"))
   expect_true(nzchar(result$rationale))
 })
+
+# Every answer the questionnaire offers for the scored questions.
+all_answers <- function() {
+  choices <- function(var) {
+    params <- parse_params(questions$params[questions$q_variable == var])
+    strsplit(params[["choices"]], ",")[[1]]
+  }
+  questions <- read.csv(test_path("..", "..", "Inputs", "questions.csv"))
+  expand.grid(
+    ttl = seq(0, 0.8, by = 0.05),
+    cohort_size = 1:6,
+    toxicity_confidence = choices("toxicity_confidence"),
+    time_resources = choices("time_resources"),
+    statistical_support = choices("statistical_support"),
+    decision_transparency = choices("decision_transparency"),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("no statistician always recommends 3+3", {
+  answers <- all_answers()
+  answers <- answers[answers$statistical_support == "No statistician", ]
+  results <- lapply(seq_len(nrow(answers)), function(i) do.call(recommend, as.list(answers[i, ])))
+  expect_equal(unique(vapply(results, `[[`, "", "suitability_model")), "3+3")
+  expect_equal(unique(vapply(results, function(r) r$ranked_methods[1], "")), "3+3")
+})
+
+test_that("every cohort size scores, and sizes other than 3 favour CRM and BOIN", {
+  # Study Population weight is 4.
+  expect_equal(recommend(cohort_size = 3)$scores, c(CRM = 4, BOIN = 4, "3+3" = 4))
+  for (size in c(1, 2, 4, 5, 6)) {
+    expect_equal(recommend(cohort_size = size)$scores, c(CRM = 8, BOIN = 8, "3+3" = 0),
+                 label = paste("cohort size", size))
+  }
+})
+
+test_that("every target the question allows scores, including the band edges", {
+  # Performance Metrics weight is 6.
+  middle <- c(CRM = 12, BOIN = 12, "3+3" = 6)
+  expect_equal(recommend(ttl = 0.1)$scores, c(CRM = 6, BOIN = 12, "3+3" = 0))
+  expect_equal(recommend(ttl = 0.15)$scores, middle)
+  expect_equal(recommend(ttl = 0.34)$scores, middle)
+  expect_equal(recommend(ttl = 0.35)$scores, c(CRM = 12, BOIN = 6, "3+3" = 0))
+  for (ttl in seq(0, 0.8, by = 0.05)) {
+    expect_gt(sum(recommend(ttl = ttl)$scores), 0, label = paste("target", ttl))
+  }
+})
+
+test_that("the confidence, the close-scores note and the 3+3 warning agree with the scores", {
+  answers <- all_answers()
+  results <- lapply(seq_len(nrow(answers)), function(i) do.call(recommend, as.list(answers[i, ])))
+  confidence <- vapply(results, `[[`, "", "confidence")
+  rationale <- vapply(results, `[[`, "", "rationale")
+  top <- vapply(results, function(r) r$ranked_methods[1], "")
+
+  # The note says the scores are close exactly when the confidence is not High.
+  expect_equal(grepl("scores are quite close", rationale), confidence != "High")
+  # The warning says the answer favoured 3+3 only when 3+3 comes first.
+  expect_false(any(grepl("in favour of 3\\+3", rationale) & top != "3+3"))
+  # Every sentence ends with one full stop.
+  expect_false(any(grepl("because\\.|\\.\\.", rationale)))
+  expect_true(all(endsWith(rationale, ".")))
+})
