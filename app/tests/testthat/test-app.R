@@ -50,16 +50,23 @@ test_that("the default design runs one simulation for each design", {
   expect_equal(count_errors(app), 0)
 })
 
-test_that("CRM runs after a skeleton value is edited", {
+test_that("an edited skeleton is checked, and CRM runs after a valid edit", {
   app <- AppDriver$new(test_path("..", ".."), name = "skeleton-edit",
                        load_timeout = 60 * 1000, timeout = 20 * 1000)
   on.exit(app$stop(), add = TRUE)
 
-  # Edit dose 2 of the skeleton to a valid value, as DT sends a cell edit
-  # (0-based column; column 0 is the dose name, column 1 the prior).
+  # Edit dose 2 of the skeleton as DT sends a cell edit (0-based column;
+  # column 0 is the dose name, column 1 the prior). The default skeleton is
+  # 0.057, 0.136, 0.250, 0.382, 0.512, so 0.5 at dose 2 is not increasing.
+  edit_dose_2 <- function(value) {
+    app$set_inputs(`trial_design-skeleton_df_cell_edit` = list(row = 2, col = 1, value = value),
+                   allow_no_input_binding_ = TRUE)
+  }
   app$set_inputs(nav = "Trial Design")
-  app$set_inputs(`trial_design-skeleton_df_cell_edit` = list(row = 2, col = 1, value = "0.15"),
-                 allow_no_input_binding_ = TRUE)
+  edit_dose_2("0.5")
+  expect_match(app$get_value(output = "trial_design-skeleton_warning"), "increase")
+  edit_dose_2("0.15")
+  expect_equal(app$get_value(output = "trial_design-skeleton_warning"), "")
 
   app$set_inputs(nav = "Simulation")
   app$set_inputs(`simulation-simulation_design_selection_input` = "CRM")

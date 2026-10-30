@@ -55,6 +55,27 @@ validate_numeric_input <- function(value, min_val = NULL, max_val = NULL, intege
   return(NULL) # No error
 }
 
+# Checks the CRM skeleton: one prior DLT rate per dose, each between 0 and 1,
+# strictly increasing with dose. Returns NULL if it is valid.
+validate_skeleton <- function(skeleton, n_doses) {
+  if (is.null(skeleton) || is.null(n_doses) || is.na(n_doses)) {
+    return(NULL) # Nothing to check yet
+  }
+  if (!is.numeric(skeleton) || any(is.na(skeleton))) {
+    return("Every prior DLT rate must be a number")
+  }
+  if (length(skeleton) != n_doses) {
+    return(paste0("The skeleton needs one prior DLT rate per dose level (", n_doses, ")"))
+  }
+  if (any(skeleton <= 0 | skeleton >= 1)) {
+    return("Every prior DLT rate must be between 0 and 1")
+  }
+  if (any(diff(skeleton) <= 0)) {
+    return("The prior DLT rates must increase with each dose level")
+  }
+  return(NULL) # No error
+}
+
 # Reusable UI component for numeric input with validation using bslib
 
 ###################################### BOIN Boundaries ######################################

@@ -46,6 +46,7 @@ prior_var_input <- numericInput(ns("prior_var_input"), "What is the estimate of 
 stop_n_mtd_input <- numericInput(ns("stop_n_mtd_input"), "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = default_design$crm$stop_n_mtd)
 
 skeleton_table <- DT::DTOutput(ns("skeleton_df"))
+skeleton_warning_text <- textOutput(ns("skeleton_warning"))
 
 prior_mtd_input <- numericInput(ns("prior_mtd_input"), "What is your prior guess of the MTD?", min = 1, value = default_design$crm$prior_mtd)
 stop_tox_x_input <- numericInput(ns("stop_tox_x_input"), "When using the this Bayesian safety early criterion: p(true DLT rate at lowest dose > target DLT rate + x | data) > y, what would you like x to be? This is the excess toxicity above the target DLT.", min = 0, value = default_design$crm$stop_tox_x)
@@ -67,6 +68,7 @@ specific_ui_inputs_crm <- tagList(
   stop_n_mtd_warning_text,
    p("What are the prior estimates of the DLT rates at each dose? Please add them to the table below."),
   skeleton_table,
+  skeleton_warning_text,
   prior_mtd_input,
   prior_mtd_warning_text,
   stop_tox_x_input,
@@ -241,14 +243,16 @@ reactive_skeleton <- reactiveVal() # initalising a reactive value to store the d
    } })
   
   output$skeleton_df <- renderDT({
-    datatable(reactive_skeleton(), editable = TRUE, rownames = FALSE, options = list(searching = FALSE, paging = FALSE, info = FALSE, scrollX = TRUE)) #, scrollX = TRUE, scrollX="250px", paging = FALSE
+    datatable(reactive_skeleton(), editable = list(target = "cell", disable = list(columns = 0)), rownames = FALSE, options = list(searching = FALSE, paging = FALSE, info = FALSE, scrollX = TRUE)) #, scrollX = TRUE, scrollX="250px", paging = FALSE
   })
 
   observeEvent(input$skeleton_df_cell_edit, {
     info <- input$skeleton_df_cell_edit
 
     modified_data <- reactive_skeleton()
-    modified_data[info$row, info$col + 1] <- DT::coerceValue(info$value, modified_data[info$row, info$col]) # +1 is here to counterract the movement of edited data.
+    # DT columns are 0-based; +1 gives the R column. Coerce against the edited
+    # column itself, so the priors stay numeric.
+    modified_data[info$row, info$col + 1] <- DT::coerceValue(info$value, modified_data[info$row, info$col + 1])
     reactive_skeleton(modified_data)
   })
 
@@ -475,6 +479,7 @@ observeEvent(move_data(), {
     prior_mtd_val = NULL,
     stop_tox_x_val = NULL,
     stop_tox_y_val = NULL,
+    skeleton_val = NULL,
 
     boin_cohorts_val = NULL,
     stop_n_mtd_boin_val = NULL,
@@ -687,6 +692,13 @@ observeEvent(move_data(), {
   observe({
     update_validation("direct_phi_2_val", input$direct_phi_2)
   })
+  # CRM skeleton: checked as a whole, not as one number
+  observe({
+    skeleton <- if (is.null(reactive_skeleton())) NULL else reactive_skeleton()$Prior
+    error_msg <- validate_skeleton(skeleton, input$n_doses_inputt)
+    validation_state$skeleton_val <- error_msg
+    validation_state$skeleton_val_warning <- if (is.null(error_msg)) "" else paste("⚠️", error_msg)
+  })
 
   # Render individual warning messages next to each input
   output$n_doses_warning <- renderText({
@@ -733,6 +745,10 @@ observeEvent(move_data(), {
 
   output$stop_tox_y_warning <- renderText({
     validation_state$stop_tox_y_val_warning %||% ""
+  })
+
+  output$skeleton_warning <- renderText({
+    validation_state$skeleton_val_warning %||% ""
   })
 
   # BOIN
@@ -842,22 +858,23 @@ observeEvent(move_data(), {
       crm_names_var <- grep("var_val", names(validation_errors))
       crm_names_mtd <- grep("mtd_val", names(validation_errors))
       crm_names_tox <- grep("stop_tox", names(validation_errors))
+      crm_names_skel <- grep("skeleton", names(validation_errors))
 
       boin_names <- grep("boin", names(validation_errors))
       boin_names_phi <- grep("phi", names(validation_errors))
 
       if (length(crm_names_var) == 0 && length(crm_names_mtd) == 0 && length(crm_names_tox) == 0
-          && length(boin_names) == 0 && length(boin_names_phi) == 0) {
+          && length(crm_names_skel) == 0 && length(boin_names) == 0 && length(boin_names_phi) == 0) {
           general_names <- names(validation_errors)
           } else {
-      general_names <- validation_errors[-c(crm_names_var, crm_names_mtd, crm_names_tox, boin_names, boin_names_phi)]
+      general_names <- validation_errors[-c(crm_names_var, crm_names_mtd, crm_names_tox, crm_names_skel, boin_names, boin_names_phi)]
           }
       if (length(general_names) > 0) {
         names[[1]] <- "General Parameters"
       } else {
         names[[1]] <- NULL
       }
-      if (length(crm_names_var) > 0 || length(crm_names_mtd) > 0 || length(crm_names_tox) > 0) {
+      if (length(crm_names_var) > 0 || length(crm_names_mtd) > 0 || length(crm_names_tox) > 0 || length(crm_names_skel) > 0) {
         names[[2]] <- "CRM Parameters"
       } else {
         names[[2]] <- NULL
