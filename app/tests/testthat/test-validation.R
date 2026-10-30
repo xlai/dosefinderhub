@@ -35,16 +35,21 @@ test_that("the BOIN check follows BOIN's own rules", {
   expect_null(validate_boin_phis(NA, 0.15, 0.35))
 })
 
-test_that("BOIN boundaries match BOIN::get.boundary() and convert back", {
+test_that("BOIN boundaries do not depend on the cohorts, and convert back", {
   for (target in c(0.25, 0.4)) {
     p_saf <- 0.6 * target
     p_tox <- 1.4 * target
     lambda <- boin_lambdas(target, p_saf, p_tox)
-    expected <- BOIN::get.boundary(target = target, ncohort = 10, cohortsize = 3,
+    expected <- BOIN::get.boundary(target = target, ncohort = 8, cohortsize = 4,
                                    p.saf = p_saf, p.tox = p_tox)
     expect_equal(lambda$lambda_e, expected$lambda_e, tolerance = 1e-10)
     expect_equal(lambda$lambda_d, expected$lambda_d, tolerance = 1e-10)
     expect_equal(boin_probs(target, lambda$lambda_e, 1), p_saf, tolerance = 1e-3)
     expect_equal(boin_probs(target, lambda$lambda_d, 2), p_tox, tolerance = 1e-3)
   }
+})
+
+test_that("BOIN boundaries are NA when p.saf or p.tox do not fit", {
+  expect_equal(boin_lambdas(0.4, 0.15, 0.35), list(lambda_e = NA_real_, lambda_d = NA_real_))
+  expect_equal(boin_lambdas(NA, 0.15, 0.35), list(lambda_e = NA_real_, lambda_d = NA_real_))
 })
