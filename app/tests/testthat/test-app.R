@@ -55,7 +55,7 @@ test_that("the default design runs one simulation for each design", {
   expect_equal(count_errors(app), 0)
 })
 
-test_that("the skeleton is rebuilt when the target or the prior MTD guess changes", {
+test_that("the skeleton is rebuilt when the target, the prior MTD guess or the halfwidth changes", {
   app <- AppDriver$new(test_path("..", ".."), name = "skeleton-rebuild",
                        load_timeout = 60 * 1000, timeout = 20 * 1000)
   on.exit(app$stop(), add = TRUE)
@@ -76,8 +76,8 @@ test_that("the skeleton is rebuilt when the target or the prior MTD guess change
     }
     shown
   }
-  expected <- function(ttl, prior_mtd) {
-    dfcrm::getprior(halfwidth = 0.25 * ttl, target = ttl, nu = prior_mtd,
+  expected <- function(ttl, prior_mtd, halfwidth = 0.25 * ttl) {
+    dfcrm::getprior(halfwidth = halfwidth, target = ttl, nu = prior_mtd,
                     nlevel = default_design$n_doses)
   }
   app$set_inputs(nav = "Trial Design")
@@ -85,13 +85,24 @@ test_that("the skeleton is rebuilt when the target or the prior MTD guess change
   want <- expected(default_design$ttl, default_design$crm$prior_mtd)
   expect_equal(skeleton(want), want, tolerance = 1e-6)
 
+  # A new target also resets the halfwidth to 0.25 x target.
   app$set_inputs(`trial_design-ttl_inputt` = 0.3)
   want <- expected(0.3, default_design$crm$prior_mtd)
   expect_equal(skeleton(want), want, tolerance = 1e-6)
+  expect_equal(app$get_value(input = "trial_design-halfwidth_input"), 0.075, tolerance = 1e-8)
 
   app$set_inputs(`trial_design-prior_mtd_input` = 2)
   want <- expected(0.3, 2)
   expect_equal(skeleton(want), want, tolerance = 1e-6)
+
+  app$set_inputs(`trial_design-halfwidth_input` = 0.05)
+  want <- expected(0.3, 2, halfwidth = 0.05)
+  expect_equal(skeleton(want), want, tolerance = 1e-6)
+  expect_equal(app$get_value(output = "trial_design-halfwidth_warning"), "")
+
+  # The halfwidth must be below the target (and below 1 - target).
+  app$set_inputs(`trial_design-halfwidth_input` = 0.35)
+  expect_match(app$get_value(output = "trial_design-halfwidth_warning"), "at most 0.3")
 })
 
 test_that("an edited skeleton is checked, and CRM runs after a valid edit", {
