@@ -226,8 +226,10 @@ trial_design_server <- function(id, shared, move_data, parent_session = NULL) {
 ##### Reactive Skeleton Input ######
 reactive_skeleton <- reactiveVal() # initalising a reactive value to store the data frame
 
- observeEvent({input$n_doses_inputt | input$prior_mtd_input}, {  
-    if (is.na(input$n_doses_inputt) | is.na(input$prior_mtd_input)) {  
+ # The skeleton is built from the target (with a halfwidth of 0.25 x target),
+ # the prior MTD guess and the number of doses, so a change to any of them rebuilds it.
+ observeEvent(list(input$n_doses_inputt, input$prior_mtd_input, input$ttl_inputt), {
+    if (is.na(input$n_doses_inputt) | is.na(input$prior_mtd_input) | is.na(input$ttl_inputt)) {
       reactive_skeleton(NULL)  
     } else if (input$prior_mtd_input > input$n_doses_inputt)  {  
       reactive_skeleton(NULL)  

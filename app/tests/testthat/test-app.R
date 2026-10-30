@@ -55,6 +55,32 @@ test_that("the default design runs one simulation for each design", {
   expect_equal(count_errors(app), 0)
 })
 
+test_that("the skeleton is rebuilt when the target or the prior MTD guess changes", {
+  app <- AppDriver$new(test_path("..", ".."), name = "skeleton-rebuild",
+                       load_timeout = 60 * 1000, timeout = 20 * 1000)
+  on.exit(app$stop(), add = TRUE)
+
+  # The priors as shown in the skeleton table.
+  skeleton <- function() {
+    as.numeric(unlist(app$get_js(
+      "Array.from(document.querySelectorAll('#trial_design-skeleton_df tbody td:nth-child(2)')).map(td => td.innerText)"
+    )))
+  }
+  expected <- function(ttl, prior_mtd) {
+    dfcrm::getprior(halfwidth = 0.25 * ttl, target = ttl, nu = prior_mtd,
+                    nlevel = default_design$n_doses)
+  }
+  app$set_inputs(nav = "Trial Design")
+  app$set_inputs(display_crm = TRUE, display_input_all = TRUE)
+  expect_equal(skeleton(), expected(default_design$ttl, default_design$crm$prior_mtd), tolerance = 1e-6)
+
+  app$set_inputs(`trial_design-ttl_inputt` = 0.3)
+  expect_equal(skeleton(), expected(0.3, default_design$crm$prior_mtd), tolerance = 1e-6)
+
+  app$set_inputs(`trial_design-prior_mtd_input` = 2)
+  expect_equal(skeleton(), expected(0.3, 2), tolerance = 1e-6)
+})
+
 test_that("an edited skeleton is checked, and CRM runs after a valid edit", {
   app <- AppDriver$new(test_path("..", ".."), name = "skeleton-edit",
                        load_timeout = 60 * 1000, timeout = 20 * 1000)
