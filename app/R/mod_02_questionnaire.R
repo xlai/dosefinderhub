@@ -557,22 +557,9 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
       )
     }
     
-    # Transfer questionnaire values to shared variables for Trial Design/Simulation
-    transfer_questionnaire_values <- function() {
-      # Only map essential questionnaire values - advanced parameters handled in trial design
-      shared$n_dosess <- shared$q_n_doses
-      shared$ttl <- shared$q_ttl  
-      shared$max_size <- shared$q_max_size
-      shared$start_dose <- shared$q_start_dose
-      shared$cohort_size <- shared$q_cohort
-    }
-    
     # Handler for "Go to Simulation" button
     observeEvent(input$go_to_simulation, {
-      # Transfer questionnaire values
-      transfer_questionnaire_values()
-      
-      # Trigger the transfer function in the Trial Design Module
+      # Trigger the transfer of the answers into the Trial Design inputs
       move_data(TRUE)
 
       # Navigate to Simulation tab
@@ -593,10 +580,7 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
     
     # Handler for "Advanced Settings" button  
     observeEvent(input$advanced_settings, {
-      # Transfer questionnaire values
-      transfer_questionnaire_values()
-
-      # Trigger the transfer function in the Trial Design Module
+      # Trigger the transfer of the answers into the Trial Design inputs
       move_data(TRUE)
 
       # Navigate to Trial Design tab
