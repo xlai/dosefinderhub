@@ -7,6 +7,11 @@ count_errors <- function(app) {
   app$get_js("document.querySelectorAll('.shiny-output-error').length")
 }
 
+# Waits until a picker drawn by the server is ready to be set.
+wait_for_picker <- function(app, id) {
+  app$wait_for_js(sprintf("!!(document.getElementById('%s') || {}).selectize", id))
+}
+
 test_that("every tab loads without errors", {
   app <- AppDriver$new(test_path("..", ".."), name = "tabs",
                        load_timeout = 60 * 1000, timeout = 20 * 1000)
@@ -73,7 +78,9 @@ test_that("an edited skeleton is checked, and CRM runs after a valid edit", {
 
   app$set_inputs(nav = "Simulation")
   app$set_inputs(`simulation-simulation_design_selection_input` = "CRM")
+  wait_for_picker(app, "simulation-scen_output_input")
   app$set_inputs(`simulation-scen_output_input` = "Scenario 1")
+  wait_for_picker(app, "simulation-metric_selection_input")
   app$set_inputs(`simulation-metric_selection_input` = "Accuracy")
   app$click("simulation-run_simulation")
   app$wait_for_idle(timeout = 10 * 60 * 1000)
