@@ -243,7 +243,8 @@ con_server <- function(id, shared) {
     # Remove cohort
     observeEvent(input$remove_cohort, {
       data <- conduct_reactive_table_data()
-      if (nrow(data) <= 3 || is.na(max(data$Cohort_Number))) return()
+      # The first cohort always stays, whatever the cohort size.
+      if (nrow(data) == 0 || max(data$Cohort_Number, na.rm = TRUE) <= 1) return()
       last_cohort <- max(data$Cohort_Number)
       updated_data <- data[data$Cohort_Number != last_cohort, ]
       conduct_reactive_table_data(updated_data)
