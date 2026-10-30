@@ -276,3 +276,36 @@ test_that("Trial Design settings can be saved to a file and loaded again", {
   # The BOIN probabilities follow the loaded multiple and target.
   expect_equal(app$get_value(input = td("direct_phi_1")), 0.7 * 0.3, tolerance = 1e-6)
 })
+
+test_that("each design's plots carry its own name when viewed individually", {
+  # The names of the plots offered after one run, in a fresh app.
+  plot_names <- function(designs) {
+    app <- AppDriver$new(test_path("..", ".."), name = "plot-labels",
+                         load_timeout = 60 * 1000, timeout = 20 * 1000)
+    on.exit(app$stop(), add = TRUE)
+    app$set_inputs(nav = "Simulation")
+    app$set_inputs(`simulation-simulation_design_selection_input` = designs)
+    wait_for_picker(app, "simulation-scen_output_input")
+    app$set_inputs(`simulation-scen_output_input` = "Scenario 1")
+    wait_for_picker(app, "simulation-metric_selection_input")
+    app$set_inputs(`simulation-metric_selection_input` = "% times dose was selected as MTD")
+    app$set_inputs(`simulation-comparative_view` = "Individually")
+    app$click("simulation-run_simulation")
+    app$wait_for_idle(timeout = 10 * 60 * 1000)
+    app$click(selector = "a[data-value='Simulation Output - Plots']")
+    app$wait_for_idle()
+    expect_equal(count_errors(app), 0)
+    unlist(app$get_js(
+      "Object.keys(document.getElementById('simulation-ind_graph').selectize.options)"
+    ))
+  }
+
+  # Without 3+3, CRM's plot was labelled BOIN and BOIN's was missing.
+  names <- plot_names(c("CRM", "BOIN"))
+  expect_length(names, 2)
+  expect_true(any(grepl("for CRM ", names)), label = "a CRM plot")
+  expect_true(any(grepl("for BOIN ", names)), label = "a BOIN plot")
+
+  # With one design there were no plots at all.
+  expect_match(plot_names("CRM"), "for CRM ")
+})

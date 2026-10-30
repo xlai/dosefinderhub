@@ -620,9 +620,12 @@ validation_state <- reactiveValues(
       data_scen <- plot_list[[j]]
  
 
-      data_mod <- plot_by_scenario(data_scen, 4, 4, n_models) # Reordering data such that we have scenario, model, metric.
-      
-      used_data <- data_mod[!sapply(data_mod, identical, FALSE)] 
+      # Reordering data by design (3+3, CRM, BOIN), then metric. Every design
+      # has a slot, selected or not, so the selected ones are picked out with
+      # selected_models and line up with updated_model.
+      data_mod <- plot_by_scenario(data_scen, 3, 4, 3)
+
+      used_data <- data_mod[selected_models]
 
       for (i in 1:n_models) {
         data <- used_data[[i]]
