@@ -418,6 +418,51 @@ test_that("CRM and BOIN results do not depend on which other designs run", {
   expect_equal(with_tpt$BOIN, alone$BOIN)
 })
 
+test_that("Conduct uses the same designs as Simulation", {
+  app <- AppDriver$new(test_path("..", ".."), name = "conduct-designs",
+                       load_timeout = 60 * 1000, timeout = 20 * 1000)
+  on.exit(app$stop(), add = TRUE)
+
+  # Non-default settings that the old Conduct designs ignored: with them, CRM
+  # skips to dose 5 after no DLTs at dose 2 (old: 3), and BOIN stays at dose 2
+  # after 1 DLT in 3 (old: 1).
+  d <- default_design
+  app$set_inputs(nav = "Trial Design")
+  app$set_inputs(display_crm = TRUE, display_boin = TRUE, display_input_all = TRUE)
+  app$set_inputs(`trial_design-start_dose_inputt` = 2, `trial_design-skip_esc_crm_input` = "TRUE",
+                 `trial_design-prior_var_input` = 2.5, `trial_design-stop_n_mtd_input` = 6,
+                 `trial_design-direct_phi_2` = 0.45, `trial_design-boin_stopping_rule` = "FALSE")
+  app$wait_for_idle()
+
+  skeleton <- dfcrm::getprior(halfwidth = d$crm$halfwidth, target = d$ttl,
+                              nu = d$crm$prior_mtd, nlevel = d$n_doses)
+  designs <- list(
+    CRM = crm_design(skeleton, d$ttl, d$max_size, prior_var = 2.5, skip_esc = TRUE,
+                     d$crm$skip_deesc, d$crm$stop_tox_x, d$crm$stop_tox_y, stop_n_mtd = 6),
+    BOIN = boin_design(d$n_doses, d$ttl, d$max_size, d$boin$stop_n_mtd, p_tox = 0.45,
+                       p_saf = d$boin$phi_1, use_stopping_rule = FALSE),
+    `3+3` = tpt_design(d$n_doses, d$max_size)
+  )
+  outcomes <- c(CRM = "2NNN", BOIN = "2NNT", `3+3` = "2NNN")
+
+  app$set_inputs(nav = "Conduct")
+  for (design in names(designs)) {
+    app$set_inputs(`conduct-choice` = design)
+    app$click("conduct-update_design")
+    app$wait_for_idle()
+    if (design == "BOIN") {
+      # A DLT for the third patient of the first cohort.
+      app$set_inputs(`conduct-editable_table_cell_edit` = list(row = 3, col = 3, value = "1"),
+                     allow_no_input_binding_ = TRUE)
+      app$wait_for_idle()
+    }
+    expected <- recommended_dose(fit(designs[[design]], outcomes[[design]]))
+    expect_equal(app$get_value(output = "conduct-recommended_dose"), as.character(expected),
+                 label = paste(design, "recommended dose"))
+  }
+  expect_equal(count_errors(app), 0)
+})
+
 test_that("Conduct draws the BOIN plot before every dose has been given", {
   app <- AppDriver$new(test_path("..", ".."), name = "conduct-boin-plot",
                        load_timeout = 60 * 1000, timeout = 20 * 1000)

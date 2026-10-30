@@ -168,6 +168,31 @@ find_pct_dlt <- function(sims) {
   100 * num_tox(sims) / num_patients(sims)
 }
 
+########################### Design builders ###########################
+# Simulation and Conduct both build their designs here, so a trial run in
+# Conduct uses the design that was simulated.
+
+tpt_design <- function(n_doses, max_n) {
+  escalation::get_three_plus_three(num_doses = n_doses, allow_deescalate = FALSE) %>%
+    stop_at_n(n = max_n)
+}
+
+crm_design <- function(skeleton, ttl, max_n, prior_var, skip_esc, skip_deesc,
+                       stop_tox_x, stop_tox_y, stop_n_mtd) {
+  escalation::get_dfcrm(skeleton = skeleton, target = ttl, scale = sqrt(prior_var)) %>%
+    dont_skip_doses(when_escalating = 1-skip_esc, when_deescalating = 1-skip_deesc) %>%
+    stop_when_too_toxic(dose = 1, stop_tox_x + ttl, confidence = stop_tox_y) %>%
+    stop_when_n_at_dose(n = stop_n_mtd, dose = "recommended") %>%
+    stop_at_n(n = max_n)
+}
+
+boin_design <- function(n_doses, ttl, max_n, stop_n_mtd, p_tox, p_saf, use_stopping_rule) {
+  get_boin(num_doses = n_doses, target = ttl, use_stopping_rule = use_stopping_rule, p.saf = p_saf, p.tox = p_tox,
+           cutoff.eli = 0.95, extrasafe = FALSE, offset = 0.05) %>%
+    escalation::stop_when_n_at_dose(n = stop_n_mtd, dose = "recommended") %>%
+    escalation::stop_at_n(n = max_n)
+}
+
 ########################### 3+3 Simulation Function ###########################
 sim_tpt <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss) {
 
@@ -201,9 +226,7 @@ mean_length <- list()
   model <- list()
   
   # Create the model
-  model$tpt <- escalation::get_three_plus_three(num_doses = n_doses, 
-    allow_deescalate = FALSE) %>% 
-    stop_at_n(n=max_n)
+  model$tpt <- tpt_design(n_doses, max_n)
 
   # run sims  
 
@@ -304,11 +327,8 @@ best_dose_level <- find_best_dose_level(true_dlt_ss, ttl)
 
 # Model itself
 
-model$crm <- escalation::get_dfcrm(skeleton = skeleton, target = ttl, scale = sqrt(prior_var)) %>% 
-  dont_skip_doses(when_escalating = 1-skip_esc, when_deescalating = 1-skip_deesc) %>% 
-  stop_when_too_toxic(dose = 1, stop_tox_x + ttl, confidence = stop_tox_y) %>%
-  stop_when_n_at_dose(n = stop_n_mtd, dose = "recommended") %>%
-  stop_at_n(n=max_n) 
+model$crm <- crm_design(skeleton, ttl, max_n, prior_var, skip_esc, skip_deesc,
+                        stop_tox_x, stop_tox_y, stop_n_mtd)
 
 ########################################################################################################################################################
 # run sims  
@@ -383,10 +403,7 @@ sim_boin <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss, cohor
 
 best_dose_level <- find_best_dose_level(true_dlt_ss, ttl)
 
-model <- get_boin(num_doses = n_doses, target = ttl, use_stopping_rule = use_stopping_rule, p.saf = p_saf, p.tox = p_tox,
-                       cutoff.eli = 0.95, extrasafe = FALSE, offset = 0.05) %>%
-  escalation::stop_when_n_at_dose(n = stop_n_mtd, dose = "recommended") %>% 
-  escalation::stop_at_n(n = max_n)
+model <- boin_design(n_doses, ttl, max_n, stop_n_mtd, p_tox, p_saf, use_stopping_rule)
   # Might be worth looking at https://www.rdocumentation.org/packages/BOIN/versions/2.7.2/topics/get.boundary to refine this.
 
 # run sims
