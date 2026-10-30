@@ -98,7 +98,21 @@ con_server <- function(id, shared) {
     crm_model <- reactiveVal(NULL)
     boin_model <- reactiveVal(NULL)
     tpt_model <- reactiveVal(NULL)
-    trial_stopped <- reactiveVal(FALSE)
+    # The chosen design fitted to the patients in the table, as list(fit) or
+    # list(error); NULL before "Update Design" or with an empty table.
+    conduct_fit <- reactive({
+      data <- conduct_reactive_table_data()
+      model <- switch(input$choice, "CRM" = crm_model(), "BOIN" = boin_model(), "3+3" = tpt_model())
+      if (is.null(model) || nrow(data) == 0) return(NULL)
+      tryCatch(list(fit = model %>% fit(convert_table_to_crm_outcome(data))),
+               error = function(e) list(error = conditionMessage(e)))
+    })
+    # The trial has stopped when the fitted design says so. It follows the
+    # table, so "Update Design" or removing a cohort can clear it.
+    trial_stopped <- reactive({
+      fitted <- conduct_fit()
+      !is.null(fitted$fit) && !continue(fitted$fit)
+    })
     final_dose <- reactiveVal(NULL)
 
    
@@ -183,6 +197,7 @@ con_server <- function(id, shared) {
       current_patient_count <- nrow(data)
       max_patients <- shared$max_size()
       cohort_size <- shared$cohort_size()
+      if (trial_stopped()) return()
       # Prevent exceeding max sample size
       if (current_patient_count + cohort_size > max_patients) return()
       # New cohort number
@@ -292,35 +307,15 @@ con_server <- function(id, shared) {
 
     # Recommended next dose level
     output$recommended_dose <- renderText({
-     data <- conduct_reactive_table_data()
-     if (nrow(data) == 0) return("N/A")
-     choice <- input$choice
-
-     if (choice %in% c("CRM", "BOIN", "3+3")) {
-       model <- switch(choice,
-                    "CRM" = crm_model(),
-                    "BOIN" = boin_model(),
-                    "3+3" = tpt_model())
-
-       if (is.null(model)) return("N/A")
-       outcome_str <- convert_table_to_crm_outcome(data)
-
-       tryCatch({
-         fit_result <- model %>% fit(outcome_str)
-         dose <- fit_result %>% recommended_dose()
-         final_dose(as.character(dose))  # Save final dose
-        if (trial_stopped()) {
-          paste("Final MTD Level:", dose)
-        } else {
-        as.character(dose)
-      }
-      }, error = function(e) {
-      trial_stopped(TRUE)
-      "Final MTD Level: Latest Dose"
-      })
-      } else {
-       "N/A"
-      }
+     fitted <- conduct_fit()
+     if (is.null(fitted$fit)) return("N/A")
+     dose <- fitted$fit %>% recommended_dose()
+     final_dose(as.character(dose))  # Save final dose
+     if (trial_stopped()) {
+       paste("Final MTD Level:", if (is.na(dose)) "none" else dose)
+     } else {
+       as.character(dose)
+     }
     })
     
     # Trial status
@@ -330,23 +325,16 @@ con_server <- function(id, shared) {
      if (design_initialized() != input$choice) {
        return("Press 'Update Design' to start")
       }
+      fitted <- conduct_fit()
+      if (!is.null(fitted$error)) {
+        return(paste("The design could not be fitted to the table:", fitted$error))
+      }
       if (trial_stopped()) {
-        return("Trial Stopped Due to Toxicity Levels")
+        return(paste0("Trial stopped: ", stop_reason(fitted$fit), "."))
       }
       if (nrow(data) >= max_patients) {
        return("Trial Recruitment Complete")
       }
-      if (input$choice == "CRM" && !is.null(crm_model()) && nrow(data) > 0) {
-       outcome_str <- convert_table_to_crm_outcome(data)
-       fit_result <- tryCatch(crm_model() %>% fit(outcome_str), error = function(e) NULL)
-      if (!is.null(fit_result)) {
-        recommended <- fit_result %>% recommended_dose()
-        n_at_recommended <- sum(data$Dose_Level == recommended)
-      if (n_at_recommended >= shared$stop_n_mtd_crm()) {
-        return(paste("Suggestion: Stop trial -", shared$stop_n_mtd_crm(), "patients at recommended dose"))
-      }
-    }
-    }
     "Recruiting"
     })
    
@@ -607,6 +595,11 @@ output$crm_dlt_plot <- renderPlot({
        need(!is.null(results), "Please reach status: complete to see the plot.")
       )
 
+     # BOIN gives no estimate (NA) for doses not given yet, so plot only the
+     # doses with one, on an axis that still shows every dose.
+     n_doses <- nrow(results)
+     results <- results[!is.na(results$Posterior_DLT_Rate), ]
+
      dose_levels <- results$Dose_Level
      posterior <- results$Posterior_DLT_Rate
      ci_lower <- results$CI_Lower
@@ -618,7 +611,7 @@ output$crm_dlt_plot <- renderPlot({
        pch = 19, col = "blue", cex = 1.5,
        xlab = "Dose Level", ylab = "Posterior DLT Rate",
        main = "Posterior DLT Rates by Dose Level (BOIN)",
-       ylim = c(0, max(ci_upper) + 0.1)
+       xlim = c(1, n_doses), ylim = c(0, max(ci_upper) + 0.1)
       )
 
      polygon(

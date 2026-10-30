@@ -193,6 +193,28 @@ boin_design <- function(n_doses, ttl, max_n, stop_n_mtd, p_tox, p_saf, use_stopp
     escalation::stop_at_n(n = max_n)
 }
 
+# Why a fitted design stops, or NULL while it continues. Any design that
+# stops without a recommended dose has stopped for safety. Otherwise the reason
+# is the innermost rule of the design that says stop (the rules around it pass
+# that on): the general stopping rules added by the design builders above, or
+# else the design's own rules, such as 3+3 finding its MTD.
+stop_reason <- function(fit) {
+  if (continue(fit)) return(NULL)
+  if (is.na(recommended_dose(fit))) return("no dose is safe enough")
+  layers <- list()
+  while (!is.null(fit)) {
+    layers <- c(layers, list(fit))
+    fit <- fit$parent
+  }
+  stopped <- Filter(function(layer) !continue(layer), layers)
+  rule <- stopped[[length(stopped)]]
+  switch(class(rule)[1],
+    stop_at_n_selector = "the maximum sample size has been reached",
+    stop_when_n_at_dose_selector = "enough patients have been treated at the recommended dose",
+    "the design's own rules say to stop"
+  )
+}
+
 ########################### 3+3 Simulation Function ###########################
 sim_tpt <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss) {
 

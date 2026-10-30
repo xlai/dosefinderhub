@@ -463,6 +463,56 @@ test_that("Conduct uses the same designs as Simulation", {
   expect_equal(count_errors(app), 0)
 })
 
+test_that("Conduct draws the BOIN plot before every dose has been given", {
+  app <- AppDriver$new(test_path("..", ".."), name = "conduct-boin-plot",
+                       load_timeout = 60 * 1000, timeout = 20 * 1000)
+  on.exit(app$stop(), add = TRUE)
+
+  # After the first cohort BOIN has no estimate for doses 2 to 5, which made
+  # the plot fail.
+  app$set_inputs(nav = "Conduct")
+  app$set_inputs(`conduct-choice` = "BOIN")
+  app$click("conduct-update_design")
+  app$wait_for_idle()
+  plot <- app$get_value(output = "conduct-boin_dlt_plot")
+  expect_match(plot$src, "^data:image/png")
+  expect_equal(count_errors(app), 0)
+})
+
+test_that("Conduct says why the trial stopped, and Update Design starts again", {
+  app <- AppDriver$new(test_path("..", ".."), name = "conduct-stopped",
+                       load_timeout = 60 * 1000, timeout = 20 * 1000)
+  on.exit(app$stop(), add = TRUE)
+
+  status <- function() app$get_value(output = "conduct-trial_status")
+  set_dlt <- function(row) {
+    app$set_inputs(`conduct-editable_table_cell_edit` = list(row = row, col = 3, value = "1"),
+                   allow_no_input_binding_ = TRUE)
+    app$wait_for_idle()
+  }
+
+  app$set_inputs(nav = "Conduct")
+  app$set_inputs(`conduct-choice` = "BOIN")
+  app$click("conduct-update_design")
+  app$wait_for_idle()
+  expect_equal(status(), "Recruiting")
+
+  # 3 DLTs in 3 patients at dose 1: BOIN's stopping rule (on by default) stops
+  # the trial with no dose recommended, and no cohort can be added.
+  for (row in 1:3) set_dlt(row)
+  expect_equal(status(), "Trial stopped: no dose is safe enough.")
+  expect_equal(app$get_value(output = "conduct-recommended_dose"), "Final MTD Level: none")
+  app$click("conduct-add_cohort")
+  app$wait_for_idle()
+  expect_equal(app$get_value(output = "conduct-patient_count"), "3")
+
+  # Update Design starts a new trial.
+  app$click("conduct-update_design")
+  app$wait_for_idle()
+  expect_equal(status(), "Recruiting")
+  expect_equal(count_errors(app), 0)
+})
+
 test_that("Remove Cohort keeps the first cohort, whatever the cohort size", {
   app <- AppDriver$new(test_path("..", ".."), name = "conduct-remove-cohort",
                        load_timeout = 60 * 1000, timeout = 20 * 1000)
