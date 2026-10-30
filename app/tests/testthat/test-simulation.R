@@ -92,3 +92,21 @@ test_that("Accuracy counts 'no dose' as right when every dose is too toxic", {
   no_dose_pct <- sim$selection_tab[1, 1]
   expect_equal(sim$mean_accuracy * 100, no_dose_pct, tolerance = 1e-8)
 })
+
+test_that("stop_reason() names the rule that stopped the design", {
+  skeleton <- dfcrm::getprior(halfwidth = d$crm$halfwidth, target = d$ttl,
+                              nu = d$crm$prior_mtd, nlevel = d$n_doses)
+  crm <- crm_design(skeleton, d$ttl, max_n = 12, d$crm$prior_var, d$crm$skip_esc,
+                    d$crm$skip_deesc, d$crm$stop_tox_x, d$crm$stop_tox_y, stop_n_mtd = 6)
+  boin <- boin_design(d$n_doses, d$ttl, max_n = 12, stop_n_mtd = 6, p_tox = d$boin$phi_2,
+                      p_saf = d$boin$phi_1, use_stopping_rule = TRUE)
+  tpt <- tpt_design(d$n_doses, d$max_size)
+  reason <- function(design, outcomes) stop_reason(fit(design, outcomes))
+
+  expect_null(reason(crm, "1NNN"))
+  expect_match(reason(crm, "1TTT"), "lowest dose is too toxic")
+  expect_match(reason(crm, "1NNN 2NNN 3NTN 3NNT"), "recommended dose")
+  expect_match(reason(crm, "1NNN 2NNN 3NNN 4NTN"), "maximum sample size")
+  expect_match(reason(boin, "1TTT"), "BOIN stopping rule")
+  expect_match(reason(tpt, "1NNN 2TTN"), "3\\+3")
+})

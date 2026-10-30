@@ -193,6 +193,28 @@ boin_design <- function(n_doses, ttl, max_n, stop_n_mtd, p_tox, p_saf, use_stopp
     escalation::stop_at_n(n = max_n)
 }
 
+# Why a fitted design stops, or NULL while it continues. A design is a chain
+# of rules (see the design builders above); the rule that stopped it is the
+# innermost one that says stop, because the rules around it pass that on.
+stop_reason <- function(fit) {
+  if (continue(fit)) return(NULL)
+  layers <- list()
+  while (!is.null(fit)) {
+    layers <- c(layers, list(fit))
+    fit <- fit$parent
+  }
+  stopped <- Filter(function(layer) !continue(layer), layers)
+  rule <- stopped[[length(stopped)]]
+  switch(class(rule)[1],
+    stop_at_n_selector = "the maximum sample size has been reached",
+    stop_when_n_at_dose_selector = "enough patients have been treated at the recommended dose",
+    stop_when_too_toxic_selector = "the lowest dose is too toxic",
+    boin_selector = "the lowest dose is too toxic (BOIN stopping rule)",
+    three_plus_three_selector = "the 3+3 rules have finished",
+    "the design says to stop"
+  )
+}
+
 ########################### 3+3 Simulation Function ###########################
 sim_tpt <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss) {
 
