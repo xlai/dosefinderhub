@@ -500,7 +500,7 @@ test_that("Conduct says why the trial stopped, and Update Design starts again", 
   # 3 DLTs in 3 patients at dose 1: BOIN's stopping rule (on by default) stops
   # the trial with no dose recommended, and no cohort can be added.
   for (row in 1:3) set_dlt(row)
-  expect_equal(status(), "Trial stopped: the lowest dose is too toxic (BOIN stopping rule).")
+  expect_equal(status(), "Trial stopped: no dose is safe enough.")
   expect_equal(app$get_value(output = "conduct-recommended_dose"), "Final MTD Level: none")
   app$click("conduct-add_cohort")
   app$wait_for_idle()

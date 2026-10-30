@@ -103,10 +103,13 @@ test_that("stop_reason() names the rule that stopped the design", {
   tpt <- tpt_design(d$n_doses, d$max_size)
   reason <- function(design, outcomes) stop_reason(fit(design, outcomes))
 
+  # Every stop for safety, whichever design and rule, gives the same reason.
   expect_null(reason(crm, "1NNN"))
-  expect_match(reason(crm, "1TTT"), "lowest dose is too toxic")
+  expect_equal(reason(crm, "1TTT"), "no dose is safe enough")
+  expect_equal(reason(boin, "1TTT"), "no dose is safe enough")
+  expect_equal(reason(tpt, "1TTN"), "no dose is safe enough")
   expect_match(reason(crm, "1NNN 2NNN 3NTN 3NNT"), "recommended dose")
   expect_match(reason(crm, "1NNN 2NNN 3NNN 4NTN"), "maximum sample size")
-  expect_match(reason(boin, "1TTT"), "BOIN stopping rule")
-  expect_match(reason(tpt, "1NNN 2TTN"), "3\\+3")
+  # 3+3 can stop before the maximum sample size, with an MTD.
+  expect_equal(reason(tpt, "1NNN 2TTN"), "the design's own rules say to stop")
 })
