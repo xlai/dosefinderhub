@@ -1,9 +1,41 @@
-# Questionnaire buttons: Previous, Save, Reset and Upload.
+# Questionnaire: start values, and the Previous, Save, Reset and Upload buttons.
 # https://github.com/xlai/dosefinderhub/issues/93
 
 library(shinytest2)
 
 question_on_screen <- function(app) app$get_text("#questionnaire-question_counter")
+
+test_that("the questions start at the default design, and clicking through keeps it in Trial Design", {
+  app <- AppDriver$new(test_path("..", ".."), name = "questionnaire-defaults",
+                       load_timeout = 60 * 1000, timeout = 20 * 1000)
+  on.exit(app$stop(), add = TRUE)
+  used <- function(name) app$get_value(export = paste0("trial_design-", name))
+
+  starts <- c(n_doses = default_design$n_doses, ttl = default_design$ttl,
+              max_n = default_design$max_size, start_dose = default_design$start_dose,
+              cohort_size = default_design$cohort_size)
+  app$set_inputs(nav = "Questionnaire")
+  app$wait_for_idle()
+  for (i in seq_along(starts)) {
+    expect_equal(app$get_value(input = paste0("questionnaire-", names(starts)[i])),
+                 starts[[i]], label = names(starts)[i])
+    app$click("questionnaire-next_button")
+    app$wait_for_idle()
+  }
+  for (i in 1:20) {
+    if (isTRUE(app$get_js("!!document.getElementById('questionnaire-advanced_settings')"))) break
+    app$click("questionnaire-next_button")
+    app$wait_for_idle()
+  }
+  app$click("questionnaire-advanced_settings")
+  app$wait_for_idle()
+  expect_equal(app$get_value(input = "nav"), "Trial Design")
+  expect_equal(used("n_doses"), default_design$n_doses)
+  expect_equal(used("ttl"), default_design$ttl)
+  expect_equal(used("max_size"), default_design$max_size)
+  expect_equal(used("start_dose"), default_design$start_dose)
+  expect_equal(used("cohort_size"), default_design$cohort_size)
+})
 
 test_that("Previous keeps the earlier answer", {
   app <- AppDriver$new(test_path("..", ".."), name = "questionnaire-previous",
@@ -54,11 +86,11 @@ test_that("Save, Reset and Upload keep the session, and uploaded answers reach T
   expect_equal(saved_answers$inputId, names(answers))
   expect_equal(saved_answers$value, unname(vapply(answers, as.character, "")))
 
-  # Reset goes back to question 1, drawn without the answer, and the session stays open.
+  # Reset goes back to question 1, drawn at its start value, and the session stays open.
   app$click("questionnaire-reset_button")
   app$wait_for_idle()
   expect_equal(question_on_screen(app), "Question 1 of 9")
-  expect_equal(app$get_value(input = "questionnaire-n_doses"), 2)
+  expect_equal(app$get_value(input = "questionnaire-n_doses"), default_design$n_doses)
   expect_true(app$get_js("Shiny.shinyapp.isConnected()"))
 
   # Upload restores every answer: the question on screen at once, the rest
