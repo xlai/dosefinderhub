@@ -25,7 +25,7 @@ test_that("the right dose is the highest dose at or below the target", {
 
 test_that("3+3 simulates with the default design", {
   set.seed(d$seed)
-  sim <- sim_tpt(d$n_doses, d$ttl, d$max_size, d$start_dose, n_sims, scenario, d$seed)
+  sim <- sim_tpt(d$n_doses, d$ttl, d$max_size, d$start_dose, n_sims, scenario)
   expect_valid_sim(sim, d$n_doses, n_sims)
 })
 
@@ -88,7 +88,7 @@ test_that("BOIN stops for toxicity only when its stopping rule is on", {
 
 test_that("Accuracy counts 'no dose' as right when every dose is too toxic", {
   set.seed(d$seed)
-  sim <- sim_tpt(d$n_doses, d$ttl, d$max_size, d$start_dose, n_sims, d$scenarios[3, ], d$seed)
+  sim <- sim_tpt(d$n_doses, d$ttl, d$max_size, d$start_dose, n_sims, d$scenarios[3, ])
   no_dose_pct <- sim$selection_tab[1, 1]
   expect_equal(sim$mean_accuracy * 100, no_dose_pct, tolerance = 1e-8)
 })

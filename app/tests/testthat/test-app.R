@@ -12,6 +12,28 @@ wait_for_picker <- function(app, id) {
   app$wait_for_js(sprintf("!!(document.getElementById('%s') || {}).selectize", id))
 }
 
+# The first row of an individual results table on the Tables tab, named by
+# column. The table is picked by design, scenario and metric.
+first_row <- function(app, design, scenario, metric) {
+  titles <- unlist(app$get_js(
+    "Object.keys(document.getElementById('simulation-ind_tables').selectize.options)"
+  ))
+  title <- grep(paste0("^", design, ".*", scenario, ".*", metric), titles, value = TRUE)
+  expect_length(title, 1)
+  app$set_inputs(`simulation-ind_tables` = title)
+  app$wait_for_js(sprintf(
+    "document.getElementById('simulation-selected_ind_title').textContent === %s",
+    jsonlite::toJSON(title, auto_unbox = TRUE)
+  ))
+  cells <- unlist(app$get_js(
+    "Array.from(document.querySelectorAll('#simulation-selected_ind_table tr'))
+       .slice(0, 2).map(tr => Array.from(tr.children).map(c => c.textContent.trim()).join('|'))"
+  ))
+  header <- strsplit(cells[1], "|", fixed = TRUE)[[1]][-1]
+  values <- as.numeric(strsplit(cells[2], "|", fixed = TRUE)[[1]][-1])
+  setNames(values, header)
+}
+
 test_that("every tab loads without errors", {
   app <- AppDriver$new(test_path("..", ".."), name = "tabs",
                        load_timeout = 60 * 1000, timeout = 20 * 1000)
@@ -346,32 +368,41 @@ test_that("the cohort size and the BOIN stopping rule reach the simulation", {
   app$wait_for_idle()
   expect_equal(count_errors(app), 0)
 
-  # The first row of the results table with this title, named by column.
-  titles <- unlist(app$get_js(
-    "Object.keys(document.getElementById('simulation-ind_tables').selectize.options)"
-  ))
-  first_row <- function(design, scenario, metric) {
-    title <- grep(paste0("^", design, ".*", scenario, ".*", metric), titles, value = TRUE)
-    expect_length(title, 1)
-    app$set_inputs(`simulation-ind_tables` = title)
-    app$wait_for_js(sprintf(
-      "document.getElementById('simulation-selected_ind_title').textContent === %s",
-      jsonlite::toJSON(title, auto_unbox = TRUE)
-    ))
-    cells <- unlist(app$get_js(
-      "Array.from(document.querySelectorAll('#simulation-selected_ind_table tr'))
-         .slice(0, 2).map(tr => Array.from(tr.children).map(c => c.textContent.trim()).join('|'))"
-    ))
-    header <- strsplit(cells[1], "|", fixed = TRUE)[[1]][-1]
-    values <- as.numeric(strsplit(cells[2], "|", fixed = TRUE)[[1]][-1])
-    setNames(values, header)
-  }
-
   for (design in c("CRM", "BOIN")) {
-    treated <- first_row(design, "Scenario 2", "Treated")
+    treated <- first_row(app, design, "Scenario 2", "Treated")
     expect_equal(unname(treated[1]), 100, label = paste(design, "% treated at dose 1"))
   }
   # With the stopping rule off, BOIN never stops for toxicity, even when every
   # dose is too toxic.
-  expect_equal(unname(first_row("BOIN", "Scenario 3", "MTD")["NoDose"]), 0)
+  expect_equal(unname(first_row(app, "BOIN", "Scenario 3", "MTD")["NoDose"]), 0)
+})
+
+test_that("CRM and BOIN results do not depend on which other designs run", {
+  # CRM and BOIN results for Scenario 1 after one run, in a fresh app.
+  results <- function(designs) {
+    app <- AppDriver$new(test_path("..", ".."), name = "seed",
+                         load_timeout = 60 * 1000, timeout = 20 * 1000)
+    on.exit(app$stop(), add = TRUE)
+    app$set_inputs(nav = "Simulation")
+    expect_match(app$get_text("body"), paste("seed", default_design$seed))
+    app$set_inputs(`simulation-simulation_design_selection_input` = designs)
+    wait_for_picker(app, "simulation-scen_output_input")
+    app$set_inputs(`simulation-scen_output_input` = "Scenario 1")
+    wait_for_picker(app, "simulation-metric_selection_input")
+    app$set_inputs(`simulation-metric_selection_input` = "% times dose was selected as MTD")
+    app$click("simulation-run_simulation")
+    app$wait_for_idle(timeout = 10 * 60 * 1000)
+    app$click(selector = "a[data-value='Simulation Output - Tables']")
+    app$wait_for_idle()
+    expect_equal(count_errors(app), 0)
+    lapply(c(CRM = "CRM", BOIN = "BOIN"), function(design) {
+      first_row(app, design, "Scenario 1", "MTD")
+    })
+  }
+
+  # 3+3 used to set the seed for every design, and CRM and BOIN set none.
+  alone <- results(c("CRM", "BOIN"))
+  with_tpt <- results(c("3+3", "CRM", "BOIN"))
+  expect_equal(with_tpt$CRM, alone$CRM)
+  expect_equal(with_tpt$BOIN, alone$BOIN)
 })

@@ -169,7 +169,7 @@ find_pct_dlt <- function(sims) {
 }
 
 ########################### 3+3 Simulation Function ###########################
-sim_tpt <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss, current_seed) {
+sim_tpt <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss) {
 
 # Best dose and level
 best_dose_level <- find_best_dose_level(true_dlt_ss, ttl)
@@ -202,8 +202,7 @@ mean_length <- list()
   
   # Create the model
   model$tpt <- escalation::get_three_plus_three(num_doses = n_doses, 
-    allow_deescalate = FALSE,
-    set.seed(current_seed)) %>% 
+    allow_deescalate = FALSE) %>% 
     stop_at_n(n=max_n)
 
   # run sims  
