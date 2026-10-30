@@ -60,11 +60,21 @@ test_that("the skeleton is rebuilt when the target or the prior MTD guess change
                        load_timeout = 60 * 1000, timeout = 20 * 1000)
   on.exit(app$stop(), add = TRUE)
 
-  # The priors as shown in the skeleton table.
-  skeleton <- function() {
+  # The priors as shown in the skeleton table. DT draws the table in the
+  # browser shortly after the server sends it, so wait (up to 10 s) until
+  # it shows the expected values, then return what it shows.
+  skeleton_shown <- function() {
     as.numeric(unlist(app$get_js(
       "Array.from(document.querySelectorAll('#trial_design-skeleton_df tbody td:nth-child(2)')).map(td => td.innerText)"
     )))
+  }
+  skeleton <- function(want) {
+    for (i in 1:50) {
+      shown <- skeleton_shown()
+      if (length(shown) == length(want) && isTRUE(all.equal(shown, want, tolerance = 1e-6))) break
+      Sys.sleep(0.2)
+    }
+    shown
   }
   expected <- function(ttl, prior_mtd) {
     dfcrm::getprior(halfwidth = 0.25 * ttl, target = ttl, nu = prior_mtd,
@@ -72,13 +82,16 @@ test_that("the skeleton is rebuilt when the target or the prior MTD guess change
   }
   app$set_inputs(nav = "Trial Design")
   app$set_inputs(display_crm = TRUE, display_input_all = TRUE)
-  expect_equal(skeleton(), expected(default_design$ttl, default_design$crm$prior_mtd), tolerance = 1e-6)
+  want <- expected(default_design$ttl, default_design$crm$prior_mtd)
+  expect_equal(skeleton(want), want, tolerance = 1e-6)
 
   app$set_inputs(`trial_design-ttl_inputt` = 0.3)
-  expect_equal(skeleton(), expected(0.3, default_design$crm$prior_mtd), tolerance = 1e-6)
+  want <- expected(0.3, default_design$crm$prior_mtd)
+  expect_equal(skeleton(want), want, tolerance = 1e-6)
 
   app$set_inputs(`trial_design-prior_mtd_input` = 2)
-  expect_equal(skeleton(), expected(0.3, 2), tolerance = 1e-6)
+  want <- expected(0.3, 2)
+  expect_equal(skeleton(want), want, tolerance = 1e-6)
 })
 
 test_that("an edited skeleton is checked, and CRM runs after a valid edit", {
