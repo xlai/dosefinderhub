@@ -46,14 +46,17 @@ prior_var_input <- numericInput(ns("prior_var_input"), "What is the estimate of 
 stop_n_mtd_input <- numericInput(ns("stop_n_mtd_input"), "What is the minimum number of patients required at recommended dose before early stopping?", min = 1, value = default_design$crm$stop_n_mtd)
 
 skeleton_table <- DT::DTOutput(ns("skeleton_df"))
+skeleton_warning_text <- textOutput(ns("skeleton_warning"))
 
 prior_mtd_input <- numericInput(ns("prior_mtd_input"), "What is your prior guess of the MTD?", min = 1, value = default_design$crm$prior_mtd)
+halfwidth_input <- numericInput(ns("halfwidth_input"), "What halfwidth should the skeleton use? The default is 0.25 times the target toxicity level.", min = 0, value = default_design$crm$halfwidth, step = 0.01)
 stop_tox_x_input <- numericInput(ns("stop_tox_x_input"), "When using the this Bayesian safety early criterion: p(true DLT rate at lowest dose > target DLT rate + x | data) > y, what would you like x to be? This is the excess toxicity above the target DLT.", min = 0, value = default_design$crm$stop_tox_x)
 stop_tox_y_input <- numericInput(ns("stop_tox_y_input"), "What would you like y to be? This is the confidence level for safety stopping.", min = 0, max = 1, value = default_design$crm$stop_tox_y)
 
 prior_var_warning_text <- textOutput(ns("prior_var_warning"))
 stop_n_mtd_warning_text <- textOutput(ns("stop_n_mtd_warning"))
 prior_mtd_warning_text <- textOutput(ns("prior_mtd_warning"))
+halfwidth_warning_text <- textOutput(ns("halfwidth_warning"))
 stop_tox_x_warning_text <- textOutput(ns("stop_tox_x_warning"))
 stop_tox_y_warning_text <- textOutput(ns("stop_tox_y_warning"))
 
@@ -67,8 +70,11 @@ specific_ui_inputs_crm <- tagList(
   stop_n_mtd_warning_text,
    p("What are the prior estimates of the DLT rates at each dose? Please add them to the table below."),
   skeleton_table,
+  skeleton_warning_text,
   prior_mtd_input,
   prior_mtd_warning_text,
+  halfwidth_input,
+  halfwidth_warning_text,
   stop_tox_x_input,
   stop_tox_x_warning_text,
   stop_tox_y_input,
@@ -224,14 +230,16 @@ trial_design_server <- function(id, shared, move_data, parent_session = NULL) {
 ##### Reactive Skeleton Input ######
 reactive_skeleton <- reactiveVal() # initalising a reactive value to store the data frame
 
- observeEvent({input$n_doses_inputt | input$prior_mtd_input}, {  
-    if (is.na(input$n_doses_inputt) | is.na(input$prior_mtd_input)) {  
+ # The skeleton is built from the target, the halfwidth, the prior MTD guess and
+ # the number of doses, so a change to any of them rebuilds it.
+ observeEvent(list(input$n_doses_inputt, input$prior_mtd_input, input$ttl_inputt, input$halfwidth_input), {
+    if (is.na(input$n_doses_inputt) | is.na(input$prior_mtd_input) | is.na(input$ttl_inputt) | is.na(input$halfwidth_input)) {
       reactive_skeleton(NULL)  
     } else if (input$prior_mtd_input > input$n_doses_inputt)  {  
       reactive_skeleton(NULL)  
     } else {
   dose <- as.integer(input$n_doses_inputt)  
-  Prior <- dfcrm::getprior(halfwidth = 0.25*input$ttl_inputt, target = input$ttl_inputt, nu = input$prior_mtd_input, nlevel = dose)
+  Prior <- dfcrm::getprior(halfwidth = input$halfwidth_input, target = input$ttl_inputt, nu = input$prior_mtd_input, nlevel = dose)
 
   rownames_skel <-paste("d", 1:dose, sep = "")
 
@@ -239,16 +247,25 @@ reactive_skeleton <- reactiveVal() # initalising a reactive value to store the d
 
   reactive_skeleton(df) # Updating the reactive value with the new data frame
    } })
+
+  # A new target resets the halfwidth to its default share of the target.
+  observeEvent(input$ttl_inputt, {
+    if (!is.na(input$ttl_inputt)) {
+      updateNumericInput(session, "halfwidth_input", value = default_design$crm$halfwidth_multiple * input$ttl_inputt)
+    }
+  }, ignoreInit = TRUE)
   
   output$skeleton_df <- renderDT({
-    datatable(reactive_skeleton(), editable = TRUE, rownames = FALSE, options = list(searching = FALSE, paging = FALSE, info = FALSE, scrollX = TRUE)) #, scrollX = TRUE, scrollX="250px", paging = FALSE
+    datatable(reactive_skeleton(), editable = list(target = "cell", disable = list(columns = 0)), rownames = FALSE, options = list(searching = FALSE, paging = FALSE, info = FALSE, scrollX = TRUE)) #, scrollX = TRUE, scrollX="250px", paging = FALSE
   })
 
   observeEvent(input$skeleton_df_cell_edit, {
     info <- input$skeleton_df_cell_edit
 
     modified_data <- reactive_skeleton()
-    modified_data[info$row, info$col + 1] <- DT::coerceValue(info$value, modified_data[info$row, info$col]) # +1 is here to counterract the movement of edited data.
+    # DT columns are 0-based; +1 gives the R column. Coerce against the edited
+    # column itself, so the priors stay numeric.
+    modified_data[info$row, info$col + 1] <- DT::coerceValue(info$value, modified_data[info$row, info$col + 1])
     reactive_skeleton(modified_data)
   })
 
@@ -475,6 +492,8 @@ observeEvent(move_data(), {
     prior_mtd_val = NULL,
     stop_tox_x_val = NULL,
     stop_tox_y_val = NULL,
+    skeleton_val = NULL,
+    halfwidth_val = NULL,
 
     boin_cohorts_val = NULL,
     stop_n_mtd_boin_val = NULL,
@@ -502,6 +521,7 @@ observeEvent(move_data(), {
     prior_mtd_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
     stop_tox_x_val = list(min_val = 0, max_val = 1, integer_only = FALSE),
     stop_tox_y_val = list(min_val = 0, max_val = 1, integer_only = FALSE),
+    halfwidth_val = list(min_val = 0, max_val = NULL, integer_only = FALSE),
 
     boin_cohorts_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
     stop_n_mtd_boin_val = list(min_val = 1, max_val = NULL, integer_only = TRUE),
@@ -546,6 +566,10 @@ observeEvent(move_data(), {
     # ttl_multiple_phi_2 <= 1/ttl
     if (!is.null(input$ttl_inputt) && !is.na(input$ttl_inputt) && input$ttl_inputt > 0) {
       rules$ttl_multiple_phi_2_val$max_val <- 1 / input$ttl_inputt
+    }
+    # halfwidth < ttl and ttl + halfwidth < 1, as dfcrm::getprior() needs
+    if (!is.null(input$ttl_inputt) && !is.na(input$ttl_inputt) && input$ttl_inputt > 0) {
+      rules$halfwidth_val$max_val <- min(input$ttl_inputt, 1 - input$ttl_inputt)
     }
     # direct_phi_1 < ttl
     if (!is.null(input$ttl_inputt) && !is.na(input$ttl_inputt) && input$ttl_inputt > 0) {
@@ -687,6 +711,16 @@ observeEvent(move_data(), {
   observe({
     update_validation("direct_phi_2_val", input$direct_phi_2)
   })
+  observe({
+    update_validation("halfwidth_val", input$halfwidth_input)
+  })
+  # CRM skeleton: checked as a whole, not as one number
+  observe({
+    skeleton <- if (is.null(reactive_skeleton())) NULL else reactive_skeleton()$Prior
+    error_msg <- validate_skeleton(skeleton, input$n_doses_inputt)
+    validation_state$skeleton_val <- error_msg
+    validation_state$skeleton_val_warning <- if (is.null(error_msg)) "" else paste("⚠️", error_msg)
+  })
 
   # Render individual warning messages next to each input
   output$n_doses_warning <- renderText({
@@ -733,6 +767,14 @@ observeEvent(move_data(), {
 
   output$stop_tox_y_warning <- renderText({
     validation_state$stop_tox_y_val_warning %||% ""
+  })
+
+  output$halfwidth_warning <- renderText({
+    validation_state$halfwidth_val_warning %||% ""
+  })
+
+  output$skeleton_warning <- renderText({
+    validation_state$skeleton_val_warning %||% ""
   })
 
   # BOIN
@@ -842,22 +884,23 @@ observeEvent(move_data(), {
       crm_names_var <- grep("var_val", names(validation_errors))
       crm_names_mtd <- grep("mtd_val", names(validation_errors))
       crm_names_tox <- grep("stop_tox", names(validation_errors))
+      crm_names_skel <- grep("skeleton|halfwidth", names(validation_errors))
 
       boin_names <- grep("boin", names(validation_errors))
       boin_names_phi <- grep("phi", names(validation_errors))
 
       if (length(crm_names_var) == 0 && length(crm_names_mtd) == 0 && length(crm_names_tox) == 0
-          && length(boin_names) == 0 && length(boin_names_phi) == 0) {
+          && length(crm_names_skel) == 0 && length(boin_names) == 0 && length(boin_names_phi) == 0) {
           general_names <- names(validation_errors)
           } else {
-      general_names <- validation_errors[-c(crm_names_var, crm_names_mtd, crm_names_tox, boin_names, boin_names_phi)]
+      general_names <- validation_errors[-c(crm_names_var, crm_names_mtd, crm_names_tox, crm_names_skel, boin_names, boin_names_phi)]
           }
       if (length(general_names) > 0) {
         names[[1]] <- "General Parameters"
       } else {
         names[[1]] <- NULL
       }
-      if (length(crm_names_var) > 0 || length(crm_names_mtd) > 0 || length(crm_names_tox) > 0) {
+      if (length(crm_names_var) > 0 || length(crm_names_mtd) > 0 || length(crm_names_tox) > 0 || length(crm_names_skel) > 0) {
         names[[2]] <- "CRM Parameters"
       } else {
         names[[2]] <- NULL

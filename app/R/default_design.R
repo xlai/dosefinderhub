@@ -9,7 +9,7 @@ default_design <- list(
   start_dose = 1,
   cohort_size = 3,
 
-  # CRM (the skeleton is built from the target and prior MTD in Trial Design)
+  # CRM (the skeleton is built from the target, halfwidth and prior MTD in Trial Design)
   crm = list(
     skip_esc = FALSE,
     skip_deesc = TRUE,
@@ -17,6 +17,7 @@ default_design <- list(
     prior_var = 1.34,
     stop_n_mtd = 9,
     prior_mtd = 3,
+    halfwidth_multiple = 0.25,
     stop_tox_x = 0.09,
     stop_tox_y = 0.77
   ),
@@ -44,6 +45,9 @@ default_design <- list(
     c(0.40, 0.57, 0.73, 0.84, 0.91)  # all doses too toxic
   )
 )
+
+# CRM skeleton halfwidth implied by the defaults
+default_design$crm$halfwidth <- default_design$crm$halfwidth_multiple * default_design$ttl
 
 # BOIN toxicity thresholds and escalation boundaries implied by the defaults
 default_design$boin$phi_1 <- default_design$boin$phi_1_multiple * default_design$ttl
