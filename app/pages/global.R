@@ -269,7 +269,7 @@ output <- list(
 ########################### CRM Simulation Function ###########################
 
 sim_crm <- function(n_doses, ttl, max_n, start_dose, n_sims, true_dlt_ss, skeleton, prior_var,
-                    skip_esc, skip_deesc, stop_tox_x, stop_tox_y, stop_n_mtd) {
+                    skip_esc, skip_deesc, stop_tox_x, stop_tox_y, stop_n_mtd, cohort_size) {
 
   # Failsafe for when n_doses does not match the length of skeleton
   if (length(skeleton) != n_doses) {
@@ -314,8 +314,10 @@ model$crm <- escalation::get_dfcrm(skeleton = skeleton, target = ttl, scale = sq
 ########################################################################################################################################################
 # run sims  
 
+patient_arrivals_func <- function(current_data) cohorts_of_n(n = cohort_size)
 sims$crm <- model$crm %>% 
-  escalation::simulate_trials(next_dose = start_dose, n_sims, true_dlt_ss, NULL)
+  escalation::simulate_trials(next_dose = start_dose, n_sims, true_dlt_ss, NULL,
+                              sample_patient_arrivals = patient_arrivals_func)
 
 # find selection probs  
 

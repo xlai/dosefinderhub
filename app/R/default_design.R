@@ -25,7 +25,7 @@ default_design <- list(
   # BOIN
   boin = list(
     stopping_rule = TRUE,
-    n_cohorts = 3,
+    n_cohorts = 10,
     stop_n_mtd = 9,
     phi_1_multiple = 0.6,
     phi_2_multiple = 1.4
