@@ -341,6 +341,14 @@ validation_state <- reactiveValues(
       type = "error",
       duration = 5
     )
+  } else if ("BOIN" %in% input$simulation_design_selection_input &&
+             !is.null(validate_boin_phis(shared$ttl(), shared$phi_1, shared$phi_2))) {
+    showNotification(
+      paste("Please change the BOIN parameters in the Trial Design tab:",
+            validate_boin_phis(shared$ttl(), shared$phi_1, shared$phi_2)),
+      type = "error",
+      duration = 5
+    )
   } else {
     # Adding in Scenarios. I am going to cap the possible number of Scenarios to 3 (this can be changed later).
 
