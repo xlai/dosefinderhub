@@ -278,6 +278,9 @@ reactive_skeleton <- reactiveVal() # initalising a reactive value to store the d
 ################## Questionnaire Inputs ##################    
 # There needs to be logic here to trasnfer data - I have taken this directly from the old Transfer Results From Questionnaire button.
 observeEvent(move_data(), {
+# Only on a transfer: move_data() starts as FALSE and is set back to FALSE
+# below, and either would otherwise reset these inputs.
+  if (!isTRUE(move_data())) return()
 # Transfer questionnaire results to trial design inputs
   if (length(shared$q_n_doses()) > 0) {
     updateNumericInput(session, "n_doses_inputt", value = shared$q_n_doses())
@@ -362,42 +365,18 @@ observeEvent(move_data(), {
 
   ################################ Configuration tab's sidebar code ################################
 
-  # General variables from configuration tab - use questionnaire values if available, otherwise UI inputs
-  shared$n_dosess <- reactive({
-    if (!is.null(shared$q_n_doses) && length(shared$q_n_doses()) > 0) {
-      shared$q_n_doses()
-    } else {
-      as.numeric(input$n_doses_inputt)
-    }
-  })
-  shared$ttl <- reactive({
-    if (!is.null(shared$q_ttl) && length(shared$q_ttl()) > 0) {
-      shared$q_ttl()
-    } else {
-      as.numeric(input$ttl_inputt)
-    }
-  })
-  shared$max_size <- reactive({
-    if (!is.null(shared$q_max_size) && length(shared$q_max_size()) > 0) {
-      shared$q_max_size()
-    } else {
-      as.numeric(input$max_size_inputt)
-    }
-  })
-  shared$start_dose <- reactive({
-    if (!is.null(shared$q_start_dose) && length(shared$q_start_dose()) > 0) {
-      shared$q_start_dose()
-    } else {
-      as.numeric(input$start_dose_inputt)
-    }
-  })
-  shared$cohort_size <- reactive({
-    if (!is.null(shared$q_cohort) && length(shared$q_cohort()) > 0) {
-      shared$q_cohort()
-    } else {
-      as.numeric(input$cohort_inputt)
-    }
-  })
+  # General variables from configuration tab. The questionnaire writes its
+  # answers into these inputs (see move_data above), so the inputs are the
+  # only source and later edits in Trial Design are kept.
+  shared$n_dosess <- reactive({as.numeric(input$n_doses_inputt)})
+  shared$ttl <- reactive({as.numeric(input$ttl_inputt)})
+  shared$max_size <- reactive({as.numeric(input$max_size_inputt)})
+  shared$start_dose <- reactive({as.numeric(input$start_dose_inputt)})
+  shared$cohort_size <- reactive({as.numeric(input$cohort_inputt)})
+  exportTestValues(
+    n_doses = shared$n_dosess(), ttl = shared$ttl(), max_size = shared$max_size(),
+    start_dose = shared$start_dose(), cohort_size = shared$cohort_size()
+  )
 
   # Model-specific variables from configuration tab
   # CRM

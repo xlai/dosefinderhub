@@ -198,3 +198,37 @@ test_that("BOIN p.saf and p.tox follow the target, reach the simulation, and are
   app$wait_for_idle()
   expect_match(app$get_value(output = "trial_design-boin_phi_warning"), "p.tox")
 })
+
+test_that("questionnaire answers reach Trial Design, and later edits there are kept", {
+  app <- AppDriver$new(test_path("..", ".."), name = "questionnaire-transfer",
+                       load_timeout = 60 * 1000, timeout = 20 * 1000)
+  on.exit(app$stop(), add = TRUE)
+
+  # The values Simulation and Conduct use (exported by Trial Design).
+  used <- function(name) app$get_value(export = paste0("trial_design-", name))
+  expect_equal(used("cohort_size"), default_design$cohort_size)
+  expect_equal(used("ttl"), default_design$ttl)
+
+  # Answer the general questions with non-default values, keep the rest.
+  app$set_inputs(nav = "Questionnaire")
+  for (i in 1:20) {
+    if (isTRUE(app$get_js("!!document.getElementById('questionnaire-advanced_settings')"))) break
+    question <- app$get_text("#questionnaire-question_counter")
+    if (identical(question, "Question 2 of 9")) app$set_inputs(`questionnaire-ttl` = 0.3)
+    if (identical(question, "Question 3 of 9")) app$set_inputs(`questionnaire-max_n` = 24)
+    if (identical(question, "Question 5 of 9")) app$set_inputs(`questionnaire-cohort_size` = 2)
+    app$click("questionnaire-next_button")
+    app$wait_for_idle()
+  }
+  app$click("questionnaire-advanced_settings")
+  app$wait_for_idle()
+  expect_equal(app$get_value(input = "nav"), "Trial Design")
+  expect_equal(app$get_value(input = "trial_design-cohort_inputt"), 2)
+  expect_equal(used("cohort_size"), 2)
+  expect_equal(used("ttl"), 0.3)
+  expect_equal(used("max_size"), 24)
+
+  app$set_inputs(`trial_design-cohort_inputt` = 4)
+  app$wait_for_idle()
+  expect_equal(used("cohort_size"), 4)
+})
