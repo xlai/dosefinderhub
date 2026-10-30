@@ -417,3 +417,19 @@ test_that("CRM and BOIN results do not depend on which other designs run", {
   expect_equal(with_tpt$CRM, alone$CRM)
   expect_equal(with_tpt$BOIN, alone$BOIN)
 })
+
+test_that("Conduct draws the BOIN plot before every dose has been given", {
+  app <- AppDriver$new(test_path("..", ".."), name = "conduct-boin-plot",
+                       load_timeout = 60 * 1000, timeout = 20 * 1000)
+  on.exit(app$stop(), add = TRUE)
+
+  # After the first cohort BOIN has no estimate for doses 2 to 5, which made
+  # the plot fail.
+  app$set_inputs(nav = "Conduct")
+  app$set_inputs(`conduct-choice` = "BOIN")
+  app$click("conduct-update_design")
+  app$wait_for_idle()
+  plot <- app$get_value(output = "conduct-boin_dlt_plot")
+  expect_match(plot$src, "^data:image/png")
+  expect_equal(count_errors(app), 0)
+})

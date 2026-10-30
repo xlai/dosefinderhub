@@ -617,6 +617,11 @@ output$crm_dlt_plot <- renderPlot({
        need(!is.null(results), "Please reach status: complete to see the plot.")
       )
 
+     # BOIN gives no estimate (NA) for doses not given yet, so plot only the
+     # doses with one, on an axis that still shows every dose.
+     n_doses <- nrow(results)
+     results <- results[!is.na(results$Posterior_DLT_Rate), ]
+
      dose_levels <- results$Dose_Level
      posterior <- results$Posterior_DLT_Rate
      ci_lower <- results$CI_Lower
@@ -628,7 +633,7 @@ output$crm_dlt_plot <- renderPlot({
        pch = 19, col = "blue", cex = 1.5,
        xlab = "Dose Level", ylab = "Posterior DLT Rate",
        main = "Posterior DLT Rates by Dose Level (BOIN)",
-       ylim = c(0, max(ci_upper) + 0.1)
+       xlim = c(1, n_doses), ylim = c(0, max(ci_upper) + 0.1)
       )
 
      polygon(
