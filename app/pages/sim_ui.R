@@ -99,6 +99,8 @@ sim_ui <- function(id) {
       h3("Run Simulation"),
       p("Please fill out the Simulation Inputs and click 'Run Simulation' to see the results."),
       input_task_button(ns("run_simulation"), "Run Simulation"),
+      p(paste0("Each design and scenario is simulated with the seed ", default_design$seed,
+               ", so the same inputs always give the same results.")),
       tags$hr(), # Separator line
       h3("Download Results"),
       p("Want to save your simulation results? Click a button below to download them as a CSV file."),
@@ -393,7 +395,8 @@ validation_state <- reactiveValues(
 
   # Design - only running simulations that are necessary to save time.
   if ("3+3" %in% input$simulation_design_selection_input)
-      { tpt_sim <- sim_tpt(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), default_design$seed)
+      { set.seed(default_design$seed) # Same seed for each design and scenario, so results do not depend on what else runs
+        tpt_sim <- sim_tpt(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]))
        tpt_modified_tab <- tpt_sim[-c(4,6)]
 
       tpt_modified_tab$mean_accuracy <- as.data.frame(tpt_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
@@ -421,7 +424,8 @@ validation_state <- reactiveValues(
       }
 
   if ("CRM" %in% input$simulation_design_selection_input)
-      { crm_sim <- sim_crm(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skeleton_crm(), shared$prior_var_crm(), shared$skip_esc_crm(), shared$skip_deesc_crm(), shared$stop_tox_x_crm(), shared$stop_tox_y_crm(), shared$stop_n_mtd_crm(), shared$cohort_size())
+      { set.seed(default_design$seed)
+        crm_sim <- sim_crm(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$skeleton_crm(), shared$prior_var_crm(), shared$skip_esc_crm(), shared$skip_deesc_crm(), shared$stop_tox_x_crm(), shared$stop_tox_y_crm(), shared$stop_n_mtd_crm(), shared$cohort_size())
       crm_modified_tab <- crm_sim[-c(4,6)]
   
 
@@ -450,7 +454,8 @@ validation_state <- reactiveValues(
       }
 
    if ("BOIN" %in% input$simulation_design_selection_input)
-      { boin_sim <- sim_boin(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$cohort_size(), shared$stop_n_mtd_boin(), p_tox =  shared$phi_2, p_saf =  shared$phi_1, shared$boin_stopping_rule(), shared$boin_cohorts())
+      { set.seed(default_design$seed)
+        boin_sim <- sim_boin(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$start_dose(), n_sims(), unlist(used_true_dlts[j, ]), shared$cohort_size(), shared$stop_n_mtd_boin(), p_tox =  shared$phi_2, p_saf =  shared$phi_1, shared$boin_stopping_rule(), shared$boin_cohorts())
        boin_modified_tab <- boin_sim[-c(4,6)]
 
       boin_modified_tab$mean_accuracy <- as.data.frame(boin_modified_tab$mean_accuracy, row.names = "Mean Accuracy")
