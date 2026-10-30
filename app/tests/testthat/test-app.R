@@ -246,12 +246,13 @@ test_that("Trial Design settings can be saved to a file and loaded again", {
   }
   app$set_inputs(nav = "Trial Design")
 
-  # Non-default values; the target is set first, because a new target
+  # Non-default values, basic mode included; the target is set first, because a new target
   # resets the halfwidth.
   saved <- list(ttl_inputt = 0.3, cohort_inputt = 4, max_size_inputt = 24,
                 halfwidth_input = 0.05, prior_var_input = 2,
                 skip_esc_crm_input = "TRUE", ttl_multiple_phi_1 = 0.7,
-                boin_stopping_rule = "FALSE")
+                boin_stopping_rule = "FALSE", modes = "1",
+                basic_prior_mtd_input = 2, basic_skip_esc_input = "TRUE")
   set_td(saved["ttl_inputt"])
   set_td(saved[names(saved) != "ttl_inputt"])
 
@@ -263,7 +264,8 @@ test_that("Trial Design settings can be saved to a file and loaded again", {
   set_td(list(ttl_inputt = 0.25))
   set_td(list(cohort_inputt = 3, max_size_inputt = 30, halfwidth_input = 0.1,
               prior_var_input = 1, skip_esc_crm_input = "FALSE",
-              ttl_multiple_phi_1 = 0.6, boin_stopping_rule = "TRUE"))
+              ttl_multiple_phi_1 = 0.6, boin_stopping_rule = "TRUE", modes = "2",
+              basic_prior_mtd_input = 3, basic_skip_esc_input = "FALSE"))
   app$upload_file(`trial_design-config_file_upload` = file)
   app$wait_for_idle()
 

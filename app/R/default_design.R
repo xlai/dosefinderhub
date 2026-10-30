@@ -72,9 +72,11 @@ config_numeric_inputs <- c(
   "n_doses_inputt", "ttl_inputt", "max_size_inputt", "start_dose_inputt", "cohort_inputt",
   "prior_var_input", "stop_n_mtd_input", "prior_mtd_input", "halfwidth_input",
   "stop_tox_x_input", "stop_tox_y_input",
-  "boin_cohorts", "stop_n_mtd_boin", "ttl_multiple_phi_1", "ttl_multiple_phi_2"
+  "boin_cohorts", "stop_n_mtd_boin", "ttl_multiple_phi_1", "ttl_multiple_phi_2",
+  "basic_prior_mtd_input"
 )
 config_choice_inputs <- c(
-  "skip_esc_crm_input", "skip_deesc_crm_input", "above_target_input", "boin_stopping_rule"
+  "skip_esc_crm_input", "skip_deesc_crm_input", "above_target_input", "boin_stopping_rule",
+  "modes", "basic_skip_esc_input", "basic_skip_deesc_input"
 )
 config_variables <- c(config_numeric_inputs, config_choice_inputs)
