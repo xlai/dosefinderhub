@@ -90,8 +90,38 @@ boin_probs <- function(ttl, lambda, type) { # Reverse engineering the BOIN proba
   return(result$root)
 }
 
+# Checks the BOIN target, p.saf (phi_1) and p.tox (phi_2) with the same rules
+# as BOIN::get.boundary(), which stops with an error otherwise. Returns NULL
+# if they are valid.
+validate_boin_phis <- function(target, p.saf, p.tox) {
+  if (is.null(target) || is.null(p.saf) || is.null(p.tox) ||
+      is.na(target) || is.na(p.saf) || is.na(p.tox)) {
+    return(NULL) # Nothing to check yet
+  }
+  if (target < 0.05 || target > 0.6) {
+    return("BOIN needs a target toxicity level between 0.05 and 0.6")
+  }
+  if (p.saf <= 0 || (target - p.saf) < (0.1 * target)) {
+    return(paste0("The BOIN escalation probability (p.saf) must be above 0 and at most 90% of the target (", signif(0.9 * target, 3), ")"))
+  }
+  if (p.tox >= 1 || (p.tox - target) < (0.1 * target)) {
+    return(paste0("The BOIN de-escalation probability (p.tox) must be below 1 and at least 110% of the target (", signif(1.1 * target, 3), ")"))
+  }
+  return(NULL) # No error
+}
+
+# BOIN escalation and de-escalation boundaries (Liu and Yuan, 2015), the same
+# formulas as in BOIN::get.boundary(); a test checks them against it.
+boin_lambdas <- function(target, p.saf, p.tox) {
+  list(
+    lambda_e = log((1 - p.saf) / (1 - target)) / log(target * (1 - p.saf) / (p.saf * (1 - target))),
+    lambda_d = log((1 - target) / (1 - p.tox)) / log(p.tox * (1 - target) / (target * (1 - p.tox)))
+  )
+}
+
 boin_boundaries <- function(target, ncohort, cohortsize, n.earlystop, p.saf, p.tox) { # Generating boundaries
- if (0 < p.saf && p.saf < 0.95*target && 1.05*target < p.tox && p.tox < 1 && !is.na(p.saf) && !is.na(p.tox)) {
+ phi_error <- validate_boin_phis(target, p.saf, p.tox)
+ if (is.null(phi_error) && !is.na(p.saf) && !is.na(p.tox)) {
   lambda <- BOIN::get.boundary(target = target, ncohort = ncohort, 
                                cohortsize = cohortsize, n.earlystop = n.earlystop, 
                                p.saf = p.saf, p.tox = p.tox, 0.95, FALSE, 0.05)
@@ -102,7 +132,7 @@ boin_boundaries <- function(target, ncohort, cohortsize, n.earlystop, p.saf, p.t
   text_e <-  paste("lambda_e = ", lambda_e) 
   text_d <-  paste("lambda_d = ", lambda_d)
  } else {
-  text_e <- "Probabilities must be less than and greater than the ttl respectively, and cannot be too close to the ttl."
+  text_e <- phi_error %||% "Please enter both probabilities."
   text_d <- NULL
 
   lambda_e <- NULL

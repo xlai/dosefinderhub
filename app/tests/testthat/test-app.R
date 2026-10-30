@@ -143,3 +143,58 @@ test_that("an edited skeleton is checked, and CRM runs after a valid edit", {
   expect_true(any(grepl("^CRM", titles)), label = "CRM results")
   expect_equal(count_errors(app), 0)
 })
+
+test_that("BOIN p.saf and p.tox follow the target, reach the simulation, and are checked", {
+  app <- AppDriver$new(test_path("..", ".."), name = "boin-inputs",
+                       load_timeout = 60 * 1000, timeout = 20 * 1000)
+  on.exit(app$stop(), add = TRUE)
+
+  boin_value <- function(id) app$get_value(input = paste0("trial_design-", id))
+  run_boin <- function() {
+    app$set_inputs(nav = "Simulation")
+    app$set_inputs(`simulation-simulation_design_selection_input` = "BOIN")
+    wait_for_picker(app, "simulation-scen_output_input")
+    app$set_inputs(`simulation-scen_output_input` = "Scenario 1")
+    wait_for_picker(app, "simulation-metric_selection_input")
+    app$set_inputs(`simulation-metric_selection_input` = "Accuracy")
+    app$click("simulation-run_simulation")
+    app$wait_for_idle(timeout = 10 * 60 * 1000)
+  }
+
+  app$set_inputs(nav = "Trial Design")
+  app$set_inputs(display_boin = TRUE, display_input_all = TRUE)
+
+  # A new target keeps the multiples (0.6 and 1.4), so p.saf, p.tox and the
+  # boundaries move with it.
+  app$set_inputs(`trial_design-ttl_inputt` = 0.4)
+  app$wait_for_idle()
+  expect_equal(boin_value("direct_phi_1"), 0.24, tolerance = 1e-6)
+  expect_equal(boin_value("direct_phi_2"), 0.56, tolerance = 1e-6)
+  expected <- boin_lambdas(0.4, 0.24, 0.56)
+  expect_equal(boin_value("direct_lambda_e"), expected$lambda_e, tolerance = 1e-6)
+  expect_equal(boin_value("direct_lambda_d"), expected$lambda_d, tolerance = 1e-6)
+
+  # Entering a boundary sets the matching probability and multiple.
+  lambda_e <- boin_lambdas(0.4, 0.3, 0.56)$lambda_e
+  app$set_inputs(`trial_design-direct_lambda_e` = lambda_e)
+  app$wait_for_idle()
+  expect_equal(boin_value("direct_phi_1"), 0.3, tolerance = 1e-3)
+  expect_equal(boin_value("ttl_multiple_phi_1"), 0.75, tolerance = 1e-3)
+  expect_equal(app$get_value(output = "trial_design-boin_phi_warning"), "")
+
+  # BOIN runs with a target of 0.4.
+  run_boin()
+  app$click(selector = "a[data-value='Simulation Output - Tables']")
+  app$wait_for_idle()
+  titles <- unlist(app$get_js(
+    "Object.keys(document.getElementById('simulation-ind_tables').selectize.options)"
+  ))
+  expect_true(any(grepl("^BOIN", titles)), label = "BOIN results")
+  expect_equal(count_errors(app), 0)
+
+  # A p.tox too close to the target is flagged in Trial Design.
+  app$set_inputs(nav = "Trial Design")
+  app$set_inputs(`trial_design-direct_phi_2` = 0.42)
+  app$wait_for_idle()
+  expect_match(app$get_value(output = "trial_design-boin_phi_warning"), "p.tox")
+})

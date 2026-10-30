@@ -110,7 +110,8 @@ boin_general_inputs <- tagList(
   boin_cohorts,
   boin_cohorts_warning_text <- textOutput(ns("boin_cohorts_warning")),
   stop_n_mtd_boin,
-  stop_n_mtd_boin_warning_text <- textOutput(ns("stop_n_mtd_boin_warning"))
+  stop_n_mtd_boin_warning_text <- textOutput(ns("stop_n_mtd_boin_warning")),
+  textOutput(ns("boin_phi_warning"))
 )
 boin_ui_inputs_multiple_ttl <- tagList( 
   hr(),
@@ -415,50 +416,94 @@ observeEvent(move_data(), {
   shared$boin_cohorts <- reactive({as.numeric(input$boin_cohorts)})
   shared$stop_n_mtd_boin <- reactive({as.numeric(input$stop_n_mtd_boin)})
   
+  # p.saf (phi_1) and p.tox (phi_2) are what the BOIN simulation uses. They can
+  # be entered as multiples of the target, as probabilities, or through the
+  # escalation boundaries (lambda_e, lambda_d); the other two forms are kept in
+  # step. A new target keeps the multiples, so phi_1 and phi_2 move with it.
   shared$phi_1 <- default_design$boin$phi_1
   shared$phi_2 <- default_design$boin$phi_2
 
+  # The server keeps these inputs in step by updating them, and each update
+  # comes back from the browser as an input change. The values the server
+  # sent are remembered, so that echo is ignored instead of starting another
+  # round of updates.
+  sent_to_input <- new.env()
+  update_if_changed <- function(id, value) {
+    if (!is.na(value) && !isTRUE(all.equal(as.numeric(input[[id]]), value, tolerance = 1e-6))) {
+      sent_to_input[[id]] <- value
+      updateNumericInput(session, id, value = value)
+    }
+  }
+  is_echo <- function(id) {
+    sent <- sent_to_input[[id]]
+    !is.null(sent) && isTRUE(all.equal(as.numeric(input[[id]]), sent, tolerance = 1e-9))
+  }
+
+  boin_ttl <- function() as.numeric(input$ttl_inputt)
+
+  # typed_lambda names a boundary the user just typed, which is left as typed.
+  set_boin_phis <- function(phi_1 = shared$phi_1, phi_2 = shared$phi_2, typed_lambda = NULL) {
+    ttl <- boin_ttl()
+    if (is.na(ttl) || is.na(phi_1) || is.na(phi_2)) return()
+    shared$phi_1 <- phi_1
+    shared$phi_2 <- phi_2
+    update_if_changed("ttl_multiple_phi_1", phi_1 / ttl)
+    update_if_changed("ttl_multiple_phi_2", phi_2 / ttl)
+    update_if_changed("direct_phi_1", phi_1)
+    update_if_changed("direct_phi_2", phi_2)
+    if (is.null(validate_boin_phis(ttl, phi_1, phi_2))) {
+      lambda <- boin_lambdas(ttl, phi_1, phi_2)
+      if (!identical(typed_lambda, "e")) update_if_changed("direct_lambda_e", lambda$lambda_e)
+      if (!identical(typed_lambda, "d")) update_if_changed("direct_lambda_d", lambda$lambda_d)
+    }
+  }
+
+  observeEvent(input$ttl_inputt, {
+    set_boin_phis(phi_1 = as.numeric(input$ttl_multiple_phi_1) * boin_ttl(),
+                  phi_2 = as.numeric(input$ttl_multiple_phi_2) * boin_ttl())
+  }, ignoreInit = TRUE)
   observeEvent(input$ttl_multiple_phi_1, {
-    shared$phi_1 <- as.numeric(input$ttl_multiple_phi_1) * shared$ttl()
-    updateNumericInput(session, "direct_phi_1", value = shared$phi_1)
-    lambda <- boin_boundaries(target = shared$ttl(), ncohort = shared$boin_cohorts(), 
-                                 cohortsize =  shared$cohort_size(), n.earlystop = shared$stop_n_mtd_boin(), 
-                                 p.saf = shared$phi_1, p.tox = shared$phi_2)
-    updateNumericInput(session, "direct_lambda_e", value = lambda$lambda_e)
+    if (is_echo("ttl_multiple_phi_1")) return()
+    set_boin_phis(phi_1 = as.numeric(input$ttl_multiple_phi_1) * boin_ttl())
   })
   observeEvent(input$ttl_multiple_phi_2, {
-    shared$phi_2 <- as.numeric(input$ttl_multiple_phi_2) * shared$ttl()
-    updateNumericInput(session, "direct_phi_2", value = shared$phi_2)
-   lambda <- boin_boundaries(target = shared$ttl(), ncohort = shared$boin_cohorts(), 
-                                 cohortsize =  shared$cohort_size(), n.earlystop = shared$stop_n_mtd_boin(), 
-                                 p.saf = shared$phi_1, p.tox = shared$phi_2)
-    updateNumericInput(session, "direct_lambda_d", value = lambda$lambda_d)
+    if (is_echo("ttl_multiple_phi_2")) return()
+    set_boin_phis(phi_2 = as.numeric(input$ttl_multiple_phi_2) * boin_ttl())
   })
   observeEvent(input$direct_phi_1, {
-    shared$phi_1 <- as.numeric(input$direct_phi_1)
-    updateNumericInput(session, "ttl_multiple_phi_1", value = shared$phi_1 / shared$ttl())
-    lambda <- boin_boundaries(target = shared$ttl(), ncohort = shared$boin_cohorts(), 
-                                 cohortsize =  shared$cohort_size(), n.earlystop = shared$stop_n_mtd_boin(), 
-                                 p.saf = shared$phi_1, p.tox = shared$phi_2)
-    updateNumericInput(session, "direct_lambda_e", value = lambda$lambda_e)
+    if (is_echo("direct_phi_1")) return()
+    set_boin_phis(phi_1 = as.numeric(input$direct_phi_1))
   })
   observeEvent(input$direct_phi_2, {
-    shared$phi_2 <- as.numeric(input$direct_phi_2)
-    updateNumericInput(session, "ttl_multiple_phi_2", value = shared$phi_2 / shared$ttl())
-     lambda <- boin_boundaries(target = shared$ttl(), ncohort = shared$boin_cohorts(), 
-                                 cohortsize =  shared$cohort_size(), n.earlystop = shared$stop_n_mtd_boin(), 
-                                 p.saf = shared$phi_1, p.tox = shared$phi_2)
-    updateNumericInput(session, "direct_lambda_d", value = lambda$lambda_d)
+    if (is_echo("direct_phi_2")) return()
+    set_boin_phis(phi_2 = as.numeric(input$direct_phi_2))
   })
-  observeEvent(input$lambda_e, {
-    shared$phi_1 <- boin_probs(shared$ttl(), as.numeric(input$lambda_e), 1)
-    updateNumericInput(session, "direct_phi_1", value = shared$phi_1)
-    updateNumericInput(session, "ttl_multiple_phi_1", value = shared$phi_1 / shared$ttl())
-  })
-  observeEvent(input$lambda_d, {
-    shared$phi_2 <- boin_probs(shared$ttl(), as.numeric(input$lambda_d), 2)
-    updateNumericInput(session, "direct_phi_2", value = shared$phi_2)
-    updateNumericInput(session, "ttl_multiple_phi_2", value = shared$phi_2 / shared$ttl())
+  # A boundary is turned back into a probability only when the user changes it
+  # and it differs from the one implied by the current probabilities. At
+  # startup the probabilities set the boundaries, not the other way round.
+  observeEvent(input$direct_lambda_e, {
+    if (is_echo("direct_lambda_e")) return()
+    lambda_e <- as.numeric(input$direct_lambda_e)
+    current <- boin_lambdas(boin_ttl(), shared$phi_1, shared$phi_2)$lambda_e
+    if (!is.na(lambda_e) && !isTRUE(all.equal(lambda_e, current, tolerance = 1e-4))) {
+      phi_1 <- tryCatch(boin_probs(boin_ttl(), lambda_e, 1), error = function(e) NA)
+      set_boin_phis(phi_1 = phi_1, typed_lambda = "e")
+    }
+  }, ignoreInit = TRUE)
+  observeEvent(input$direct_lambda_d, {
+    if (is_echo("direct_lambda_d")) return()
+    lambda_d <- as.numeric(input$direct_lambda_d)
+    current <- boin_lambdas(boin_ttl(), shared$phi_1, shared$phi_2)$lambda_d
+    if (!is.na(lambda_d) && !isTRUE(all.equal(lambda_d, current, tolerance = 1e-4))) {
+      phi_2 <- tryCatch(boin_probs(boin_ttl(), lambda_d, 2), error = function(e) NA)
+      set_boin_phis(phi_2 = phi_2, typed_lambda = "d")
+    }
+  }, ignoreInit = TRUE)
+
+  # Shown in the BOIN card; a run that includes BOIN is blocked in Simulation.
+  output$boin_phi_warning <- renderText({
+    error_msg <- validate_boin_phis(boin_ttl(), shared$phi_1, shared$phi_2)
+    if (is.null(error_msg)) "" else paste("⚠️", error_msg)
   })
 
   observeEvent(input$boin_generate_boundaries, {
