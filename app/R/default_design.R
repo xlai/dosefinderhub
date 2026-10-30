@@ -65,9 +65,16 @@ default_design$boin$lambda_d <- round(default_boin_boundary$lambda_d, 3)
 # Names of the designs offered in the app
 design_names <- c("CRM", "3+3", "BOIN")
 
-# Settings saved and loaded by the Trial Design configuration file
-config_variables <- c(
-  "n_doses", "ttl", "max_n", "start_dose", "cohort_size",
-  "skip_esc", "skip_deesc", "no_esc_if_observed_gt_target", "prior_var", "stop_n_mtd",
-  "prior_ttp", "prior_mtd", "stop_tox_x", "stop_tox_y", "tpt_allow_deesc"
+# Trial Design inputs saved and loaded by the settings file. The BOIN
+# probabilities and boundaries follow from the saved multiples of the target,
+# and the CRM skeleton from the target, halfwidth and prior MTD guess.
+config_numeric_inputs <- c(
+  "n_doses_inputt", "ttl_inputt", "max_size_inputt", "start_dose_inputt", "cohort_inputt",
+  "prior_var_input", "stop_n_mtd_input", "prior_mtd_input", "halfwidth_input",
+  "stop_tox_x_input", "stop_tox_y_input",
+  "boin_cohorts", "stop_n_mtd_boin", "ttl_multiple_phi_1", "ttl_multiple_phi_2"
 )
+config_choice_inputs <- c(
+  "skip_esc_crm_input", "skip_deesc_crm_input", "above_target_input", "boin_stopping_rule"
+)
+config_variables <- c(config_numeric_inputs, config_choice_inputs)

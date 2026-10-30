@@ -232,3 +232,45 @@ test_that("questionnaire answers reach Trial Design, and later edits there are k
   app$wait_for_idle()
   expect_equal(used("cohort_size"), 4)
 })
+
+test_that("Trial Design settings can be saved to a file and loaded again", {
+  app <- AppDriver$new(test_path("..", ".."), name = "settings-file",
+                       load_timeout = 60 * 1000, timeout = 20 * 1000)
+  on.exit(app$stop(), add = TRUE)
+
+  td <- function(id) paste0("trial_design-", id)
+  set_td <- function(values) {
+    names(values) <- td(names(values))
+    do.call(app$set_inputs, values)
+    app$wait_for_idle()
+  }
+  app$set_inputs(nav = "Trial Design")
+
+  # Non-default values; the target is set first, because a new target
+  # resets the halfwidth.
+  saved <- list(ttl_inputt = 0.3, cohort_inputt = 4, max_size_inputt = 24,
+                halfwidth_input = 0.05, prior_var_input = 2,
+                skip_esc_crm_input = "TRUE", ttl_multiple_phi_1 = 0.7,
+                boin_stopping_rule = "FALSE")
+  set_td(saved["ttl_inputt"])
+  set_td(saved[names(saved) != "ttl_inputt"])
+
+  file <- app$get_download(td("config_save_button"))
+  settings <- read.csv(file)
+  expect_setequal(settings$inputId, config_variables)
+
+  # Change them all, then load the file.
+  set_td(list(ttl_inputt = 0.25))
+  set_td(list(cohort_inputt = 3, max_size_inputt = 30, halfwidth_input = 0.1,
+              prior_var_input = 1, skip_esc_crm_input = "FALSE",
+              ttl_multiple_phi_1 = 0.6, boin_stopping_rule = "TRUE"))
+  app$upload_file(`trial_design-config_file_upload` = file)
+  app$wait_for_idle()
+
+  for (id in names(saved)) {
+    value <- app$get_value(input = td(id))
+    expect_equal(as.character(value), as.character(saved[[id]]), label = id)
+  }
+  # The BOIN probabilities follow the loaded multiple and target.
+  expect_equal(app$get_value(input = td("direct_phi_1")), 0.7 * 0.3, tolerance = 1e-6)
+})
