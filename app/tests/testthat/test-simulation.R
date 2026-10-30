@@ -36,7 +36,7 @@ test_that("CRM simulates with a non-default prior variance and stopping rule", {
   sim <- sim_crm(d$n_doses, d$ttl, d$max_size, d$start_dose, n_sims, scenario,
                  skeleton, prior_var = 2.5, skip_esc = d$crm$skip_esc,
                  skip_deesc = d$crm$skip_deesc, stop_tox_x = d$crm$stop_tox_x,
-                 stop_tox_y = d$crm$stop_tox_y, stop_n_mtd = 6)
+                 stop_tox_y = d$crm$stop_tox_y, stop_n_mtd = 6, cohort_size = 4)
   expect_valid_sim(sim, d$n_doses, n_sims)
 })
 
@@ -47,6 +47,43 @@ test_that("BOIN simulates with a cohort size of 4", {
                   p_tox = d$boin$phi_2, p_saf = d$boin$phi_1,
                   use_stopping_rule = d$boin$stopping_rule, n_cohorts = 8)
   expect_valid_sim(sim, d$n_doses, n_sims)
+})
+
+test_that("CRM and BOIN treat whole cohorts of the size they are given", {
+  # With 4 patients at most, one cohort of 4 all get the starting dose; with
+  # cohorts of 3, a second cohort can move on to dose 2.
+  skeleton <- dfcrm::getprior(halfwidth = 0.25 * d$ttl, target = d$ttl,
+                              nu = d$crm$prior_mtd, nlevel = d$n_doses)
+  pct_at_start <- function(design, cohort_size) {
+    set.seed(d$seed)
+    sim <- if (design == "CRM") {
+      sim_crm(d$n_doses, d$ttl, max_n = 4, d$start_dose, n_sims, d$scenarios[2, ],
+              skeleton, d$crm$prior_var, d$crm$skip_esc, d$crm$skip_deesc,
+              d$crm$stop_tox_x, d$crm$stop_tox_y, stop_n_mtd = 4, cohort_size = cohort_size)
+    } else {
+      sim_boin(d$n_doses, d$ttl, max_n = 4, d$start_dose, n_sims, d$scenarios[2, ],
+               cohort_size = cohort_size, stop_n_mtd = 4, p_tox = d$boin$phi_2,
+               p_saf = d$boin$phi_1, use_stopping_rule = TRUE, n_cohorts = 1)
+    }
+    sim$treatment_tab[1, d$start_dose]
+  }
+  for (design in c("CRM", "BOIN")) {
+    expect_equal(pct_at_start(design, 4), 100, label = design)
+    expect_lt(pct_at_start(design, 3), 100, label = design)
+  }
+})
+
+test_that("BOIN stops for toxicity only when its stopping rule is on", {
+  no_dose_pct <- function(use_stopping_rule) {
+    set.seed(d$seed)
+    sim <- sim_boin(d$n_doses, d$ttl, d$max_size, d$start_dose, n_sims, d$scenarios[3, ],
+                    d$cohort_size, d$boin$stop_n_mtd, p_tox = d$boin$phi_2,
+                    p_saf = d$boin$phi_1, use_stopping_rule = use_stopping_rule,
+                    n_cohorts = d$boin$n_cohorts)
+    sim$selection_tab[1, "NoDose"]
+  }
+  expect_gt(no_dose_pct(TRUE), 0)
+  expect_equal(no_dose_pct(FALSE), 0)
 })
 
 test_that("Accuracy counts 'no dose' as right when every dose is too toxic", {

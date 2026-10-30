@@ -309,3 +309,62 @@ test_that("each design's plots carry its own name when viewed individually", {
   # With one design there were no plots at all.
   expect_match(plot_names("CRM"), "for CRM ")
 })
+
+test_that("the cohort size and the BOIN stopping rule reach the simulation", {
+  app <- AppDriver$new(test_path("..", ".."), name = "cohort-size",
+                       load_timeout = 60 * 1000, timeout = 20 * 1000)
+  on.exit(app$stop(), add = TRUE)
+
+  # One cohort of 4 fills the trial, so every patient gets the starting dose.
+  # The default cohort size of 3 would hide a cohort size that is not used.
+  app$set_inputs(nav = "Trial Design")
+  app$set_inputs(display_crm = TRUE, display_boin = TRUE, display_input_all = TRUE)
+  app$set_inputs(`trial_design-max_size_inputt` = 4, `trial_design-cohort_inputt` = 4,
+                 `trial_design-stop_n_mtd_input` = 4, `trial_design-stop_n_mtd_boin` = 4,
+                 `trial_design-boin_cohorts` = 1, `trial_design-boin_stopping_rule` = "FALSE")
+  app$wait_for_idle()
+
+  app$set_inputs(nav = "Simulation")
+  app$set_inputs(`simulation-simulation_design_selection_input` = c("CRM", "BOIN"))
+  wait_for_picker(app, "simulation-scen_output_input")
+  app$set_inputs(`simulation-scen_output_input` = c("Scenario 2", "Scenario 3"))
+  wait_for_picker(app, "simulation-metric_selection_input")
+  app$set_inputs(`simulation-metric_selection_input` = c(
+    "% participants treated at dose", "% times dose was selected as MTD"
+  ))
+  app$set_inputs(`simulation-comparative_view` = "Individually")
+  app$click("simulation-run_simulation")
+  app$wait_for_idle(timeout = 10 * 60 * 1000)
+  app$click(selector = "a[data-value='Simulation Output - Tables']")
+  app$wait_for_idle()
+  expect_equal(count_errors(app), 0)
+
+  # The first row of the results table with this title, named by column.
+  titles <- unlist(app$get_js(
+    "Object.keys(document.getElementById('simulation-ind_tables').selectize.options)"
+  ))
+  first_row <- function(design, scenario, metric) {
+    title <- grep(paste0("^", design, ".*", scenario, ".*", metric), titles, value = TRUE)
+    expect_length(title, 1)
+    app$set_inputs(`simulation-ind_tables` = title)
+    app$wait_for_js(sprintf(
+      "document.getElementById('simulation-selected_ind_title').textContent === %s",
+      jsonlite::toJSON(title, auto_unbox = TRUE)
+    ))
+    cells <- unlist(app$get_js(
+      "Array.from(document.querySelectorAll('#simulation-selected_ind_table tr'))
+         .slice(0, 2).map(tr => Array.from(tr.children).map(c => c.textContent.trim()).join('|'))"
+    ))
+    header <- strsplit(cells[1], "|", fixed = TRUE)[[1]][-1]
+    values <- as.numeric(strsplit(cells[2], "|", fixed = TRUE)[[1]][-1])
+    setNames(values, header)
+  }
+
+  for (design in c("CRM", "BOIN")) {
+    treated <- first_row(design, "Scenario 2", "Treated")
+    expect_equal(unname(treated[1]), 100, label = paste(design, "% treated at dose 1"))
+  }
+  # With the stopping rule off, BOIN never stops for toxicity, even when every
+  # dose is too toxic.
+  expect_equal(unname(first_row("BOIN", "Scenario 3", "MTD")["NoDose"]), 0)
+})
