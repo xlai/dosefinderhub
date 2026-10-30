@@ -112,7 +112,7 @@ con_server <- function(id, shared) {
      initial_rows <- data.frame(
        Patient_Number = seq_len(initial_cohort_size),
        Cohort_Number = rep(1, initial_cohort_size),
-       Dose_Level = rep(1, initial_cohort_size),
+       Dose_Level = rep(shared$start_dose(), initial_cohort_size),
        DLT = rep(0, initial_cohort_size),
        stringsAsFactors = FALSE
       )
@@ -123,37 +123,26 @@ con_server <- function(id, shared) {
      output$dose_plot <- renderPlot(NULL)
 
      # Initialize model
+     # The same designs as in Simulation (see the design builders in global.R)
      if (input$choice == "CRM") {
-       target <- shared$ttl()
-       skeleton <- shared$skeleton_crm()
-       model <- get_dfcrm(skeleton = skeleton, target = target) %>%
-       dont_skip_doses(when_escalating = TRUE) %>%
-       stop_at_n(n = shared$max_size()) %>%
-       stop_when_n_at_dose(dose = "recommended", n = 9)
+       model <- crm_design(shared$skeleton_crm(), shared$ttl(), shared$max_size(), shared$prior_var_crm(),
+                           shared$skip_esc_crm(), shared$skip_deesc_crm(), shared$stop_tox_x_crm(),
+                           shared$stop_tox_y_crm(), shared$stop_n_mtd_crm())
        crm_model(model)
        boin_model(NULL)
        tpt_model(NULL)
       }
 
      if (input$choice == "BOIN") {
-       target <- shared$ttl()
-       num_doses <- shared$n_dosess()
-       model <- get_boin(num_doses = num_doses, target = target) %>%
-       dont_skip_doses(when_escalating = TRUE) %>%
-       stop_at_n(n = shared$max_size()) %>%
-       stop_when_n_at_dose(dose = "recommended", n = 9)
+       model <- boin_design(shared$n_dosess(), shared$ttl(), shared$max_size(), shared$stop_n_mtd_boin(),
+                            p_tox = shared$phi_2, p_saf = shared$phi_1, shared$boin_stopping_rule())
        boin_model(model)
        crm_model(NULL)
        tpt_model(NULL)
       }
 
       if (input$choice == "3+3") {
-        target <- shared$ttl()
-        num_doses <- shared$n_dosess()
-        model <- get_three_plus_three(num_doses = num_doses, target = target) %>%
-       dont_skip_doses(when_escalating = TRUE) %>%
-       stop_at_n(n = shared$max_size()) %>%
-       stop_when_n_at_dose(dose = "recommended", n = 9)
+        model <- tpt_design(shared$n_dosess(), shared$max_size())
        crm_model(NULL)
        boin_model(NULL)
        tpt_model(model)
@@ -181,7 +170,7 @@ con_server <- function(id, shared) {
       initial_rows <- data.frame(
         Patient_Number = seq_len(initial_cohort_size),
         Cohort_Number = rep(1, initial_cohort_size),
-        Dose_Level = rep(1, initial_cohort_size),
+        Dose_Level = rep(shared$start_dose(), initial_cohort_size),
         DLT = rep(0, initial_cohort_size),
         stringsAsFactors = FALSE
       )
@@ -352,8 +341,8 @@ con_server <- function(id, shared) {
       if (!is.null(fit_result)) {
         recommended <- fit_result %>% recommended_dose()
         n_at_recommended <- sum(data$Dose_Level == recommended)
-      if (n_at_recommended >= 9) {
-        return("Suggestion: Stop trial - 9 patients at recommended dose")
+      if (n_at_recommended >= shared$stop_n_mtd_crm()) {
+        return(paste("Suggestion: Stop trial -", shared$stop_n_mtd_crm(), "patients at recommended dose"))
       }
     }
     }
