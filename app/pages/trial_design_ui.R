@@ -210,12 +210,12 @@ other_basic_inputs <- tagList(
     sidebar = sidebar(
       h3("Trial Design"),
       tags$hr(), # Separator line
-      fileInput("config_file_upload", 
+      fileInput(ns("config_file_upload"), 
       "Saved a Trial Design file? Input it here to retrieve your configurations.", 
       accept = c(".csv", ".rds")),
 
       p("Want to save your configurations for later? Download a them as a file by clicking the button below."),
-      downloadButton("config_save_button", "Download file with all configurations"),
+      downloadButton(ns("config_save_button"), "Download file with all configurations"),
       tags$hr(), # Separator line
       p("Done filling out the configurations? Click the button below to run simulations."),
       actionButton(ns("view_simulation"), "View Simulation"),
@@ -249,9 +249,14 @@ reactive_skeleton <- reactiveVal() # initalising a reactive value to store the d
   reactive_skeleton(df) # Updating the reactive value with the new data frame
    } })
 
-  # A new target resets the halfwidth to its default share of the target.
+  # A new target resets the halfwidth to its default share of the target,
+  # except for a target loaded from a settings file, which comes with its
+  # own halfwidth.
+  loaded_ttl <- new.env()
   observeEvent(input$ttl_inputt, {
-    if (!is.na(input$ttl_inputt)) {
+    from_file <- isTRUE(all.equal(as.numeric(input$ttl_inputt), loaded_ttl$value))
+    loaded_ttl$value <- NULL
+    if (!from_file && !is.na(input$ttl_inputt)) {
       updateNumericInput(session, "halfwidth_input", value = default_design$crm$halfwidth_multiple * input$ttl_inputt)
     }
   }, ignoreInit = TRUE)
@@ -320,46 +325,40 @@ observeEvent(move_data(), {
 
  ######################################## Configuration tab's file upload/download ########################################
 
-  #Upload
-  observe({
-    
+  #Upload: one row per input (inputId, value), as written by the download.
+  observeEvent(input$config_file_upload, {
     in_file <- input$config_file_upload
-
-    if (is.null(in_file)) {
-      return(NULL)
+    ext <- tolower(tools::file_ext(in_file$name))
+    settings <- tryCatch(
+      if (ext == "rds") readRDS(in_file$datapath) else read.csv(in_file$datapath),
+      error = function(e) NULL
+    )
+    if (!is.data.frame(settings) || !all(c("inputId", "value") %in% names(settings))) {
+      showNotification("This file does not contain Trial Design settings.", type = "error")
+      return()
     }
-
-    ext <- tools::file_ext(in_file$datapath)
-
-    if (ext == "csv") {
-      user_responses <- read.csv(in_file$datapath)
-    } else if (ext == "rds") {
-      user_responses <- readRDS(in_file$datapath)
+    # Names not used by this version of the app are skipped.
+    for (i in seq_len(nrow(settings))) {
+      id <- as.character(settings$inputId[i])
+      value <- as.character(settings$value[i])
+      if (id %in% config_numeric_inputs) {
+        if (id == "ttl_inputt") loaded_ttl$value <- as.numeric(value)
+        updateNumericInput(session, id, value = as.numeric(value))
+      } else if (id %in% config_choice_inputs) {
+        updateRadioButtons(session, id, selected = value)
+      }
     }
-
-    for (i in seq_len(nrow(user_responses))) {
-      updateNumericInput(session, inputId = user_responses$inputId[i], value = user_responses$value[i])
-    }
-
+    showNotification("Trial Design settings loaded.", type = "message")
   })
 
-  #Download - This doesn't work. Should be changed to allow for new variable names.
-
+  #Download
   output$config_save_button <- shiny::downloadHandler(
     filename = function() {
-      paste("user_responses-", Sys.Date(), ".csv", sep = "")
+      paste0("trial-design-settings-", Sys.Date(), ".csv")
     },
-
     content = function(file) {
-        input_ids_for_df <- config_variables
-
-        inputs_for_df <- c()
-        for (input.i in 1:length(input_ids_for_df)){
-          inputs_for_df <- append(inputs_for_df, input[[input_ids_for_df[input.i]]])
-        }
-  
-        inputs_data_frame <- data.frame(inputId=c(input_ids_for_df), value=c(inputs_for_df))
-        write.csv(inputs_data_frame, file)
+      values <- vapply(config_variables, function(id) as.character(input[[id]] %||% NA), character(1))
+      write.csv(data.frame(inputId = config_variables, value = values), file, row.names = FALSE)
     }
   )
 
