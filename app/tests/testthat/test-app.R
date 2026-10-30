@@ -319,10 +319,17 @@ test_that("the cohort size and the BOIN stopping rule reach the simulation", {
   # The default cohort size of 3 would hide a cohort size that is not used.
   app$set_inputs(nav = "Trial Design")
   app$set_inputs(display_crm = TRUE, display_boin = TRUE, display_input_all = TRUE)
+
+  # 30 patients in cohorts of 4: the last cohort takes a trial to 32.
+  app$set_inputs(`trial_design-cohort_inputt` = 4)
+  app$wait_for_idle()
+  expect_match(app$get_value(output = "trial_design-cohort_multiple_warning"), "reach 32 patients")
+
   app$set_inputs(`trial_design-max_size_inputt` = 4, `trial_design-cohort_inputt` = 4,
                  `trial_design-stop_n_mtd_input` = 4, `trial_design-stop_n_mtd_boin` = 4,
                  `trial_design-boin_cohorts` = 1, `trial_design-boin_stopping_rule` = "FALSE")
   app$wait_for_idle()
+  expect_equal(app$get_value(output = "trial_design-cohort_multiple_warning"), "")
 
   app$set_inputs(nav = "Simulation")
   app$set_inputs(`simulation-simulation_design_selection_input` = c("CRM", "BOIN"))

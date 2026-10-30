@@ -20,6 +20,7 @@ trial_design_ui <- function(id) {
   max_size_warning_text <- textOutput(ns("max_size_warning"))
   start_dose_warning_text <- textOutput(ns("start_dose_warning"))
   cohort_warning_text <- textOutput(ns("cohort_warning"))
+  cohort_multiple_warning_text <- textOutput(ns("cohort_multiple_warning"))
 
   non_specific_ui_inputts <- tagList(
     n_doses_output,
@@ -32,7 +33,8 @@ trial_design_ui <- function(id) {
     start_dose_warning_text,
     cohort_output,
     cohort_note,
-    cohort_warning_text
+    cohort_warning_text,
+    cohort_multiple_warning_text
   )
 
 # Specific UI inputs for trial design
@@ -766,6 +768,20 @@ observeEvent(move_data(), {
   
   output$cohort_warning <- renderText({
     validation_state$cohort_val_warning %||% ""
+  })
+
+  # Only a note: the simulation still runs. A trial stops once it reaches the
+  # maximum, so the last cohort can take it past the maximum.
+  output$cohort_multiple_warning <- renderText({
+    max_size <- input$max_size_inputt
+    cohort_size <- input$cohort_inputt
+    if (!is.numeric(max_size) || !is.numeric(cohort_size) || is.na(max_size) ||
+        is.na(cohort_size) || cohort_size <= 0 || max_size %% cohort_size == 0) {
+      return("")
+    }
+    paste0("⚠️ The maximum sample size (", max_size, ") is not a multiple of the cohort size (",
+           cohort_size, "). In the simulations, CRM and BOIN trials fill their last cohort, so ",
+           "they can reach ", ceiling(max_size / cohort_size) * cohort_size, " patients.")
   })
 
   # CRM 
