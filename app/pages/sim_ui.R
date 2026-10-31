@@ -103,8 +103,9 @@ sim_ui <- function(id) {
                ", so the same inputs always give the same results.")),
       tags$hr(), # Separator line
       h3("Download Results"),
-      p("Want to save your simulation results? Click a button below to download them as a CSV file."),
-      downloadButton(ns("download_simulation_results"), "Download Simulation Results"),
+      p("Download the results of the last run: a report with the settings, tables and plots (HTML), or all result tables (CSV)."),
+      downloadButton(ns("download_report"), "Download Report (HTML)"),
+      downloadButton(ns("download_tables"), "Download Tables (CSV)"),
       tags$hr(),
       actionButton(ns("view_conduct"), "View Conduct Tab")
     )
@@ -307,6 +308,7 @@ validation_state <- reactiveValues(
  sim_titles <- reactiveVal(NULL) # initialising
  sim_graphs <- reactiveVal(NULL) # initialising
  scenario_list <- reactiveVal(NULL) # initialising
+ sim_report <- reactiveVal(NULL) # settings of the last run, for the downloads
 
 
   observeEvent(input$run_simulation, {
@@ -792,6 +794,45 @@ validation_state <- reactiveValues(
 
   } else {output$generate_graphs_ui <- NULL} 
 
+  # Settings of this run, for the report. Captured now, so later edits in
+  # the inputs do not change what the report says about these results.
+  if (n_data_frames > 0) {
+    settings <- c(
+      "Designs" = paste(model[selected_models], collapse = ", "),
+      "Scenarios" = paste(updated_scenarios, collapse = ", "),
+      "Metrics" = paste(input$metric_selection_input, collapse = ", "),
+      "View" = input$comparative_view,
+      "Simulations per design and scenario" = n_sims(),
+      "Seed" = default_design$seed,
+      "Number of doses" = shared$n_dosess(),
+      "Target toxicity level" = shared$ttl(),
+      "Maximum sample size" = shared$max_size(),
+      "Starting dose" = shared$start_dose(),
+      "Cohort size" = shared$cohort_size()
+    )
+    if (selected_models[2]) settings <- c(settings,
+      "CRM skeleton" = paste(round(shared$skeleton_crm(), 3), collapse = ", "),
+      "CRM prior variance" = shared$prior_var_crm(),
+      "CRM skip doses when escalating" = shared$skip_esc_crm(),
+      "CRM skip doses when de-escalating" = shared$skip_deesc_crm(),
+      "CRM stop for toxicity: P(DLT rate at lowest dose > x) > y, x" = shared$stop_tox_x_crm(),
+      "CRM stop for toxicity: P(DLT rate at lowest dose > x) > y, y" = shared$stop_tox_y_crm(),
+      "CRM stop when this many patients are at the recommended dose" = shared$stop_n_mtd_crm()
+    )
+    if (selected_models[3]) settings <- c(settings,
+      "BOIN p.saf" = round(shared$phi_1, 3),
+      "BOIN p.tox" = round(shared$phi_2, 3),
+      "BOIN stop for toxicity at the lowest dose" = shared$boin_stopping_rule(),
+      "BOIN stop when this many patients are at the recommended dose" = shared$stop_n_mtd_boin()
+    )
+    scen_numbers <- as.numeric(gsub("Scenario ", "", updated_scenarios))
+    run_true_dlts <- as.data.frame(reactive_df()[scen_numbers, -1, drop = FALSE])
+    row.names(run_true_dlts) <- updated_scenarios
+    sim_report(list(
+      settings = data.frame(Value = as.character(settings), row.names = names(settings), check.names = FALSE),
+      true_dlts = run_true_dlts
+    ))
+  }
 
   } # else (after for loop)
   } # else (before for loop)
@@ -1090,6 +1131,50 @@ validation_state <- reactiveValues(
   })
  
   
+  # Downloads of the last run (decision 0003): an HTML report and a CSV of
+  # every result table. The buttons work once a run has results.
+  observe({
+    shinyjs::toggleState("download_report", condition = !is.null(sim_report()))
+    shinyjs::toggleState("download_tables", condition = !is.null(sim_report()))
+  })
+
+  # The on-screen titles can carry doubled spaces; the downloads drop them.
+  result_tables <- function() setNames(sim_df(), gsub("\\s+", " ", sim_titles()))
+
+  output$download_report <- downloadHandler(
+    filename = function() paste0("simulation-report-", Sys.Date(), ".html"),
+    content = function(file) {
+      report <- sim_report()
+      tables <- result_tables()
+      plots <- sim_graphs()
+      html <- report_page(
+        "Simulation Report",
+        h2("Settings"),
+        report_table(report$settings),
+        h2("True DLT probabilities"),
+        report_table(report$true_dlts),
+        h2("Results"),
+        lapply(names(tables), function(title) tagList(h3(title), report_table(tables[[title]]))),
+        h2("Plots"),
+        if (length(plots) == 0) p("No plots for the selected metrics.")
+        else lapply(plots, function(plot) tagList(h3(plot$labels$title), report_plot(plot))),
+        h2("Appendix: questionnaire answers"),
+        report_answers(shared$q_responses()),
+        h2("Appendix: package versions"),
+        report_table(report_versions())
+      )
+      writeLines(html, file, useBytes = TRUE)
+    }
+  )
+
+  output$download_tables <- downloadHandler(
+    filename = function() paste0("simulation-tables-", Sys.Date(), ".csv"),
+    content = function(file) {
+      true_dlts <- list(`True DLT probabilities` = sim_report()$true_dlts)
+      write.csv(report_long_table(c(true_dlts, result_tables())), file, row.names = FALSE)
+    }
+  )
+
   observeEvent(input$view_conduct, {
       if (!is.null(parent_session)) {
         updateNavbarPage(parent_session, "nav", selected = "Conduct")
