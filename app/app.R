@@ -53,7 +53,7 @@ server <- function(input, output, session){
       # Enable other tabs or provide navigation hints
       showNotification(
         "Questionnaire completed! You can now proceed to Trial Design.",
-        type = "success",
+        type = "message",
         duration = 5
       )
     }
