@@ -797,39 +797,19 @@ validation_state <- reactiveValues(
   # Settings of this run, for the report. Captured now, so later edits in
   # the inputs do not change what the report says about these results.
   if (n_data_frames > 0) {
-    settings <- c(
+    settings <- report_design_settings(shared, model[selected_models], first = c(
       "Designs" = paste(model[selected_models], collapse = ", "),
       "Scenarios" = paste(updated_scenarios, collapse = ", "),
       "Metrics" = paste(input$metric_selection_input, collapse = ", "),
       "View" = input$comparative_view,
       "Simulations per design and scenario" = n_sims(),
-      "Seed" = default_design$seed,
-      "Number of doses" = shared$n_dosess(),
-      "Target toxicity level" = shared$ttl(),
-      "Maximum sample size" = shared$max_size(),
-      "Starting dose" = shared$start_dose(),
-      "Cohort size" = shared$cohort_size()
-    )
-    if (selected_models[2]) settings <- c(settings,
-      "CRM skeleton" = paste(round(shared$skeleton_crm(), 3), collapse = ", "),
-      "CRM prior variance" = shared$prior_var_crm(),
-      "CRM skip doses when escalating" = shared$skip_esc_crm(),
-      "CRM skip doses when de-escalating" = shared$skip_deesc_crm(),
-      "CRM stop for toxicity: P(DLT rate at lowest dose > x) > y, x" = shared$stop_tox_x_crm(),
-      "CRM stop for toxicity: P(DLT rate at lowest dose > x) > y, y" = shared$stop_tox_y_crm(),
-      "CRM stop when this many patients are at the recommended dose" = shared$stop_n_mtd_crm()
-    )
-    if (selected_models[3]) settings <- c(settings,
-      "BOIN p.saf" = round(shared$phi_1, 3),
-      "BOIN p.tox" = round(shared$phi_2, 3),
-      "BOIN stop for toxicity at the lowest dose" = shared$boin_stopping_rule(),
-      "BOIN stop when this many patients are at the recommended dose" = shared$stop_n_mtd_boin()
-    )
+      "Seed" = default_design$seed
+    ))
     scen_numbers <- as.numeric(gsub("Scenario ", "", updated_scenarios))
     run_true_dlts <- as.data.frame(reactive_df()[scen_numbers, -1, drop = FALSE])
     row.names(run_true_dlts) <- updated_scenarios
     sim_report(list(
-      settings = data.frame(Value = as.character(settings), row.names = names(settings), check.names = FALSE),
+      settings = settings,
       true_dlts = run_true_dlts
     ))
   }

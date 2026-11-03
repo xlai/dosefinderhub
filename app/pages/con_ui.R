@@ -24,10 +24,10 @@ con_ui <- function(id) {
           inline = FALSE
         ),
         actionButton(ns("update_design"), "Update Design"),
-        radioButtons(ns("export_type"), "Choose Export Format:",
-               choices = c("Rmd","PDF", "Excel"),
-               inline = TRUE),
-        downloadButton(ns("download_report"), "Download Report")
+        tags$hr(),
+        p("Download the trial so far: a report with the settings, patients, results and plots (HTML), or the patient table (CSV)."),
+        downloadButton(ns("download_report"), "Download Report (HTML)"),
+        downloadButton(ns("download_patients"), "Download Patient Table (CSV)")
       ),
       layout_columns(
         value_box(
@@ -117,9 +117,13 @@ con_server <- function(id, shared) {
 
    
     design_initialized <- reactiveVal(FALSE)
+    # Settings of the design in use, for the report. Captured on "Update
+    # Design", the moment the design is built from them.
+    conduct_settings <- reactiveVal(NULL)
 
     observeEvent(input$update_design, {
      design_initialized(input$choice)
+     conduct_settings(report_design_settings(shared, input$choice, first = c("Design" = input$choice)))
 
      # Reset table to first cohort
      initial_cohort_size <- shared$cohort_size()
@@ -319,7 +323,7 @@ con_server <- function(id, shared) {
     })
     
     # Trial status
-    output$trial_status <- renderText({
+    status_text <- reactive({
      data <- conduct_reactive_table_data()
      max_patients <- shared$max_size()
      if (design_initialized() != input$choice) {
@@ -337,6 +341,7 @@ con_server <- function(id, shared) {
       }
     "Recruiting"
     })
+    output$trial_status <- renderText(status_text())
    
     #Disables Add Cohort button if trial is stopped
    observe({
@@ -363,7 +368,12 @@ con_server <- function(id, shared) {
       output$dose_plot <- renderPlot({
         data <- conduct_reactive_table_data()
         if (nrow(data) == 0) return(NULL)
+        draw_cohort_plot(data, input$plot_title)
+      })
+   })
 
+    # The patients by cohort and dose, red for a DLT. Drawn on screen and in the report.
+    draw_cohort_plot <- function(data, title) {
         data$Patient <- data$Patient_Number
         data$Cohort_Position <- ave(data$Cohort_Number, data$Cohort_Number, FUN = seq_along)
         data$X <- data$Cohort_Number + (data$Cohort_Position - 2) * 0.2
@@ -383,7 +393,7 @@ con_server <- function(id, shared) {
          cex = 2,
          xlab = "Cohort",
          ylab = "Dose Level",
-         main = input$plot_title,
+         main = title,
          xaxt = "n",
          yaxt = "n",
          ylim = ylim
@@ -396,8 +406,7 @@ con_server <- function(id, shared) {
        par(mar = c(0, 0, 0, 0))
        plot.new()
        legend("center", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19, cex = 1.2, bty = "n")
-      })
-   })
+    }
 
     observeEvent(input$reset_title, {
       updateTextInput(session, "plot_title", value = "Cohort Grouped Patient Dose Level with DLT's")
@@ -470,7 +479,10 @@ con_server <- function(id, shared) {
 output$crm_dlt_plot <- renderPlot({
   results <- crm_results_data()
   if (is.null(results)) return(NULL)
+  draw_crm_plot(results)
+})
 
+draw_crm_plot <- function(results) {
   dose_levels <- results$Dose_Level
   posterior <- results$Posterior_DLT_Rate
   ci_lower <- results$CI_Lower
@@ -507,7 +519,7 @@ output$crm_dlt_plot <- renderPlot({
   text(dose_levels, posterior + 0.05, labels = paste(patients, "pts"), cex = 0.8)
 
   grid()
-})
+}
 
 
     ## CRM plot card UI
@@ -594,7 +606,10 @@ output$crm_dlt_plot <- renderPlot({
      validate(
        need(!is.null(results), "Please reach status: complete to see the plot.")
       )
+     draw_boin_plot(results)
+    })
 
+    draw_boin_plot <- function(results) {
      # BOIN gives no estimate (NA) for doses not given yet, so plot only the
      # doses with one, on an axis that still shows every dose.
      n_doses <- nrow(results)
@@ -623,7 +638,7 @@ output$crm_dlt_plot <- renderPlot({
 
      text(dose_levels, posterior + 0.05, labels = paste(patients, "pts"), cex = 0.8)
      grid()
-    })
+    }
 
     ## BOIN plot card UI
     output$boin_plot_card_ui <- renderUI({
@@ -639,168 +654,68 @@ output$crm_dlt_plot <- renderPlot({
     })
 
 
-    ################################### Rmd file generation #########################################################
-   output$download_report <- downloadHandler(
-  filename = function() {
-    ext <- switch(input$export_type,
-                  "PDF" = ".pdf",
-                  "Excel" = ".xlsx",
-                  "Rmd" = ".Rmd")
-    paste0("cohort_report_", Sys.Date(), ext)
-  },
-  content = function(file) {
-    data <- conduct_reactive_table_data()
+    ################################### Downloads (decision 0003) ###################################
+    # The trial so far as an HTML report, and the patient table as CSV. Both
+    # work once the chosen design has been built with "Update Design".
+    observe({
+      ready <- identical(design_initialized(), input$choice)
+      shinyjs::toggleState("download_report", condition = ready)
+      shinyjs::toggleState("download_patients", condition = ready)
+    })
 
-    # --- Generate cohort plot ---
-    cohort_plot_file <- tempfile(fileext = ".png")
-    png(cohort_plot_file, width = 800, height = 600)
-    data$Patient <- data$Patient_Number
-    data$Cohort_Position <- ave(data$Cohort_Number, data$Cohort_Number, FUN = seq_along)
-    data$X <- data$Cohort_Number + (data$Cohort_Position - 2) * 0.2
-    colors <- ifelse(data$DLT, "red", "green")
-    ylim <- c(0.5, max(data$Dose_Level) + 0.5)
-
-    plot(
-      x = data$X,
-      y = data$Dose_Level,
-      col = colors,
-      pch = 19,
-      cex = 2,
-      xlab = "Cohort",
-      ylab = "Dose Level",
-      main = "Cohort Grouped Patient Dose Level with DLTs",
-      xaxt = "n",
-      ylim = ylim
-    )
-    axis(1, at = sort(unique(data$Cohort_Number)), labels = sort(unique(data$Cohort_Number)))
-    text(data$X, data$Dose_Level + 0.3, labels = paste0("P", data$Patient), cex = 0.8)
-    legend("bottom", legend = c("DLT", "No DLT"), col = c("red", "green"), pch = 19)
-    dev.off()
-
-    # --- Generate CRM plot ---
-    crm_plot_file <- tempfile(fileext = ".png")
-    crm_data <- NULL
-    boin_data <- NULL
-
-    if (input$choice == "CRM") {
-      crm_data <- get_crm_results()
-      png(crm_plot_file, width = 800, height = 600)
-      plot(
-        crm_data$`Dose Level`, crm_data$`Posterior DLT Rate`,
-        pch = 19, col = "blue", cex = 1.5,
-        xlab = "Dose Level", ylab = "Posterior DLT Rate",
-        main = "Posterior DLT Rates by Dose Level (CRM)",
-        ylim = c(0, max(crm_data$`CI Upper`) + 0.1)
-      )
-      arrows(
-        x0 = crm_data$`Dose Level`, y0 = crm_data$`CI Lower`,
-        x1 = crm_data$`Dose Level`, y1 = crm_data$`CI Upper`,
-        angle = 90, code = 3, length = 0.05, col = "darkblue"
-      )
-      text(crm_data$`Dose Level`, crm_data$`Posterior DLT Rate` + 0.05,
-           labels = paste(crm_data$`No. of Patients`, "pts"), cex = 0.8)
-      grid()
-      dev.off()
-    } else if (input$choice == "BOIN") {
-      boin_data <- get_boin_results()
+    # A dose-level results table as shown on screen
+    results_for_report <- function(results) {
+      results <- results[, c("Dose_Level", "No_of_Patients", "No_of_DLTs", "Posterior_DLT_Rate", "CI_Lower", "CI_Upper")]
+      colnames(results) <- c("Dose Level", "No. of Patients", "No. of DLTs", "Posterior DLT Rate", "CI Lower (95%)", "CI Upper (95%)")
+      results
     }
 
-    # --- Rmd content ---
-    table_section <- NULL
-    if (!is.null(crm_data)) {
-      table_section <- c(
-        "## CRM Summary Table",
-        "```{r}",
-        "crm_data <- data.frame(",
-        paste0("  `Dose Level` = c(", paste(crm_data$`Dose Level`, collapse = ", "), "),"),
-        paste0("  `No. of Patients` = c(", paste(crm_data$`No. of Patients`, collapse = ", "), "),"),
-        paste0("  `No. of DLTs` = c(", paste(crm_data$`No. of DLTs`, collapse = ", "), "),"),
-        paste0("  `Posterior DLT Rate` = c(", paste(crm_data$`Posterior DLT Rate`, collapse = ", "), "),"),
-        paste0("  `CI Upper` = c(", paste(crm_data$`CI Upper`, collapse = ", "), "),"),
-        paste0("  `CI Lower` = c(", paste(crm_data$`CI Lower`, collapse = ", "), ")"),
-        ")",
-        "knitr::kable(crm_data)",
-        "```"
-      )
-    } else if (!is.null(boin_data)) {
-      table_section <- c(
-        "## BOIN Summary Table",
-        "```{r}",
-        "boin_data <- data.frame(",
-        paste0("  `Dose Level` = c(", paste(boin_data$`Dose Level`, collapse = ", "), "),"),
-        paste0("  `No. of Patients` = c(", paste(boin_data$`No. of Patients`, collapse = ", "), "),"),
-        paste0("  `No. of DLTs` = c(", paste(boin_data$`No. of DLTs`, collapse = ", "), "),"),
-        paste0("  `Posterior DLT Rate` = c(", paste(boin_data$`Posterior DLT Rate`, collapse = ", "), "),"),
-        paste0("  `CI Upper` = c(", paste(boin_data$`CI Upper`, collapse = ", "), "),"),
-        paste0("  `CI Lower` = c(", paste(boin_data$`CI Lower`, collapse = ", "), ")"),
-        ")",
-        "knitr::kable(boin_data)",
-        "```"
-      )
-    }
-
-    rmd_content <- c(
-      "---",
-      "title: \"Cohort Report\"",
-      "output: pdf_document",
-      "---",
-      "",
-      "## Patient Table",
-      "```{r}",
-      "library(knitr)",
-      "library(dplyr)",
-      "data <- tibble::tibble(",
-      paste0("  Patient_Number = c(", paste(data$Patient_Number, collapse = ", "), "),"),
-      paste0("  Cohort_Number = c(", paste(data$Cohort_Number, collapse = ", "), "),"),
-      paste0("  Dose_Level = c(", paste(data$Dose_Level, collapse = ", "), "),"),
-      paste0("  DLT = c(", paste(as.character(data$DLT), collapse = ", "), ")"),
-      ")",
-      "kable(data)",
-      "```",
-      "",
-      "## Cohort Dose Plot",
-      paste0("!"),
-      "",
-      if (!is.null(crm_data)) {
-        c("## CRM Posterior DLT Plot", paste0("!"))
-      } else {
-        NULL
-      },
-      "",
-      table_section
-    )
-
-    # --- Export ---
-    if (input$export_type == "PDF") {
-      rmd_file <- tempfile(fileext = ".Rmd")
-      writeLines(rmd_content, rmd_file)
-      rmarkdown::render(rmd_file, output_file = file, quiet = TRUE)
-    } else if (input$export_type == "Excel") {
-      wb <- openxlsx::createWorkbook()
-      openxlsx::addWorksheet(wb, "Cohort Table")
-      openxlsx::writeData(wb, "Cohort Table", data)
-
-      openxlsx::addWorksheet(wb, "Cohort Plot")
-      openxlsx::insertImage(wb, "Cohort Plot", cohort_plot_file, startRow = 2, startCol = 2, width = 6, height = 6)
-
-      if (!is.null(crm_data)) {
-        openxlsx::addWorksheet(wb, "CRM Summary")
-        openxlsx::writeData(wb, "CRM Summary", crm_data)
-        openxlsx::addWorksheet(wb, "CRM Plot")
-        openxlsx::insertImage(wb, "CRM Plot", crm_plot_file, startRow = 2, startCol = 2, width = 6, height = 6)
-      } else if (!is.null(boin_data)) {
-        openxlsx::addWorksheet(wb, "BOIN Summary")
-        openxlsx::writeData(wb, "BOIN Summary", boin_data)
+    output$download_report <- downloadHandler(
+      filename = function() paste0("conduct-report-", Sys.Date(), ".html"),
+      content = function(file) {
+        data <- conduct_reactive_table_data()
+        fitted <- conduct_fit()
+        dose <- if (!is.null(fitted$fit)) recommended_dose(fitted$fit) else NA
+        status <- data.frame(
+          Value = c(nrow(data), status_text(),
+                    if (is.na(dose)) "none" else as.character(dose)),
+          row.names = c("Number of patients", "Trial status",
+                        if (trial_stopped()) "Final MTD level" else "Recommended next dose level"),
+          check.names = FALSE
+        )
+        results <- switch(input$choice, "CRM" = crm_results_data(), "BOIN" = boin_results_data(), NULL)
+        draw_results <- switch(input$choice, "CRM" = draw_crm_plot, "BOIN" = draw_boin_plot, NULL)
+        html <- report_page(
+          "Conduct Report",
+          h2("Settings"),
+          report_table(conduct_settings()),
+          h2("Trial status"),
+          report_table(status),
+          h2("Patients"),
+          report_table(data, rownames = FALSE),
+          if (nrow(data) > 0) report_plot(function() draw_cohort_plot(data, input$plot_title),
+                                           alt = input$plot_title),
+          if (!is.null(results)) tagList(
+            h2(paste(input$choice, "results by dose level")),
+            report_table(results_for_report(results), rownames = FALSE),
+            report_plot(function() draw_results(results),
+                        alt = paste("Posterior DLT rates by dose level", input$choice))
+          ),
+          h2("Appendix: questionnaire answers"),
+          report_answers(shared$q_responses()),
+          h2("Appendix: package versions"),
+          report_table(report_versions())
+        )
+        writeLines(html, file, useBytes = TRUE)
       }
+    )
 
-      openxlsx::saveWorkbook(wb, file, overwrite = TRUE)
-    } else if (input$export_type == "Rmd") {
-      rmd_file <- tempfile(fileext = ".Rmd")
-      writeLines(rmd_content, rmd_file)
-      file.copy(rmd_file, file)
-    }
-  }
-)
+    output$download_patients <- downloadHandler(
+      filename = function() paste0("conduct-patients-", Sys.Date(), ".csv"),
+      content = function(file) {
+        write.csv(conduct_reactive_table_data(), file, row.names = FALSE)
+      }
+    )
 
   })
 }

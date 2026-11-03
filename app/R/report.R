@@ -27,18 +27,52 @@ report_table <- function(df, rownames = TRUE, digits = 2) {
 }
 
 #' A plot as an embedded PNG image
-#' @param plot A ggplot (or anything that draws when printed)
+#' @param plot A ggplot, or a function that draws a base R plot
 #' @param width,height Size in pixels
-report_plot <- function(plot, width = 700, height = 450) {
+#' @param alt Text shown when the image cannot be; a ggplot's title by default
+report_plot <- function(plot, width = 700, height = 450, alt = NULL) {
   file <- tempfile(fileext = ".png")
   on.exit(unlink(file), add = TRUE)
+  draw <- if (is.function(plot)) plot else function() print(plot)
   # The same PNG device renderPlot() uses, so it also works in the browser app.
-  shiny::plotPNG(function() print(plot), filename = file, width = width, height = height, res = 96)
+  shiny::plotPNG(draw, filename = file, width = width, height = height, res = 96)
+  if (is.null(alt)) alt <- if (is.function(plot)) "Plot" else plot$labels$title %||% "Plot"
   htmltools::tags$img(
     src = base64enc::dataURI(file = file, mime = "image/png"),
-    alt = plot$labels$title %||% "Plot",
+    alt = alt,
     width = width
   )
+}
+
+#' The design settings for a report, as a one-column table
+#' @param shared The app's shared values from Trial Design
+#' @param designs The designs whose own settings are listed ("3+3", "CRM", "BOIN")
+#' @param first Settings listed before the general ones, as a named vector
+report_design_settings <- function(shared, designs, first = c()) {
+  settings <- c(
+    first,
+    "Number of doses" = shared$n_dosess(),
+    "Target toxicity level" = shared$ttl(),
+    "Maximum sample size" = shared$max_size(),
+    "Starting dose" = shared$start_dose(),
+    "Cohort size" = shared$cohort_size()
+  )
+  if ("CRM" %in% designs) settings <- c(settings,
+    "CRM skeleton" = paste(round(shared$skeleton_crm(), 3), collapse = ", "),
+    "CRM prior variance" = shared$prior_var_crm(),
+    "CRM skip doses when escalating" = shared$skip_esc_crm(),
+    "CRM skip doses when de-escalating" = shared$skip_deesc_crm(),
+    "CRM stop for toxicity: P(DLT rate at lowest dose > x) > y, x" = shared$stop_tox_x_crm(),
+    "CRM stop for toxicity: P(DLT rate at lowest dose > x) > y, y" = shared$stop_tox_y_crm(),
+    "CRM stop when this many patients are at the recommended dose" = shared$stop_n_mtd_crm()
+  )
+  if ("BOIN" %in% designs) settings <- c(settings,
+    "BOIN p.saf" = round(shared$phi_1, 3),
+    "BOIN p.tox" = round(shared$phi_2, 3),
+    "BOIN stop for toxicity at the lowest dose" = shared$boin_stopping_rule(),
+    "BOIN stop when this many patients are at the recommended dose" = shared$stop_n_mtd_boin()
+  )
+  data.frame(Value = as.character(settings), row.names = names(settings), check.names = FALSE)
 }
 
 #' Versions of R and the packages that compute the results
