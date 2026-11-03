@@ -20,9 +20,8 @@ app_packages <- c(
   "ggplot2", "ggpattern", "magrittr", "rlang",
   "dplyr", "tidyr", "stringr", "tibble",
   "escalation", "BOIN", "dfcrm",
-  # Conduct export, until the HTML and CSV exports replace it
-  # (https://github.com/xlai/dosefinderhub/issues/94)
-  "rmarkdown", "knitr", "openxlsx"
+  # The HTML reports embed their plots with base64enc::dataURI()
+  "base64enc"
 )
 
 test_packages <- c("testthat", "shinytest2")
