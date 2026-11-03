@@ -57,3 +57,43 @@ test_that("the Simulation report and tables download after a run", {
     expect_true(any(grepl(paste0("^", design, " Simulation for Scenario 1 - "), tables$Table)), label = design)
   }
 })
+
+test_that("the Conduct report and patient table download after Update Design", {
+  app <- AppDriver$new(test_path("..", ".."), name = "conduct-report",
+                       load_timeout = 60 * 1000, timeout = 20 * 1000)
+  on.exit(app$stop(), add = TRUE)
+  disabled <- function(id) app$get_js(sprintf("document.getElementById('%s').classList.contains('disabled') || document.getElementById('%s').hasAttribute('disabled')", id, id))
+
+  app$set_inputs(nav = "Conduct")
+  app$wait_for_idle()
+  expect_true(disabled("conduct-download_report"))
+  expect_true(disabled("conduct-download_patients"))
+  expect_null(app$get_value(input = "conduct-export_type"))
+
+  # CRM, first cohort with one DLT, then a second cohort.
+  app$set_inputs(`conduct-choice` = "CRM")
+  app$click("conduct-update_design")
+  app$wait_for_idle()
+  app$set_inputs(`conduct-editable_table_cell_edit` = list(row = 2, col = 3, value = "1"),
+                 allow_no_input_binding_ = TRUE)
+  app$wait_for_idle()
+  app$click("conduct-add_cohort")
+  app$wait_for_idle()
+  expect_false(disabled("conduct-download_report"))
+
+  report <- paste(readLines(app$get_download("conduct-download_report"), warn = FALSE), collapse = "\n")
+  expect_match(report, "<title>Conduct Report</title>")
+  expect_lt(regexpr("<h2>Settings</h2>", report), regexpr("<h2>Patients</h2>", report))
+  expect_match(report, "<th>Design</th>\\s*<td>CRM</td>")
+  expect_match(report, "<th>CRM skeleton</th>")
+  expect_match(report, "<th>Number of patients</th>\\s*<td>6</td>")
+  expect_match(report, "<th>Recommended next dose level</th>")
+  expect_match(report, "<h2>CRM results by dose level</h2>")
+  expect_equal(lengths(regmatches(report, gregexpr("data:image/png;base64,", report))), 2)
+  expect_gt(regexpr("Appendix: package versions", report), regexpr("CRM results by dose level", report))
+
+  patients <- read.csv(app$get_download("conduct-download_patients"))
+  expect_equal(names(patients), c("Patient_Number", "Cohort_Number", "Dose_Level", "DLT"))
+  expect_equal(nrow(patients), 6)
+  expect_equal(patients$DLT[1:3], c(0, 1, 0))
+})
