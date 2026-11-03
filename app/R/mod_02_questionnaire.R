@@ -164,6 +164,11 @@ mod_questionnaire_server <- function(id, shared, move_data, parent_session = NUL
     # Reactive values
     current_question <- reactiveVal(1)
     user_responses <- reactiveValues()
+    # The answers, for the appendix of the reports
+    shared$q_responses <- reactive({
+      answers <- reactiveValuesToList(user_responses)[questions$q_variable]
+      setNames(answers, questions$q_text)
+    })
     questions_shown <- reactiveVal(c())  # Track which questions have been displayed
     redraw <- reactiveVal(0)  # Bumped by Upload and Reset to draw the question again
     
