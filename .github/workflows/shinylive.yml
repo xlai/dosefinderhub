@@ -53,7 +53,7 @@ jobs:
             "shinylive", "shiny", "bslib", "bsicons", "htmltools", "shinyjs",
             "DT", "escalation", "BOIN", "dfcrm", "dplyr", "tidyr", "stringr",
             "tibble", "magrittr", "rlang", "ggplot2", "ggpattern", "markdown",
-            "rmarkdown", "openxlsx"
+            "base64enc"
           ))
         shell: Rscript {0}
 
