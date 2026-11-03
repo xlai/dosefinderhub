@@ -14,7 +14,7 @@ intro_ui <- function(id) {
       navset_tab(
         nav_panel(
           "Introduction",
-          includeMarkdown("pages/rmd/intro_introduction.Rmd"),
+          includeMarkdown("pages/rmd/intro_introduction.md"),
           div(
             style = "text-align: center; margin: 30px 0;",
             actionButton(
@@ -27,11 +27,11 @@ intro_ui <- function(id) {
         ),
         nav_panel(
           "Dose-Finding Methods",
-          includeMarkdown("pages/rmd/intro_three_models.Rmd")
+          includeMarkdown("pages/rmd/intro_three_models.md")
         ),
         nav_panel(
           "Team",
-          includeMarkdown("pages/rmd/intro_team.Rmd")
+          includeMarkdown("pages/rmd/intro_team.md")
         )
       )  
     )
