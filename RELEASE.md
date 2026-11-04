@@ -20,7 +20,7 @@ From now on we keep two long-lived branches: `main` for stable releases and `dev
 
 - [x] Merge `exp` into `dev`. This keeps all existing history.
 - [x] Merge `main` into `dev`, so that `dev` also has this file, `NEWS.md` and `documentation/decisions/`.
-- [ ] Make each fix as its own small pull request to `dev`.
+- [x] Make each fix as its own small pull request to `dev`.
 
 Some branches will not be part of this release:
 
@@ -48,63 +48,63 @@ We will tag v0.1.0 once everything below is done on `dev` and `dev` has been mer
 
 ### The app
 
-- [ ] The app runs from its own folder and no longer depends on the old `app/` folder.
-- [ ] The app opens with the signed-off default design (https://github.com/xlai/dosefinderhub/issues/91), so you can run a simulation straight away.
-- [ ] With that default design, CRM, BOIN and 3+3 all work in Trial Design, Simulation and Conduct.
-- [ ] The preview notice is shown.
+- [x] The app runs from its own folder and no longer depends on the old `app/` folder.
+- [x] The app opens with the signed-off default design (https://github.com/xlai/dosefinderhub/issues/91), so you can run a simulation straight away.
+- [x] With that default design, CRM, BOIN and 3+3 all work in Trial Design, Simulation and Conduct.
+- [x] The preview notice is shown.
 
 ### Known bugs to fix
 
 Trial Design and Simulation:
 
-- [ ] Plots show the right design names, whichever designs are selected.
-- [ ] The cohort size you enter is used by CRM and BOIN. 3+3 always uses cohorts of 3, and the app says so next to the input.
-- [ ] The BOIN stopping rule you choose is actually used.
-- [ ] The same inputs always give the same results, whichever other designs are selected. The seed is shown.
-- [ ] The BOIN boundary settings you enter are used, they are updated when the target changes, and the app explains the problem instead of crashing when they don't fit the target.
-- [ ] Editing the CRM skeleton no longer breaks the CRM simulation. The skeleton is checked before it is used, and it updates when the target changes.
-- [ ] When every dose is above the target, choosing no dose counts as a correct result in "Accuracy". The metric labelled "Overdose" is replaced by what it measured, shown as the % of patients with a DLT in each trial.
-- [ ] The cohort size is no longer reset when the app starts.
-- [ ] Saving and loading the trial design settings works.
-- [ ] "View Conduct Tab" opens the Conduct tab.
+- [x] Plots show the right design names, whichever designs are selected.
+- [x] The cohort size you enter is used by CRM and BOIN. 3+3 always uses cohorts of 3, and the app says so next to the input.
+- [x] The BOIN stopping rule you choose is actually used.
+- [x] The same inputs always give the same results, whichever other designs are selected. The seed is shown.
+- [x] The BOIN boundary settings you enter are used, they are updated when the target changes, and the app explains the problem instead of crashing when they don't fit the target.
+- [x] Editing the CRM skeleton no longer breaks the CRM simulation. The skeleton is checked before it is used, and it updates when the target changes.
+- [x] When every dose is above the target, choosing no dose counts as a correct result in "Accuracy". The metric labelled "Overdose" is replaced by what it measured, shown as the % of patients with a DLT in each trial.
+- [x] The cohort size is no longer reset when the app starts.
+- [x] Saving and loading the trial design settings works.
+- [x] "View Conduct Tab" opens the Conduct tab.
 
 Conduct:
 
-- [ ] Conduct uses the same design settings as Simulation.
-- [ ] The BOIN plot shows correctly.
+- [x] Conduct uses the same design settings as Simulation.
+- [x] The BOIN plot shows correctly.
 
 Questionnaire:
 
-- [ ] The Reset, Save and Upload buttons work without closing the session.
-- [ ] The recommendation chooses 3+3 when the user has no statistician.
-- [ ] The questionnaire answers still reach Trial Design.
+- [x] The Reset, Save and Upload buttons work without closing the session.
+- [x] The recommendation chooses 3+3 when the user has no statistician.
+- [x] The questionnaire answers still reach Trial Design.
 
 ### Reports and downloads
 
-- [ ] You can download the simulation results and the Conduct results as a single HTML report with tables and plots. This doesn't need LaTeX.
-- [ ] Each report starts with the design settings used, including the seed and the number of simulations. The questionnaire answers and package versions go at the end.
-- [ ] The simulation results tables and the Conduct patient table can also be downloaded as CSV.
-- [ ] The PDF, Rmd and Excel downloads are removed. HTML and CSV are the only formats.
+- [x] You can download the simulation results and the Conduct results as a single HTML report with tables and plots. This doesn't need LaTeX.
+- [x] Each report starts with the design settings used, including the seed and the number of simulations. The questionnaire answers and package versions go at the end.
+- [x] The simulation results tables and the Conduct patient table can also be downloaded as CSV.
+- [x] The PDF, Rmd and Excel downloads are removed. HTML and CSV are the only formats.
 
 ### Tests and CI
 
-- [ ] Each bug fixed above has an automated test. Where a bug can only be seen in the browser, the PR says how it was checked by hand.
-- [ ] A quick test starts the app and runs one simulation for each design.
-- [ ] Tests run automatically on every pull request to `dev`.
-- [ ] `dev` has one up-to-date `renv.lock` with the latest `escalation` release, updated only in its own pull requests.
+- [x] Each bug fixed above has an automated test. Where a bug can only be seen in the browser, the PR says how it was checked by hand.
+- [x] A quick test starts the app and runs one simulation for each design.
+- [x] Tests run automatically on every pull request to `dev`.
+- [x] `dev` has one up-to-date `renv.lock` with the latest `escalation` release, updated only in its own pull requests.
 
 ### Deployment
 
-- [ ] The app is published on GitHub Pages using Shinylive.
-- [ ] Opened in a current version of Chrome or Firefox, the published app loads and runs a simulation for each of CRM, BOIN and 3+3. This is checked by hand.
+- [x] The app is published on GitHub Pages using Shinylive.
+- [x] Opened in a current version of Chrome or Firefox, the published app loads and runs a simulation for each of CRM, BOIN and 3+3. This is checked by hand.
 
 ### History and documentation
 
-- [ ] Before removing the old `app/` folder, we tag the current `main` so the earlier work stays easy to find, and we credit the people who built it.
-- [ ] `app_skeleton/` is renamed to `app/` in a way that keeps its file history.
-- [ ] The README explains what the app does, how to run it and where to find it online.
-- [ ] NEWS.md lists what changed in v0.1.0 and says it is a preview.
-- [ ] The main decisions for v0.1.0 are written up in `documentation/decisions/`.
+- [x] Before removing the old `app/` folder, we tag the current `main` so the earlier work stays easy to find, and we credit the people who built it.
+- [x] `app_skeleton/` is renamed to `app/` in a way that keeps its file history.
+- [x] The README explains what the app does, how to run it and where to find it online.
+- [x] NEWS.md lists what changed in v0.1.0 and says it is a preview.
+- [x] The main decisions for v0.1.0 are written up in `documentation/decisions/`.
 
 ## Decisions and assumptions
 
