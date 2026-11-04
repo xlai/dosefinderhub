@@ -14,11 +14,24 @@ source("pages/trial_design_ui.R", local = TRUE)
 source("pages/sim_ui.R", local = TRUE)
 source("pages/con_ui.R", local = TRUE)
 
+# Shown above every tab: v0.1.0 is a preview release (see RELEASE.md).
+preview_notice <- div(
+    id = "preview-notice",
+    class = "alert alert-warning",
+    role = "note",
+    style = "margin: 0 0 1rem 0;",
+    strong("Preview release (v0.1.0)."),
+    " Results should be checked by a statistician before they are used.",
+    " The questionnaire's recommendation is based on expert opinion, not yet on published evidence.",
+    " The app may still change in later versions."
+)
+
 # Define UI for the application
 ui <- navbarPage(
     title = "DoseFinderHub",
     id = "nav",
     theme = bs_theme(version = 5, bootswatch = "flatly"),
+    header = preview_notice,
     # Intro tab
     tabPanel("Introduction", intro_ui("intro")),
     # Questionnaire tab
