@@ -1,8 +1,10 @@
 # DoseFinderHub
 
-DoseFinderHub is an R Shiny app for planning, comparing and running Phase 1 dose-finding trials. It covers three designs: the continual reassessment method (CRM), Bayesian optimal interval (BOIN) and 3+3. The designs come from the [`escalation`](https://cran.r-project.org/package=escalation) package.
+DoseFinderHub is an R Shiny app for designing and conducting Phase 1 dose-finding trials. At the planning stage, it compares dose-finding designs on your own trial settings by simulation. During the trial, it helps conduct the chosen design. v0.1.0 includes three designs: the continual reassessment method (CRM), Bayesian optimal interval (BOIN) and 3+3, all from the [`escalation`](https://cran.r-project.org/package=escalation) package. More methods may be added in later releases.
 
-It is for trialists and statisticians who want to compare these designs on their own trial settings before the trial, and then use the chosen design while the trial runs.
+A key part of the app is its questionnaire. It works like a first discussion with a statistician: it helps decide which design suits your trial, and collects the trial design settings that the other tabs then use.
+
+The app is for trialists and statisticians. It does not replace the need for a statistician; it is meant to support the discussion between the trial team and their statistician.
 
 **v0.1.0 is a preview release.** Results should be checked by a statistician before they are used. The questionnaire's recommendation is based on expert opinion, not yet on published evidence. The app may still change in later versions.
 
@@ -13,7 +15,7 @@ The app has five tabs:
 - **Introduction**: an overview of the three designs and the team.
 - **Questionnaire**: questions about your trial. The app recommends a design and passes your answers on to Trial Design.
 - **Trial Design**: the settings for each design, such as the number of doses, the target toxicity, the cohort size and the stopping rules. The app opens with a default design, so you can run a simulation straight away. You can save the settings to a file and load them again.
-- **Simulation**: simulate CRM, BOIN and 3+3 under several toxicity scenarios and compare them on accuracy, duration and the % of patients with a DLT. Download the results as an HTML report or the tables as CSV.
+- **Simulation**: simulate the selected designs under several toxicity scenarios and compare them on accuracy, duration and the % of patients with a DLT. Download the results as an HTML report or the tables as CSV.
 - **Conduct**: choose one design, enter the patients' outcomes cohort by cohort and see the recommended next dose. Download an HTML report or the patient table as CSV.
 
 ## Use it online
@@ -39,20 +41,9 @@ You need R 4.5 (the lockfile was built with R 4.5.1) and the [`renv`](https://rs
 
 Some packages need system libraries on Linux (for example GDAL, GEOS, PROJ and udunits, used through `ggpattern`). `.github/workflows/tests.yml` lists the ones used on Ubuntu.
 
-## Run the tests
-
-The tests use their own renv profile, with extra packages such as `testthat` and `shinytest2`. The browser tests need Chrome or Chromium.
-
-```sh
-RENV_PROFILE=test Rscript -e 'renv::restore(prompt = FALSE)'
-RENV_PROFILE=test Rscript -e 'shiny::runTests("app")'
-```
-
-The tests also run on GitHub Actions for every pull request to `dev`.
-
 ## Project layout
 
-- `app/`: the Shiny app (`app.R`, `pages/`, `R/`) and its tests (`tests/`).
+- `app/`: the Shiny app (`app.R`, `pages/`, `R/`).
 - `webr/`: the Shinylive build, including a stand-in `trialr` package so that `escalation` loads in the browser.
 - `documentation/decisions/`: the decision records.
 - `RELEASE.md`: the scope and criteria for v0.1.0. `NEWS.md`: what changed in each release.
