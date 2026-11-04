@@ -95,8 +95,8 @@ Questionnaire:
 
 ### Deployment
 
-- [ ] The app is published on GitHub Pages using Shinylive.
-- [ ] Opened in a current version of Chrome or Firefox, the published app loads and runs a simulation for each of CRM, BOIN and 3+3. This is checked by hand.
+- [x] The app is published on GitHub Pages using Shinylive.
+- [x] Opened in a current version of Chrome or Firefox, the published app loads and runs a simulation for each of CRM, BOIN and 3+3. This is checked by hand.
 
 ### History and documentation
 
