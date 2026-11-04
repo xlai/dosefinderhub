@@ -1,6 +1,7 @@
 # Build the browser (Shinylive) version of the app and keep it as a build
-# artifact named "shinylive-site". It is not published: publishing to
-# GitHub Pages from main is a later step (decision 0002).
+# artifact named "shinylive-site". This workflow does not publish it:
+# pages.yml calls it on main and publishes the result to GitHub Pages
+# (decision 0002).
 # Adapted from the Shinylive build of ICR-EPAT/dtptite-shiny
 # (https://github.com/ICR-EPAT/dtptite-shiny/tree/spike/shinylive-pages).
 name: Shinylive build
@@ -18,6 +19,7 @@ on:
       - "webr/**"
       - ".github/workflows/shinylive.yml"
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
