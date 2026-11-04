@@ -8,11 +8,9 @@ output: html_document
 Clinical Trials and Statistics Unit (CTSU)  
 Institute of Cancer Research (ICR), UK
 
-## Current Team Members
+## Past Contributors
 - **Heather Christie**
 - **Madeleine Thomas**
-
-## Past Contributors
 - **Sian Dennett**
 - **Jake Holton**
 - **Eduardo Viegas**
