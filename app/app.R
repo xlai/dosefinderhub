@@ -1,0 +1,112 @@
+#app.R#
+# Load necessary libraries
+library(shiny)
+library(bslib)
+library(htmltools)
+library(markdown)
+
+# Run with shiny::runApp("app"). Shiny sources the files in R/ itself
+# and runs this file from the app folder, so paths are relative to it.
+# local = TRUE lets the pages see what R/ defines, such as default_design.
+source("pages/intro_ui.R", local = TRUE)
+source("pages/global.R", local = TRUE)
+source("pages/trial_design_ui.R", local = TRUE)
+source("pages/sim_ui.R", local = TRUE)
+source("pages/con_ui.R", local = TRUE)
+
+# Shown above every tab: v0.1.0 is a preview release (see RELEASE.md).
+preview_notice <- div(
+    id = "preview-notice",
+    class = "alert alert-warning",
+    role = "note",
+    style = "margin: 0 0 1rem 0;",
+    strong("Preview release (v0.1.0)."),
+    " Results should be checked by a statistician before they are used.",
+    " The questionnaire's recommendation is based on expert opinion, not yet on published evidence.",
+    " The app may still change in later versions."
+)
+
+# Define UI for the application
+ui <- navbarPage(
+    title = "DoseFinderHub",
+    id = "nav",
+    theme = bs_theme(version = 5, bootswatch = "flatly"),
+    header = preview_notice,
+    # Intro tab
+    tabPanel("Introduction", intro_ui("intro")),
+    # Questionnaire tab
+    tabPanel("Questionnaire", mod_questionnaire_ui("questionnaire")),
+    # Results tab
+    tabPanel("Trial Design", trial_design_ui("trial_design")),
+    # Simulation tab
+    tabPanel("Simulation", sim_ui("simulation")),
+    # Conduct tab
+    tabPanel("Conduct", con_ui("conduct"))
+)
+
+# Define server logic
+server <- function(input, output, session){
+    # Defining Buttons that move data between tabs
+    move_data <- reactiveVal(FALSE)
+
+    # Defining shared reactive variables
+    shared <- reactiveValues()
+
+    intro_server("intro", session)
+    questionnaire_results <- mod_questionnaire_server("questionnaire", shared, session, move_data = move_data)
+    trial_design_server("trial_design", shared, move_data = move_data, session)
+    sim_server("simulation", shared, session)
+    con_server("conduct", shared = shared)
+
+      observe({
+    if (!is.null(questionnaire_results) && 
+        !is.null(questionnaire_results$is_complete) &&
+        questionnaire_results$is_complete()) {
+      
+      # Enable other tabs or provide navigation hints
+      showNotification(
+        "Questionnaire completed! You can now proceed to Trial Design.",
+        type = "message",
+        duration = 5
+      )
+    }
+    })
+}
+
+shinyApp(ui, server)
+
+##### List of Shared Variables #####
+
+### Defined in qusetionnaire_server ###
+
+# shared$q_n_doses: Number of doses response from questionnaire
+# shared$q_start_dose: Starting dose level response from questionnaire
+# shared$q_ttl: ttl response from questionnaire
+# shared$q_cohort: Cohort size response from questionnaire
+# shared$q_max_size: Maximum sample size response from questionnaire
+
+### Defined in trial_design_server ###
+
+# shared$n_dosess: Number of doses (be careful of two 's's! n_doses is a different variable)
+# shared$ttl: ttl
+# shared$max_size: Maximum sample size
+# shared$start_dose: Starting dose level
+# shared$cohort_size: Cohort size
+
+# shared$skip_esc_crm: Skip escalation in CRM
+# shared$skip_deesc_crm: Skip de-escalation in CRM
+# shared$above_target_crm: Above target in CRM
+# shared$prior_var_crm: Prior variance in CRM
+# shared$stop_n_mtd_crm: Stop at n MTD in CRM
+# shared$skeleton_crm: Skeleton in CRM
+# shared$prior_mtd_crm: Prior MTD in CRM
+# shared$stop_tox_x_crm: Stop toxicity x in CRM
+# shared$stop_tox_y_crm: Stop toxicity y in CRM
+
+# shared$boin_stopping_rule: Stopping rule in BOIN
+# shared$boin_cohorts: Number of cohorts in BOIN
+# shared$stop_n_mtd_boin: Early stopping value for BOIN
+
+# shared$phi_1: Escalation probability for BOIN
+# shared$phi_2: De-escalation probability for BOIN
+

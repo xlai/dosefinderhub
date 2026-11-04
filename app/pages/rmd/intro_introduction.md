@@ -1,0 +1,36 @@
+---
+title: "intro_introduction"
+output: html_document
+---
+
+<div style="text-align: center;">
+<h3 id="introduction_intro">Welcome to DoseFinderHub</h3>
+</div>
+
+**DoseFinderHub helps you select and compare dose-finding methods for Phase I clinical trials through guided questionnaires and simulations.**
+
+## How It Works
+
+<div style="margin: 20px 0;">
+<h4>📋 Step 1: Answer Questionnaire</h4>
+Get personalized recommendations based on your trial characteristics and preferences.
+
+<h4>💡 Step 2: Review Recommendation</h4>
+See which method suits your trial among 3+3, CRM, and BOIN designs.
+
+<h4>🛤️ Step 3: Choose Your Path</h4>
+Go directly to Simulation OR customize parameters in Trial Design.
+
+<h4>⚡ Step 4: Run Simulations</h4>
+Compare method performance across safety, accuracy, and efficiency metrics.
+
+<h4>✅ Step 5: Select Design</h4>
+Use results to make informed decisions for your Phase I trial.
+
+<h4>📊 Step 6: Explore Conduct</h4>
+Conduct a trial with recorded DLT's, including dose allocation, toxicity rates, and more.
+</div>
+
+
+
+

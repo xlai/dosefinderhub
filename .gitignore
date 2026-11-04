@@ -50,3 +50,6 @@ rsconnect/
 
 # Working plans and notes (not documentation)
 /plans/
+
+# Shinylive build output (webr/export.R)
+/_site/
