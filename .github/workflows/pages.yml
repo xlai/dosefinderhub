@@ -1,0 +1,50 @@
+# Publish the browser (Shinylive) version of the app to GitHub Pages
+# from main (decision 0002). The site is built by shinylive.yml and
+# deployed here. Runs on every push to main, and by hand.
+#
+# Needs Settings > Pages > Source set to "GitHub Actions".
+name: Publish to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time; a newer push waits rather than cancelling a
+# deployment that is already running.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    uses: ./.github/workflows/shinylive.yml
+
+  deploy:
+    needs: build
+    # Only main is published, also when started by hand from another branch.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: shinylive-site
+          path: _site
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
